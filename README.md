@@ -2,11 +2,11 @@
 
 A browser app that turns a photo of handmade letters (Lego, clay, wool, coffee beans, gummy bears…) into a font you can type with and install. It was built for the **Typography Type Play** kids' workshop.
 
-Everything runs in the browser, with no accounts and no cloud. After the page has loaded once, it works offline.
+Everything happens inside the web page. Attendees add their photo and the page finds the letters, traces them and writes the `.ttf` file itself. They don't need a scanner, a separate program, an account or an internet connection. After the page has loaded once, it works offline.
 
 ## The five steps
 
-1. **Snap**: take a photo with the webcam, choose one, or try the built-in Lego demo. The screen shows framing tips.
+1. **Snap**: add a photo any way you like. Take it with the webcam, choose a file (on a phone this offers the camera *or* the gallery), drag it onto the page, or paste it with Ctrl+V. There's also a built-in Lego demo. The screen shows framing tips.
 2. **Check**: the app finds the letter blobs and labels them left to right (P, L, A, Y). Kids can drag a label onto a different box, tap a box to choose its letter, remove a box with ✕, or **draw a box around a letter** when detection misses one.
 3. **Neaten**: each letter gets a *Thinner ↔ Bolder* slider with the photo and the traced letter side by side. A **Fill the gaps** switch handles porous materials. It switches on by itself when a letter is made of separate pieces, such as beans, pasta or buttons.
 4. **Type**: a big text box shows what the kid types in their own letters as they type. Letters they haven't made yet show as grey boxes, next to an **Add more letters** button. The first time they type a word, it fills the screen with confetti.
@@ -52,7 +52,7 @@ npm run room -- --reset     # start with an empty wall
 - **Canva:** uploading fonts needs a Canva Pro, Teams or Education account (Brand Kit → Upload a font).
 - **Google Docs can't use fonts installed on the computer**, only Google Fonts. No font file can work there. The brief lists Google Docs, so this needs a decision: either drop it from the test, or have kids paste the PNG poster into Docs.
 
-## Testing
+## Testing (for developers only; attendees never need this)
 
 ```bash
 npm test               # unit tests: tracing, TTF structure and checksums, segmentation on samples, font build under 2 s

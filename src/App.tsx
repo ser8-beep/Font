@@ -52,7 +52,12 @@ function Station() {
       window.scrollTo(0, 0);
     } catch (e) {
       console.error(e);
-      setError("Hmm, that photo didn't work. Try another one!");
+      const name = 'name' in blob ? String((blob as File).name) : '';
+      setError(
+        /hei[cf]/i.test(blob.type + name)
+          ? 'This is an iPhone HEIC photo, which Chrome cannot open. Send it as a JPEG instead (on the iPhone: Settings → Camera → Formats → Most Compatible).'
+          : "Hmm, that photo didn't work. Try another one!",
+      );
     } finally {
       setBusy(false);
     }

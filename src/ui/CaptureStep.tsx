@@ -16,8 +16,63 @@ export function CaptureStep({ addingMore, busy, error, onPhoto }: Props) {
   const [word, setWord] = useState(addingMore ? '' : 'PLAY');
   const [camera, setCamera] = useState(false);
   const [camError, setCamError] = useState<string | null>(null);
+  const [dragOver, setDragOver] = useState(false);
+  const [hint, setHint] = useState<string | null>(null);
   const fileRef = useRef<HTMLInputElement>(null);
   const ready = cleanWord(word).length > 0;
+
+  /** Any way a photo arrives (picker, drag and drop, paste) ends up here. */
+  const take = (f: Blob | null | undefined) => {
+    if (!f) return;
+    if (f.type && !f.type.startsWith('image/')) {
+      setHint("That isn't a photo. Try a .jpg or .png picture.");
+      return;
+    }
+    if (!ready) {
+      setHint('First type what your photo spells.');
+      return;
+    }
+    setHint(null);
+    onPhoto(f, cleanWord(word));
+  };
+  const takeRef = useRef(take);
+  takeRef.current = take;
+
+  // Drop a photo anywhere on the page, or paste one (Ctrl+V).
+  useEffect(() => {
+    if (busy) return;
+    const hasFiles = (e: DragEvent) => !!e.dataTransfer && [...e.dataTransfer.types].includes('Files');
+    const over = (e: DragEvent) => {
+      if (!hasFiles(e)) return;
+      e.preventDefault();
+      setDragOver(true);
+    };
+    const leave = (e: DragEvent) => {
+      if (!e.relatedTarget) setDragOver(false);
+    };
+    const drop = (e: DragEvent) => {
+      if (!hasFiles(e)) return;
+      e.preventDefault();
+      setDragOver(false);
+      takeRef.current(e.dataTransfer!.files[0]);
+    };
+    const paste = (e: ClipboardEvent) => {
+      const item = [...(e.clipboardData?.items ?? [])].find((i) => i.type.startsWith('image/'));
+      if (!item) return;
+      e.preventDefault();
+      takeRef.current(item.getAsFile());
+    };
+    window.addEventListener('dragover', over);
+    window.addEventListener('dragleave', leave);
+    window.addEventListener('drop', drop);
+    window.addEventListener('paste', paste);
+    return () => {
+      window.removeEventListener('dragover', over);
+      window.removeEventListener('dragleave', leave);
+      window.removeEventListener('drop', drop);
+      window.removeEventListener('paste', paste);
+    };
+  }, [busy]);
 
   if (busy) {
     return (
@@ -73,7 +128,7 @@ export function CaptureStep({ addingMore, busy, error, onPhoto }: Props) {
         </Tip>
       </div>
 
-      {error && <p className="card" style={{ background: 'var(--pink)' }}>{error}</p>}
+      {(hint || error) && <p className="card" style={{ background: 'var(--pink)' }}>{hint || error}</p>}
 
       {camera ? (
         <Camera
@@ -102,21 +157,33 @@ export function CaptureStep({ addingMore, busy, error, onPhoto }: Props) {
               Try the Lego demo
             </button>
           )}
+          <button className="dropzone" onClick={() => fileRef.current?.click()}>
+            <DropIcon />
+            Or drag your photo here
+          </button>
         </div>
       )}
       {camError && <p>{camError}</p>}
+      {/* No `capture` attribute: phones then offer both "take photo" and "pick from gallery". */}
       <input
         ref={fileRef}
         type="file"
         accept="image/*"
-        capture="environment"
         hidden
         onChange={(e) => {
           const f = e.target.files?.[0];
           e.target.value = '';
-          if (f) onPhoto(f, cleanWord(word));
+          take(f);
         }}
       />
+      {dragOver && (
+        <div className="drop-overlay" aria-hidden>
+          <div>
+            <DropIcon />
+            Drop your photo!
+          </div>
+        </div>
+      )}
     </>
   );
 }
@@ -178,6 +245,12 @@ const CameraIcon = () => (
     <rect x="3" y="10" width="34" height="24" rx="5" fill="white" stroke="#1b1b3a" strokeWidth="3" />
     <circle cx="20" cy="22" r="7" fill="#3a86ff" stroke="#1b1b3a" strokeWidth="3" />
     <rect x="13" y="5" width="14" height="6" rx="2" fill="#1b1b3a" />
+  </svg>
+);
+const DropIcon = () => (
+  <svg width="48" height="48" viewBox="0 0 48 48" aria-hidden>
+    <rect x="4" y="18" width="40" height="26" rx="6" fill="white" stroke="#1b1b3a" strokeWidth="3" strokeDasharray="6 4" />
+    <path d="M24 4v24M15 19l9 9 9-9" stroke="#1b1b3a" strokeWidth="4" fill="none" strokeLinecap="round" strokeLinejoin="round" />
   </svg>
 );
 const PhotoIcon = () => (
