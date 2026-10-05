@@ -1,0 +1,7 @@
+node_modules/
+dist/
+dist-single/
+samples/_debug/
+server/room-data.json
+*.log
+.DS_Store
