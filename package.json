@@ -10,7 +10,8 @@
     "test": "vitest run",
     "samples:make": "tsx scripts/make-samples.ts",
     "samples:test": "tsx scripts/segment-samples.ts",
-    "room": "node server/room-server.js"
+    "room": "node server/room-server.js",
+    "build:artifact": "npm run build && node scripts/make-artifact-page.mjs"
   },
   "dependencies": {
     "fflate": "^0.8.3",

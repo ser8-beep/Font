@@ -29,6 +29,8 @@ There are three ways to run it. Pick the one that suits the room:
 | **Served from the facilitator laptop** | `npm run room`, then kids open `http://<facilitator-ip>:8787` | ⚠️ see below | ✅ once the page is open |
 | **Local dev** | `npm run dev` | ✅ on localhost | n/a |
 
+**As a claude.ai link.** `npm run build:artifact` writes `dist-single/artifact.html`, which can be published as a claude.ai artifact. That viewer blocks the webcam and the room wall, so there attendees add photos by choosing a file, dragging it onto the page or pasting it. Saving the font and the poster asks the viewer to confirm.
+
 **Webcams and LAN addresses.** Chrome only allows the webcam on `https://`, `localhost` or `file://` pages. A page served from `http://192.168.x.x` can't use the webcam, so kids get only **Choose a photo** (phones still open their camera from that button). If kids need the laptop webcam *and* the room wall, open the single file (`file://`) and enter the room-wall address on the Save screen under **Room wall…**. That address is remembered on each laptop.
 
 **Facilitator demo.** **Try the Lego demo** on the first screen loads a sample photo of PLAY in Lego, for the projector walkthrough.

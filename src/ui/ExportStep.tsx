@@ -1,5 +1,6 @@
 import { useEffect, useState } from 'react';
-import { buildFont, download, safeFileName, type LetterGlyph } from '../font';
+import { buildFont, safeFileName, type LetterGlyph } from '../font';
+import { inClaudeViewer, saveFile, type SaveOutcome } from '../host';
 import { renderPoster } from '../poster';
 import { fetchRoom, roomBase, saveRoomBase, submitToRoom } from '../room';
 import { MaterialToggle } from './TypeStep';
@@ -19,7 +20,9 @@ interface Props {
 
 export function ExportStep(p: Props) {
   const [poster, setPoster] = useState<string | null>(null);
-  const [saved, setSaved] = useState<string | null>(null);
+  const [fontSave, setFontSave] = useState<SaveOutcome | null>(null);
+  const [posterSave, setPosterSave] = useState<SaveOutcome | null>(null);
+  const [confirmReset, setConfirmReset] = useState(false);
   const name = p.fontName || (p.maker ? `${p.maker}'s Font` : 'My Font');
 
   useEffect(() => {
@@ -34,15 +37,14 @@ export function ExportStep(p: Props) {
     };
   }, [p.text, p.map, p.material, name, p.maker]);
 
-  const saveFont = () => {
+  const saveFont = async () => {
     const ttf = buildFont(p.map, name, p.maker);
-    download(new Blob([ttf as BlobPart], { type: 'font/ttf' }), `${safeFileName(name)}.ttf`);
-    setSaved('font');
+    setFontSave(await saveFile(new Blob([ttf as BlobPart], { type: 'font/ttf' }), `${safeFileName(name)}.ttf`));
   };
   const savePoster = async () => {
     const c = await renderPoster(p.text, p.map, p.material, name, p.maker);
-    c.toBlob((b) => b && download(b, `${safeFileName(name)} poster.png`), 'image/png');
-    setSaved('poster');
+    const blob = await new Promise<Blob | null>((res) => c.toBlob(res, 'image/png'));
+    if (blob) setPosterSave(await saveFile(blob, `${safeFileName(name)} poster.png`));
   };
 
   return (
@@ -63,7 +65,7 @@ export function ExportStep(p: Props) {
             </button>
           </div>
           <p className="help">
-            {saved === 'font' ? '✅ Saved! ' : ''}To install it: open <strong>{safeFileName(name)}.ttf</strong> from Downloads, then press <strong>Install</strong>. Then pick it in Word.
+            {fontSave && <SaveNote outcome={fontSave} />}To install it: open <strong>{safeFileName(name)}.ttf</strong> from Downloads, then press <strong>Install</strong>. Then pick it in Word.
           </p>
         </div>
 
@@ -75,27 +77,45 @@ export function ExportStep(p: Props) {
               ⬇ Save poster
             </button>
           </div>
-          {saved === 'poster' && <p className="help">✅ Poster saved to Downloads.</p>}
+          {posterSave && (
+            <p className="help">
+              <SaveNote outcome={posterSave} />
+            </p>
+          )}
         </div>
       </div>
 
-      <RoomPanel map={p.map} team={p.maker} />
+      {/* The room wall talks to a server on the local network, which a claude.ai page can't reach. */}
+      {!inClaudeViewer && <RoomPanel map={p.map} team={p.maker} />}
 
       <div className="row" style={{ marginTop: 24 }}>
         <button className="btn pink" onClick={p.onAddMore}>
           + Add more letters
         </button>
-        <button
-          className="btn"
-          onClick={() => {
-            if (confirm('Start a brand new font? Your letters will be cleared.')) p.onStartOver();
-          }}
-        >
-          Start a new font
-        </button>
+        {confirmReset ? (
+          <span className="row card" style={{ padding: '8px 14px' }}>
+            <strong>Clear all your letters?</strong>
+            <button className="btn small pink" onClick={p.onStartOver}>
+              Yes, start again
+            </button>
+            <button className="btn small" onClick={() => setConfirmReset(false)}>
+              No, keep them
+            </button>
+          </span>
+        ) : (
+          <button className="btn" onClick={() => setConfirmReset(true)}>
+            Start a new font
+          </button>
+        )}
       </div>
     </>
   );
+}
+
+function SaveNote({ outcome }: { outcome: SaveOutcome }) {
+  if (outcome === 'saved') return <>✅ Saved to Downloads. </>;
+  if (outcome === 'declined') return <>Not saved. Press the button again to save it. </>;
+  return <>Saving didn't work here. Ask your helper. </>;
 }
 
 function RoomPanel({ map, team }: { map: Map<string, LetterGlyph>; team: string }) {

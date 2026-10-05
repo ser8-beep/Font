@@ -1,5 +1,6 @@
 import { useEffect, useRef, useState } from 'react';
 import demoUrl from '../assets/demo-lego.jpg';
+import { dataUrlToBlob, inClaudeViewer } from '../host';
 import { cleanWord } from '../state';
 
 interface Props {
@@ -10,7 +11,8 @@ interface Props {
   onPhoto: (blob: Blob, word: string) => void;
 }
 
-const canUseCamera = () => typeof navigator !== 'undefined' && !!navigator.mediaDevices?.getUserMedia && window.isSecureContext;
+// The claude.ai viewer refuses camera access, so only offer it on a normal web page.
+const canUseCamera = () => !inClaudeViewer && !!navigator.mediaDevices?.getUserMedia && window.isSecureContext;
 
 export function CaptureStep({ addingMore, busy, error, onPhoto }: Props) {
   const [word, setWord] = useState(addingMore ? '' : 'PLAY');
@@ -149,7 +151,7 @@ export function CaptureStep({ addingMore, busy, error, onPhoto }: Props) {
             <button
               className="btn big"
               onClick={async () => {
-                const blob = await (await fetch(demoUrl)).blob();
+                const blob = demoUrl.startsWith('data:') ? dataUrlToBlob(demoUrl) : await (await fetch(demoUrl)).blob();
                 setWord('PLAY');
                 onPhoto(blob, 'PLAY');
               }}

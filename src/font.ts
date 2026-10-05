@@ -154,14 +154,3 @@ export function buildFont(map: Map<string, LetterGlyph>, name: string, maker: st
 export function safeFileName(name: string): string {
   return (name.trim() || 'my-font').replace(/[\\/:*?"<>|]+/g, '').replace(/\s+/g, ' ').slice(0, 60);
 }
-
-export function download(data: Blob, filename: string) {
-  const url = URL.createObjectURL(data);
-  const a = document.createElement('a');
-  a.href = url;
-  a.download = filename;
-  document.body.appendChild(a);
-  a.click();
-  a.remove();
-  setTimeout(() => URL.revokeObjectURL(url), 5000);
-}

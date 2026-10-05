@@ -2,7 +2,7 @@ import { strToU8, zipSync } from 'fflate';
 import { useEffect, useState } from 'react';
 import { CAP_HEIGHT, svgToContours } from '../core/trace';
 import { buildTTF } from '../core/ttf';
-import { download } from '../font';
+import { saveFile } from '../host';
 import { connectRoom, fetchRoom, roomBase, type RoomState } from '../room';
 
 const ALPHABET = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ';
@@ -47,7 +47,7 @@ export function RoomView() {
       );
     }
     files['teams.txt'] = strToU8(glyphs.map((g) => `${g.char}: ${g.team}`).join('\n') + '\n');
-    download(new Blob([zipSync(files) as BlobPart], { type: 'application/zip' }), 'room-alphabet.zip');
+    void saveFile(new Blob([zipSync(files) as BlobPart], { type: 'application/zip' }), 'room-alphabet.zip');
   };
 
   return (
