@@ -1,0 +1,42 @@
+import { fitGeometry } from './fit';
+import { extractContinuous } from './materials/continuous';
+import { extractFlat } from './materials/flat';
+import { detectGrid } from './materials/grid';
+import { extractPieces } from './materials/pieces';
+import { measureSample } from './measure';
+import type { Material, MaterialProfile, Measure, StyleProfile, StyleSample } from './types';
+
+/** Learn the kid's style from their captured letters. */
+export function analyseStyle(samples: StyleSample[]): StyleProfile {
+  if (!samples.length) throw new Error('analyseStyle needs at least one captured letter');
+  const measures = samples.map(measureSample);
+  const geometry = fitGeometry(samples, measures);
+  const materials = samples.map((s, i) => profileMaterial(s, measures[i]));
+  const heights = measures.map((m) => m.heightPx).sort((a, b) => a - b);
+  const weights = materials.map((m) => m.weight).sort((a, b) => a - b);
+  const w = weights[weights.length >> 1];
+  // Render near the photo's own scale (materials look right), within limits that stay fast.
+  const letterPx = Math.min(300, Math.max(150, heights[heights.length >> 1]));
+  const wobbles = measures.map((m) => m.wobble).sort((a, b) => a - b);
+  return {
+    geometry,
+    materials,
+    pxPerUnit: letterPx * (1 - w),
+    wobble: Math.min(0.03, wobbles[wobbles.length >> 1] ?? 0),
+  };
+}
+
+export function profileMaterial(s: StyleSample, m: Measure): MaterialProfile {
+  let material: Material | null = detectGrid(s, m);
+  if (!material && s.porous) material = extractPieces(s, m);
+  if (!material) material = extractContinuous(s, m);
+  if (!material) material = extractFlat(s, m);
+  return {
+    source: s.char,
+    weight: Math.min(0.4, Math.max(0.03, m.strokePx / Math.max(1, m.heightPx))),
+    colour: m.colour,
+    fillGaps: s.porous,
+    fillRadius: s.porous ? s.fillRadius / Math.max(1, m.heightPx) : 0,
+    material,
+  };
+}

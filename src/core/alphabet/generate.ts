@@ -1,0 +1,88 @@
+import { closePadded, fillHoles, keepBig } from '../mask';
+import { buildField } from './field';
+import { renderContinuous } from './materials/continuous';
+import { renderFlat } from './materials/flat';
+import { renderGrid } from './materials/grid';
+import { renderPieces } from './materials/pieces';
+import { hashString, makeRng } from './rng';
+import { skeletonFor } from './skeletons';
+import type { GeneratedArt, MaterialProfile, P2, Rng, Skeleton, StyleProfile } from './types';
+
+const ORDER = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789';
+
+/** Which captured letter's material a generated character borrows. Changes with the seed. */
+export function materialFor(ch: string, style: StyleProfile, seed: number): MaterialProfile {
+  const n = style.materials.length;
+  const i = ORDER.indexOf(ch.toUpperCase());
+  const base = i >= 0 ? i : hashString(ch);
+  return style.materials[(base + seed) % n];
+}
+
+/** Paint one character in the kid's style. Null if there is no drawing for it. */
+export function renderLetter(ch: string, style: StyleProfile, seed = 0): GeneratedArt | null {
+  const sk = skeletonFor(ch, style.geometry);
+  if (!sk || !sk.strokes.length) return null;
+  const mp = materialFor(ch, style, seed);
+  const rng = makeRng(hashString(ch) ^ Math.imul(seed + 1, 0x9e3779b1));
+  const ppu = style.pxPerUnit;
+  const w = Math.min(0.4, Math.max(0.03, mp.weight));
+  // Stroke = weight x letter height, and letter height = ppu + stroke.
+  const halfWidth = (w * ppu) / (2 * (1 - w));
+  const relPx = ppu + 2 * halfWidth;
+  const field = buildField(wobble(sk, style.wobble, rng), { pxPerUnit: ppu, halfWidth, margin: Math.ceil(halfWidth * 0.7 + 8) });
+
+  let art: GeneratedArt;
+  try {
+    const m = mp.material;
+    art =
+      m.kind === 'pieces' ? renderPieces(field, m, relPx, rng)
+      : m.kind === 'grid' ? renderGrid(field, m, relPx, rng)
+      : m.kind === 'continuous' ? renderContinuous(field, m, relPx, rng)
+      : renderFlat(field, m);
+  } catch (e) {
+    console.warn(`material renderer failed for ${ch}, using flat colour`, e);
+    art = renderFlat(field, { kind: 'flat', colour: mp.colour });
+  }
+
+  if (mp.fillGaps && mp.fillRadius > 0) {
+    let mask = closePadded(art.mask, mp.fillRadius * relPx);
+    mask = fillHoles(mask, mask.width * mask.height * 0.012);
+    art = { ...art, mask: keepBig(mask, 0.06) };
+  }
+  return art;
+}
+
+/** Hand-made wobble: smooth sideways drift along each stroke, pinned at the stroke ends. */
+function wobble(sk: Skeleton, amp: number, rng: Rng): Skeleton {
+  if (amp <= 0) return sk;
+  return {
+    strokes: sk.strokes.map((s) => {
+      if (s.points.length < 2) return s;
+      const pts = resample(s.points, 0.025);
+      const L = pts.length - 1;
+      const p1 = rng() * Math.PI * 2, p2 = rng() * Math.PI * 2;
+      const out = pts.map((p, i): P2 => {
+        if (i === 0 || i === L) return p;
+        const a = pts[Math.max(0, i - 1)], b = pts[Math.min(L, i + 1)];
+        const dx = b[0] - a[0], dy = b[1] - a[1];
+        const len = Math.hypot(dx, dy) || 1;
+        const t = i / L;
+        const s0 = i * 0.025;
+        const off = amp * Math.sin(Math.PI * t) * (0.65 * Math.sin(s0 * 9 + p1) + 0.35 * Math.sin(s0 * 21 + p2));
+        return [p[0] - (dy / len) * off, p[1] + (dx / len) * off];
+      });
+      return { points: out };
+    }),
+  };
+}
+
+function resample(pts: P2[], step: number): P2[] {
+  const out: P2[] = [pts[0]];
+  for (let i = 1; i < pts.length; i++) {
+    const a = pts[i - 1], b = pts[i];
+    const len = Math.hypot(b[0] - a[0], b[1] - a[1]);
+    const n = Math.max(1, Math.ceil(len / step));
+    for (let k = 1; k <= n; k++) out.push([a[0] + ((b[0] - a[0]) * k) / n, a[1] + ((b[1] - a[1]) * k) / n]);
+  }
+  return out;
+}

@@ -17,10 +17,13 @@ export type Contour = Pt[];
 export interface GlyphOutline {
   contours: Contour[];
   advance: number;
-  /** Mask bounds (in mask pixels) that map onto [lsb, lsb+inkWidth] x [0, capHeight]. */
+  /** Mask bounds (in mask pixels) that map onto [lsb, lsb+inkWidth] x [bottom, top]. */
   source: Box;
   lsb: number;
   inkWidth: number;
+  /** Font-unit vertical extent of the ink (0..CAP_HEIGHT for capitals; below 0 for descenders). */
+  bottom: number;
+  top: number;
 }
 
 export const UNITS_PER_EM = 1000;
@@ -202,7 +205,13 @@ function normaliseMask(m: Mask, b: Box, targetH: number): { mask: Mask; scale: n
   return { mask: out, scale, margin };
 }
 
-export function maskToGlyph(mask: Mask): GlyphOutline | null {
+/**
+ * Trace a letter mask into a glyph. The ink's bounds are scaled (keeping its aspect ratio) so
+ * they span `range` vertically, in font units: [0, CAP_HEIGHT] for a capital, [-210, 490] for a
+ * lowercase p, and so on (see verticalRange in core/alphabet/skeletons.ts).
+ */
+export function maskToGlyph(mask: Mask, range: [number, number] = [0, CAP_HEIGHT]): GlyphOutline | null {
+  const [bottom, top] = range;
   const b = maskBounds(mask);
   if (!b || b.h < 4 || b.w < 2) return null;
   const { mask: norm, margin } = normaliseMask(mask, b, TRACE_HEIGHT);
@@ -215,13 +224,13 @@ export function maskToGlyph(mask: Mask): GlyphOutline | null {
     .map((l) => simplifyClosed(l, 0.9))
     .filter((l) => l.length >= 3 && Math.abs(signedArea(l)) > 16);
 
-  const k = CAP_HEIGHT / TRACE_HEIGHT;
-  const baseY = margin + TRACE_HEIGHT; // mask row that sits on the baseline
+  const k = (top - bottom) / TRACE_HEIGHT;
+  const baseY = margin + TRACE_HEIGHT; // mask row that sits at `bottom`
   const left = nb.x;
   const inkWidth = Math.round(nb.w * k);
   const contours: Contour[] = loops.map((loop, i) => {
     // Pixel coords -> font units (y up).
-    let poly: P[] = loop.map(([x, y]) => [(x - left) * k + SIDE_BEARING, (baseY - y) * k]);
+    let poly: P[] = loop.map(([x, y]) => [(x - left) * k + SIDE_BEARING, bottom + (baseY - y) * k]);
     const depth = depthOf(i, loops);
     const area = signedArea(poly);
     // TrueType: outer contours clockwise (negative area with y up), holes counter-clockwise.
@@ -236,6 +245,8 @@ export function maskToGlyph(mask: Mask): GlyphOutline | null {
     source: b,
     lsb: SIDE_BEARING,
     inkWidth,
+    bottom,
+    top,
   };
 }
 
