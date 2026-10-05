@@ -1,9 +1,9 @@
 import { closePadded, fillHoles, keepBig } from '../mask';
 import { buildField } from './field';
-import { renderContinuous } from './materials/continuous';
 import { renderFlat } from './materials/flat';
-import { renderGrid } from './materials/grid';
-import { renderPieces } from './materials/pieces';
+import { renderGrid, type GridMaterial } from './materials/grid';
+import { renderPieces, type PiecesMaterial } from './materials/pieces';
+import { renderStrokes, type StrokesMaterial } from './materials/strokes';
 import { hashString, makeRng } from './rng';
 import { skeletonFor } from './skeletons';
 import type { GeneratedArt, MaterialProfile, P2, Rng, Skeleton, StyleProfile } from './types';
@@ -34,10 +34,11 @@ export function renderLetter(ch: string, style: StyleProfile, seed = 0): Generat
   let art: GeneratedArt;
   try {
     const m = mp.material;
+    const pool = <T extends { kind: string }>(kind: T['kind']) => style.materials.map((x) => x.material).filter((x): x is T & typeof x => x.kind === kind);
     art =
-      m.kind === 'pieces' ? renderPieces(field, m, relPx, rng)
-      : m.kind === 'grid' ? renderGrid(field, m, relPx, rng)
-      : m.kind === 'continuous' ? renderContinuous(field, m, relPx, rng)
+      m.kind === 'pieces' ? renderPieces(field, m, relPx, rng, pool<PiecesMaterial>('pieces'))
+      : m.kind === 'grid' ? renderGrid(field, m, relPx, rng, pool<GridMaterial>('grid'))
+      : m.kind === 'strokes' ? renderStrokes(field, m, relPx, rng, pool<StrokesMaterial>('strokes'))
       : renderFlat(field, m);
   } catch (e) {
     console.warn(`material renderer failed for ${ch}, using flat colour`, e);

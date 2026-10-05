@@ -13,6 +13,7 @@ export function extractPieces(_sample: StyleSample, _m: Measure): PiecesMaterial
 }
 
 /** relPx: pixels per rel unit at the target size (the target letter's height in px). */
-export function renderPieces(_f: StrokeField, _mat: PiecesMaterial, _relPx: number, _rng: Rng): GeneratedArt {
+/** pool: every pieces material learned from this photo (including mat), to mix in variety if wanted. */
+export function renderPieces(_f: StrokeField, _mat: PiecesMaterial, _relPx: number, _rng: Rng, _pool: PiecesMaterial[]): GeneratedArt {
   throw new Error('renderPieces not implemented');
 }

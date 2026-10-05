@@ -16,7 +16,8 @@ import { maskToGlyph, type GlyphOutline } from '../src/core/trace';
 import { buildTTF } from '../src/core/ttf';
 
 const ROOT = join(dirname(fileURLToPath(import.meta.url)), '..');
-const DIR = join(ROOT, 'samples');
+// --refs uses samples/_refs (local test photos made from reference alphabets; not committed).
+const DIR = process.argv.includes('--refs') ? join(ROOT, 'samples', '_refs') : join(ROOT, 'samples');
 const debug = process.argv.includes('--debug');
 
 function load(path: string): RGBAImage {
@@ -61,7 +62,8 @@ if (!existsSync(DIR)) {
   process.exit(1);
 }
 const files = walk(DIR).sort();
-if (debug) mkdirSync(join(DIR, '_debug'), { recursive: true });
+const DEBUG_DIR = join(ROOT, 'samples', '_debug');
+if (debug) mkdirSync(DEBUG_DIR, { recursive: true });
 
 let failures = 0;
 const rows: string[][] = [['photo', 'expected', 'found', 'glyphs', 'time', '']];
@@ -87,8 +89,8 @@ for (const f of files) {
   if (!ok) failures++;
   rows.push([relative(DIR, f), String(word.length), String(an.blobs.length), String(traced), `${ms.toFixed(0)}ms`, ok ? 'ok' : 'MISMATCH']);
   if (debug) {
-    writeDebug(join(DIR, '_debug', basename(f).replace(/\.\w+$/, '.png')), img, an);
-    writeFileSync(join(DIR, '_debug', basename(f).replace(/\.\w+$/, '.ttf')), ttf);
+    writeDebug(join(DEBUG_DIR, basename(f).replace(/\.\w+$/, '.png')), img, an);
+    writeFileSync(join(DEBUG_DIR, basename(f).replace(/\.\w+$/, '.ttf')), ttf);
   }
 }
 

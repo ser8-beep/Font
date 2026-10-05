@@ -1,8 +1,8 @@
 import { fitGeometry } from './fit';
-import { extractContinuous } from './materials/continuous';
 import { extractFlat } from './materials/flat';
 import { detectGrid } from './materials/grid';
 import { extractPieces } from './materials/pieces';
+import { extractStrokes } from './materials/strokes';
 import { measureSample } from './measure';
 import type { Material, MaterialProfile, Measure, StyleProfile, StyleSample } from './types';
 
@@ -29,7 +29,7 @@ export function analyseStyle(samples: StyleSample[]): StyleProfile {
 export function profileMaterial(s: StyleSample, m: Measure): MaterialProfile {
   let material: Material | null = detectGrid(s, m);
   if (!material && s.porous) material = extractPieces(s, m);
-  if (!material) material = extractContinuous(s, m);
+  if (!material) material = extractStrokes(s, m);
   if (!material) material = extractFlat(s, m);
   return {
     source: s.char,

@@ -1,4 +1,4 @@
-import type { P2, Skeleton } from './types';
+import type { P2, Skeleton, StrokeRole } from './types';
 
 // Rasterises a skeleton into a "stroke field": for every pixel, where is the nearest stroke
 // centreline, how far along that stroke, and how far to the side. Material renderers paint from
@@ -11,6 +11,9 @@ export interface FieldStroke {
   cum: number[];
   /** Total length, px (0 for a dot). */
   length: number;
+  role?: StrokeRole;
+  /** Bowl / loop circle in px (y down), if the skeleton gave one. */
+  circle?: { cx: number; cy: number; rx: number; ry: number };
 }
 
 export interface StrokeField {
@@ -81,7 +84,9 @@ export function buildField(sk: Skeleton, opts: FieldOptions): StrokeField {
     const pts = s.points.map((p) => unitToPx({ originX, baselineY, pxPerUnit }, p));
     const cum = [0];
     for (let i = 1; i < pts.length; i++) cum.push(cum[i - 1] + Math.hypot(pts[i][0] - pts[i - 1][0], pts[i][1] - pts[i - 1][1]));
-    return { pts, cum, length: cum[cum.length - 1] };
+    const c = s.circle;
+    const circle = c ? { cx: originX + c.cx * pxPerUnit, cy: baselineY - c.cy * pxPerUnit, rx: c.rx * pxPerUnit, ry: c.ry * pxPerUnit } : undefined;
+    return { pts, cum, length: cum[cum.length - 1], role: s.role, circle };
   });
 
   const reach = pad;

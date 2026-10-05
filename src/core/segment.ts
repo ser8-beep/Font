@@ -275,10 +275,11 @@ function tightenGroup(g: Group, labels: Int32Array, w: number, raw: Mask): Blob 
 function groupComponents(comps: Component[], expected: number, imgW: number, imgH: number): Group[] {
   let groups: Group[] = comps.map((c) => ({ box: c.box, labels: [c.label], area: c.area }));
   if (!groups.length) return groups;
+  const byLabel = new Map(comps.map((c) => [c.label, c]));
 
   // Drop big things hugging the frame edge (table edges, a hand, the shadow of the phone).
   groups = groups.filter((g) => {
-    const c = comps[g.labels[0] - 1];
+    const c = byLabel.get(g.labels[0])!;
     return !(c.touchesEdge && (g.box.w > imgW * 0.6 || g.box.h > imgH * 0.85));
   });
 
@@ -394,8 +395,7 @@ export function analyse(src: RGBAImage, opts: SegmentOptions): Analysis {
     threshold = Math.max(10, otsu(dist));
   }
 
-  const raw = makeMask(w, h);
-  for (let i = 0; i < w * h; i++) raw.data[i] = dist[i] > threshold ? 1 : 0;
+  const raw = hysteresis(dist, w, h, threshold, () => true);
   const opened = open(raw, Math.max(1, Math.round(diag * 0.0015)));
   const minArea = w * h * 0.0008;
 
@@ -432,6 +432,23 @@ export function analyse(src: RGBAImage, opts: SegmentOptions): Analysis {
     .sort((a, b) => a.box.x + a.box.w / 2 - (b.box.x + b.box.w / 2));
 
   return { work, bg, dist, threshold, fg, closeR, fillR: Math.max(closeR, Math.round(base)), blobs };
+}
+
+/**
+ * Hysteresis threshold: pixels clearly above `t` are ink, and fainter pixels (above LOW x t) are
+ * ink too when they connect to clear ones. Thin wire legs and pale stems joined to a bold part of
+ * the letter survive; faint smudges on their own do not.
+ */
+const LOW = 0.55;
+function hysteresis(dist: Float32Array, w: number, h: number, t: number, inside: (i: number) => boolean): Mask {
+  const weak = makeMask(w, h);
+  for (let i = 0; i < w * h; i++) weak.data[i] = dist[i] > Math.max(6, t * LOW) && inside(i) ? 1 : 0;
+  const { labels, comps } = components(weak);
+  const keep = new Uint8Array(comps.length + 1);
+  for (let i = 0; i < w * h; i++) if (labels[i] && dist[i] > t) keep[labels[i]] = 1;
+  const out = makeMask(w, h);
+  for (let i = 0; i < w * h; i++) out.data[i] = labels[i] && keep[labels[i]] ? 1 : 0;
+  return out;
 }
 
 // ---------- per-letter clean-up at full resolution ----------
@@ -481,8 +498,7 @@ export function cleanLetter(src: RGBAImage, an: Analysis, letter: LetterRegion, 
   }
   const { box, dist, allowed } = cache;
   const t = cache.threshold! * Math.pow(2, -s.bolder * 1.1);
-  const raw = makeMask(box.w, box.h);
-  for (let i = 0; i < raw.data.length; i++) raw.data[i] = dist[i] > t && allowed.data[i] ? 1 : 0;
+  const raw = hysteresis(dist, box.w, box.h, t, (i) => allowed.data[i] === 1);
 
   let m = open(raw, Math.max(1, Math.round(k * 0.8)));
   const cr = s.fillHoles ? an.fillR * k : an.closeR * k * 0.35;

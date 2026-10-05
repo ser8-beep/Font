@@ -13,6 +13,7 @@ export function detectGrid(_sample: StyleSample, _m: Measure): GridMaterial | nu
 }
 
 /** relPx: pixels per rel unit at the target size (the target letter's height in px). */
-export function renderGrid(_f: StrokeField, _mat: GridMaterial, _relPx: number, _rng: Rng): GeneratedArt {
+/** pool: every grid material learned from this photo (including mat), e.g. to borrow brick colours. */
+export function renderGrid(_f: StrokeField, _mat: GridMaterial, _relPx: number, _rng: Rng, _pool: GridMaterial[]): GeneratedArt {
   throw new Error('renderGrid not implemented');
 }

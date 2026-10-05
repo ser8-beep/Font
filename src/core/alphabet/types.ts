@@ -4,7 +4,7 @@
 //   captured letters (StyleSample[])
 //     -> measure each (measure.ts)          stroke width, skeleton paths, slant, wobble
 //     -> fit letter geometry (fit.ts)       how wide / slanted / where bars and bowls sit
-//     -> profile each letter's material     pieces | grid | continuous | flat (materials/*)
+//     -> profile each letter's material     grid | pieces | strokes | flat (materials/*)
 //   = StyleProfile
 //   renderLetter(char, style, seed)
 //     -> skeleton for char (skeletons.ts) with the fitted geometry
@@ -19,16 +19,27 @@
 //     1 = the height of the letter they were measured on) so they scale to any render size.
 
 import type { Mask, RGBAImage } from '../image';
-import type { ContinuousMaterial } from './materials/continuous';
 import type { FlatMaterial } from './materials/flat';
 import type { GridMaterial } from './materials/grid';
 import type { PiecesMaterial } from './materials/pieces';
+import type { StrokesMaterial } from './materials/strokes';
 
 export type P2 = [number, number];
+
+/**
+ * What a stroke is for, so object-based materials can pick a fitting object:
+ * a straight stick for a 'line', a bent one for an 'arc', a ring / disc / round object for a
+ * 'bowl' (the round part attached to a stem, as in P B R D b d p q) or a 'loop' (a closed ring as in
+ * O o 0), and a small round thing for a 'dot'.
+ */
+export type StrokeRole = 'line' | 'arc' | 'bowl' | 'loop' | 'dot';
 
 /** An open polyline in skeleton units. A closed loop repeats its first point at the end. A single point is a dot. */
 export interface Stroke {
   points: P2[];
+  role?: StrokeRole;
+  /** For bowls and loops: the circle (or ellipse, rx/ry) the shape follows, skeleton units. */
+  circle?: { cx: number; cy: number; rx: number; ry: number };
 }
 
 export interface Skeleton {
@@ -98,7 +109,7 @@ export interface SkeletonPath {
   radius: number[];
 }
 
-export type Material = PiecesMaterial | GridMaterial | ContinuousMaterial | FlatMaterial;
+export type Material = PiecesMaterial | GridMaterial | StrokesMaterial | FlatMaterial;
 
 /** The look of one captured letter, reusable to paint any other letter. */
 export interface MaterialProfile {

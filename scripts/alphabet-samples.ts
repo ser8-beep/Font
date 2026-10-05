@@ -23,8 +23,9 @@ import { maskToGlyph, type GlyphOutline } from '../src/core/trace';
 import { buildTTF } from '../src/core/ttf';
 
 const ROOT = join(dirname(fileURLToPath(import.meta.url)), '..');
-const DIR = join(ROOT, 'samples');
-const OUT = join(DIR, '_debug');
+// --refs uses samples/_refs (local test photos made from reference alphabets; not committed).
+const DIR = process.argv.includes('--refs') ? join(ROOT, 'samples', '_refs') : join(ROOT, 'samples');
+const OUT = join(ROOT, 'samples', '_debug');
 const args = process.argv.slice(2);
 const opt = (name: string) => args.find((a) => a.startsWith(`--${name}=`))?.split('=')[1];
 const filters = args.filter((a) => !a.startsWith('--'));
