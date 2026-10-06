@@ -161,10 +161,10 @@ export function useAlphabet(
   useEffect(() => {
     if (!enabled) return;
     let live = true;
-    const need = new Set([...picks.values()].map((p) => p.choice.set).filter((s) => !atlases.has(s.id)));
+    const need = new Set([...picks.values()].map((p) => p.choice.set).filter((s) => !atlases.has(s.atlas)));
     for (const set of need) {
       loadAtlas(set)
-        .then((img) => live && setAtlases((m) => new Map(m).set(set.id, img)))
+        .then((img) => live && setAtlases((m) => new Map(m).set(set.atlas, img)))
         .catch((e) => console.warn(e));
     }
     return () => {
@@ -177,7 +177,7 @@ export function useAlphabet(
     const options = new Map<string, number>();
     for (const [ch, { choice, count }] of picks) {
       options.set(ch, count);
-      const atlas = atlases.get(choice.set.id);
+      const atlas = atlases.get(choice.set.atlas);
       if (atlas) grown.set(ch, libraryGlyph(choice, atlas, ch));
     }
     return { grown, options };

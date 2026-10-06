@@ -34,17 +34,23 @@ describe('letter library', () => {
     }
   });
 
-  it('fills a capitals font from one full alphabet of the category', () => {
-    const sets = rankSets('stationery', UPPER, null);
-    expect(sets[0].category).toBe('stationery');
-    for (const ch of UPPER) expect(optionsFor(ch, sets)[0].set).toBe(sets[0]);
+  it('puts the category\'s own alphabets first, the most complete first', () => {
+    for (const id of CATEGORY_IDS) {
+      const sets = rankSets(id, UPPER, null);
+      const own = sets.filter((s) => s.category === id);
+      expect(sets.slice(0, own.length)).toEqual(own);
+      const count = (s: (typeof sets)[number]) => UPPER.filter((c) => s.letters.some((l) => l.char === c)).length;
+      for (let i = 1; i < own.length; i++) expect(count(own[i - 1])).toBeGreaterThanOrEqual(count(own[i]) - 4);
+    }
   });
 
-  it('prefers a nearby category with capitals over a lowercase-only set for a capitals font', () => {
+  it('takes each capital from the best alphabet that has it, in the right case', () => {
     const sets = rankSets('hardware', UPPER, null);
-    expect(UPPER.every((ch) => sets[0].letters.some((l) => l.char === ch))).toBe(true);
-    // A lowercase font still gets the hardware alphabet.
-    expect(rankSets('hardware', LOWER, null)[0].category).toBe('hardware');
+    for (const ch of UPPER) {
+      const first = optionsFor(ch, sets)[0];
+      expect(first.letter.char).toBe(ch);
+      expect(first.set).toBe(sets.find((s) => s.letters.some((l) => l.char === ch)));
+    }
   });
 
   it('falls back to the other case only when no alphabet has the letter in the right case', () => {

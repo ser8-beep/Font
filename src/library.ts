@@ -50,10 +50,8 @@ export function rankSets(category: string, chars: string[], looks: number[] | nu
     const exact = chars.filter((c) => has(s, c)).length;
     const either = chars.filter((c) => !has(s, c) && has(s, otherCase(c))).length;
     const look = looks ? Math.sqrt(s.looks.reduce((d, v, i) => d + (v - looks[i]) ** 2, 0)) : 0;
-    // The category's own alphabets win unless they are mostly missing the letters needed (a
-    // lowercase-only set for a capitals font): then a nearby category's full set does better.
-    const own = s.category === category ? 0.3 * chars.length : -near.indexOf(s.category);
-    return own + exact + 0.4 * either - 4 * look - (s.generated ? 0.5 : 0);
+    const where = s.category === category ? 1000 : -100 * near.indexOf(s.category);
+    return where + exact + 0.1 * either - 4 * look - (s.generated ? 0.5 : 0);
   };
   return SETS.filter((s) => s.category === category || near.includes(s.category))
     .map((s) => ({ s, v: score(s) }))
@@ -84,7 +82,7 @@ const atlases = new Map<string, Promise<RGBAImage>>();
 
 /** The set's packed picture, decoded. Browser only. */
 export function loadAtlas(set: LibrarySet): Promise<RGBAImage> {
-  let p = atlases.get(set.id);
+  let p = atlases.get(set.atlas);
   if (!p) {
     p = new Promise<RGBAImage>((resolve, reject) => {
       const img = new Image();
@@ -97,11 +95,11 @@ export function loadAtlas(set: LibrarySet): Promise<RGBAImage> {
         const d = ctx.getImageData(0, 0, c.width, c.height);
         resolve({ width: d.width, height: d.height, data: d.data });
       };
-      img.onerror = () => reject(new Error(`could not load the ${set.id} alphabet`));
+      img.onerror = () => reject(new Error(`could not load the ${set.category} letters`));
       img.src = ATLAS_URLS[`./library/atlases/${set.atlas}`];
     });
-    atlases.set(set.id, p);
-    p.catch(() => atlases.delete(set.id));
+    atlases.set(set.atlas, p);
+    p.catch(() => atlases.delete(set.atlas));
   }
   return p;
 }

@@ -22,11 +22,12 @@ export interface LibraryLetter {
 }
 
 export interface LibrarySet {
-  /** Source id, e.g. img02. */
+  /** Category and source, e.g. stationery/img02 (one source can have letters in several categories). */
   id: string;
   category: string;
   /** What the set is, from the repository. */
   title: string;
+  /** The packed picture its letters are in (one per category). */
   atlas: string;
   /** Colour make-up [metal, dark, green, brown, bright, hues/6], comparable with a kid's photo. */
   looks: number[];

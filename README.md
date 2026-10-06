@@ -97,32 +97,17 @@ photo ─► background model ─► "stands out" map ─► threshold ─► cl
 
 ### The letter library
 
-Every letter a kid doesn't make comes from a real object alphabet: a cut-out of a letter someone built from objects and photographed. `src/library/` holds them, one packed WebP picture per alphabet plus `manifest.json` (where each letter sits in its picture, its outline for the `.ttf`, what it is made of). It is built from a folder of cut-outs:
+Every letter a kid doesn't make comes from a real object alphabet: a cut-out of a letter someone built from objects and photographed. The cut-outs live in **`alphabet-repository/`**, the consolidated repository: `<category>/<LETTER>/<source>_<char>_<case>.png`, transparent backgrounds only, with `manifest.json` (letter, case, category, objects, construction, source, `primary`), `coverage.csv` (pictures per category and letter) and `generation_brief.csv` (a photographic prompt for every picture still needed to reach three per letter per category). Up to four primary pictures per letter come from different sets; extras sit in `<LETTER>/_more/`. See its own README.
 
-```bash
-npm run library -- path/to/object-alphabets data/cutouts-extra
-```
-
-The cut-out folder (`object-alphabets.zip`, not in git) has `manifest.json` and `<category>/<set>/<letter>_<case>.png`, transparent where the background was plain. `data/cutouts-extra/` uses the same layout for letters cut out here (the climbing-gear alphabet). Numbers and punctuation are skipped.
-
-At the moment the library has 39 alphabets and about 930 letters. Every category has all 26 capitals from its own alphabets except these, which borrow from the nearest category until generated letters fill them (`NEAREST` in `src/library.ts`):
-
-| Category | Missing capitals |
-|---|---|
-| Fabric & thread | all (no alphabet yet) |
-| Nuts & bolts | all (its only alphabet is lowercase) |
-| Toys & games | C D O P Q X |
-| Boxes & packaging | G I R |
-| Electronics | F |
-| Nature | H |
-
-Small letters exist only in a few alphabets (nuts & bolts, binder clips, pencil shavings and some partial sets); elsewhere a small-letter font uses capitals.
+`npm run library` turns it into `src/library/`: one packed WebP per category plus `manifest.json` (where each letter sits in its picture, its outline for the `.ttf`, what it is made of). Letters of one source within a category count as one alphabet, so a font can keep to one maker's style.
 
 How a letter is chosen (`src/library.ts`):
 
-1. **Alphabets are ranked** for the kid's category: the category's own alphabets first, by how many of the needed letters they have in the right case and how close their colours are to the kid's letters; then the nearest categories' alphabets.
+1. **Alphabets are ranked** for the kid's category: the category's own alphabets first, by how many of the needed letters they have in the right case and how close their colours are to the kid's letters; then the nearest categories' alphabets (`NEAREST`), for letters the category doesn't have yet.
 2. **Each missing letter** comes from the first alphabet that has it; **Try another** walks down the list. The other case is used only when no alphabet has the right one.
 3. The cut-out goes into the font as is: its traced outline in `glyf`, its photo in the colour tables.
+
+Small letters exist only in a few alphabets; elsewhere a small-letter font uses capitals. Fonts are letters only for now.
 
 ### The object-type repository
 
@@ -152,11 +137,12 @@ src/core/      image, mask morphology, segmentation, tracing, TTF writer, colour
 src/ui/        one React component per step + projector room view
 src/core/alphabet/  reading the kid's letters: what they're made of, which repository category
 src/library.ts letter library: ranking alphabets, choosing letters, loading cut-outs
-src/library/   the library itself (built by scripts/library.ts)
+src/library/   the library itself (built by scripts/library.ts from alphabet-repository/)
 src/grow.ts    the kid's whole alphabet: matching (in grow.worker.ts) + library letters
 src/font.ts    letters → glyphs (cached), photo cut-outs, text layout, font build
 src/pictures.ts  makes the font's photo letters in a worker
-data/          object-type repository, extra cut-outs
+data/          object-type repository (the catalogue: how each reference letter was built)
+alphabet-repository/  the cut-out letters, by category and letter
 src/poster.ts  PNG poster
 src/room.ts    room wall client
 server/        room wall server (Node http + ws)
