@@ -4,19 +4,16 @@ import { LINE, layoutText, materialImage, type LetterGlyph } from '../font';
 interface Props {
   text: string;
   map: Map<string, LetterGlyph>;
-  /** Photo letters (the kid's material) instead of ink. */
-  material: boolean;
   maxWidth?: number;
   className?: string;
-  color?: string;
   /** Background colour painted behind the letters (none = transparent). */
   backdrop?: string;
   /** Show a blinking caret after the text. */
   caret?: boolean;
 }
 
-/** Draws text with the kid's letters. Characters the font doesn't have become grey boxes. */
-export function TextRender({ text, map, material, maxWidth = 5200, className, color = '#1b1b3a', backdrop, caret }: Props) {
+/** Draws text with the kid's photo letters. Characters the font doesn't have become grey boxes. */
+export function TextRender({ text, map, maxWidth = 5200, className, backdrop, caret }: Props) {
   const shadowId = useId().replace(/:/g, '');
   const lay = layoutText(text, map, maxWidth);
   const pad = 80;
@@ -35,7 +32,7 @@ export function TextRender({ text, map, material, maxWidth = 5200, className, co
         </filter>
       </defs>
       {backdrop && <rect x="0" y="0" width={w} height={h} fill={backdrop} />}
-      <g filter={material ? `url(#${shadowId})` : undefined}>
+      <g filter={`url(#${shadowId})`}>
         {lay.items.map((it, i) => {
           const x = pad + it.x;
           const y = base(it.line);
@@ -51,10 +48,7 @@ export function TextRender({ text, map, material, maxWidth = 5200, className, co
             );
           }
           const o = it.glyph.outline;
-          if (material) {
-            return <image key={i} href={materialImage(it.glyph)} x={x + o.lsb} y={y - o.top} width={o.inkWidth} height={o.top - o.bottom} preserveAspectRatio="none" />;
-          }
-          return <path key={i} d={it.glyph.svg} transform={`translate(${x} ${y}) scale(1 -1)`} fill={color} />;
+          return <image key={i} href={materialImage(it.glyph)} x={x + o.lsb} y={y - o.top} width={o.inkWidth} height={o.top - o.bottom} preserveAspectRatio="none" />;
         })}
       </g>
       {caret && (
@@ -66,8 +60,8 @@ export function TextRender({ text, map, material, maxWidth = 5200, className, co
   );
 }
 
-/** A single letter, fitted into a square. */
-export function GlyphView({ glyph, material, size = 200 }: { glyph: LetterGlyph | null; material?: boolean; size?: number }) {
+/** A single photo letter, fitted into a square. */
+export function GlyphView({ glyph, size = 200 }: { glyph: LetterGlyph | null; size?: number }) {
   if (!glyph) {
     return (
       <svg viewBox="0 0 100 100" width={size} height={size}>
@@ -84,11 +78,7 @@ export function GlyphView({ glyph, material, size = 200 }: { glyph: LetterGlyph 
   const base = (box + 700 - 210) / 2;
   return (
     <svg viewBox={`0 0 ${box} ${box}`} width={size} height={size}>
-      {material ? (
-        <image href={materialImage(glyph)} x={ox + o.lsb} y={base - o.top} width={o.inkWidth} height={o.top - o.bottom} preserveAspectRatio="none" />
-      ) : (
-        <path d={glyph.svg} transform={`translate(${ox} ${base}) scale(1 -1)`} fill="#1b1b3a" />
-      )}
+      <image href={materialImage(glyph)} x={ox + o.lsb} y={base - o.top} width={o.inkWidth} height={o.top - o.bottom} preserveAspectRatio="none" />
     </svg>
   );
 }

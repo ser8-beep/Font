@@ -2,6 +2,7 @@ import { useCallback, useEffect, useMemo, useReducer, useState } from 'react';
 import { backdropColour, tableColour } from './backdrop';
 import { glyphMap } from './font';
 import { useAlphabet } from './grow';
+import { warmPictures } from './pictures';
 import { processPhoto } from './photo';
 import { GROW_STEPS, initialState, reducer, STEPS, type Letter, type Step } from './state';
 import { CaptureStep } from './ui/CaptureStep';
@@ -43,6 +44,11 @@ function Station() {
   const captured = useMemo(() => glyphMap(s.letters, s.photos), [s.letters, s.photos]);
   const alphabet = useAlphabet(captured, s.letters, s.photos, s.seeds, GROW_STEPS.includes(s.step));
   const map = useMemo(() => new Map([...alphabet.grown, ...captured]), [alphabet.grown, captured]);
+  // Once the alphabet is finished, quietly start on the font's photo letters for the Save step.
+  const finished = alphabet.done >= alphabet.total;
+  useEffect(() => {
+    if ((s.step === 'type' || s.step === 'export') && finished) warmPictures(map.values());
+  }, [s.step, finished, map]);
   const table = tableColour(s.photos[0] ?? null);
   const photo = s.photos.find((p) => p.id === s.currentPhotoId) ?? null;
   const photoLetters = s.letters.filter((l) => l.photoId === s.currentPhotoId);
@@ -133,8 +139,6 @@ function Station() {
           <GrowStep
             alphabet={alphabet}
             captured={captured}
-            material={s.material}
-            onMaterial={(on) => dispatch({ type: 'material', on })}
             onReroll={(ch) => dispatch({ type: 'reroll', char: ch })}
           />
         )}
@@ -143,14 +147,12 @@ function Station() {
             text={s.text}
             map={map}
             keys={alphabet.chars}
-            material={s.material}
             celebrated={s.celebrated}
             size={s.size}
             backdrop={s.backdrop}
             table={table}
             growing={alphabet.done < alphabet.total}
             onText={(t) => dispatch({ type: 'text', text: t })}
-            onMaterial={(on) => dispatch({ type: 'material', on })}
             onSize={(size) => dispatch({ type: 'size', size })}
             onBackdrop={(backdrop) => dispatch({ type: 'backdrop', backdrop })}
             onCelebrated={onCelebrated}
@@ -163,12 +165,10 @@ function Station() {
             map={map}
             captured={captured}
             backdrop={backdropColour(s.backdrop === 'white' ? 'yellow' : s.backdrop, table)}
-            material={s.material}
             fontName={s.fontName}
             maker={maker}
             onFontName={(n) => dispatch({ type: 'fontName', name: n })}
             onMaker={(n) => dispatch({ type: 'maker', name: n })}
-            onMaterial={(on) => dispatch({ type: 'material', on })}
             onAddMore={addMore}
             onStartOver={() => {
               setAddingMore(false);

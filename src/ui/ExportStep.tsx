@@ -1,9 +1,10 @@
+import { strToU8, zipSync } from 'fflate';
 import { useEffect, useState } from 'react';
-import { buildFont, safeFileName, type LetterGlyph } from '../font';
+import { buildFont, materialCanvas, safeFileName, type LetterGlyph } from '../font';
 import { inClaudeViewer, saveFile, type SaveOutcome } from '../host';
+import { fontPictures, warmPictures } from '../pictures';
 import { renderPoster } from '../poster';
 import { fetchRoom, roomBase, saveRoomBase, submitToRoom } from '../room';
-import { MaterialToggle } from './TypeStep';
 
 interface Props {
   text: string;
@@ -13,12 +14,10 @@ interface Props {
   captured: Map<string, LetterGlyph>;
   /** Poster background colour. */
   backdrop: string;
-  material: boolean;
   fontName: string;
   maker: string;
   onFontName: (n: string) => void;
   onMaker: (n: string) => void;
-  onMaterial: (on: boolean) => void;
   onAddMore: () => void;
   onStartOver: () => void;
 }
@@ -27,27 +26,59 @@ export function ExportStep(p: Props) {
   const [poster, setPoster] = useState<string | null>(null);
   const [fontSave, setFontSave] = useState<SaveOutcome | null>(null);
   const [posterSave, setPosterSave] = useState<SaveOutcome | null>(null);
+  const [lettersSave, setLettersSave] = useState<SaveOutcome | null>(null);
+  /** Letters done while the font is being made (null = not making it right now). */
+  const [making, setMaking] = useState<{ done: number; total: number } | null>(null);
+  const [packing, setPacking] = useState(false);
   const [confirmReset, setConfirmReset] = useState(false);
   const name = p.fontName || (p.maker ? `${p.maker}'s Font` : 'My Font');
+
+  // Start on the font's photo letters straight away, so saving is quick.
+  useEffect(() => warmPictures(p.map.values()), [p.map]);
 
   useEffect(() => {
     let live = true;
     const t = setTimeout(async () => {
-      const c = await renderPoster(p.text, p.map, p.material, name, p.maker, p.backdrop);
+      const c = await renderPoster(p.text, p.map, name, p.maker, p.backdrop);
       if (live) setPoster(c.toDataURL('image/png'));
     }, 150);
     return () => {
       live = false;
       clearTimeout(t);
     };
-  }, [p.text, p.map, p.material, name, p.maker, p.backdrop]);
+  }, [p.text, p.map, name, p.maker, p.backdrop]);
 
   const saveFont = async () => {
-    const ttf = buildFont(p.map, name, p.maker);
-    setFontSave(await saveFile(new Blob([ttf as BlobPart], { type: 'font/ttf' }), `${safeFileName(name)}.ttf`));
+    if (making) return;
+    setMaking({ done: 0, total: p.map.size });
+    try {
+      const pictures = await fontPictures([...p.map.values()], (done, total) => setMaking({ done, total }));
+      const ttf = buildFont(p.map, name, p.maker, pictures);
+      setFontSave(await saveFile(new Blob([ttf as BlobPart], { type: 'font/ttf' }), `${safeFileName(name)}.ttf`));
+    } finally {
+      setMaking(null);
+    }
+  };
+  const saveLetters = async () => {
+    if (packing) return;
+    setPacking(true);
+    try {
+      const files: Record<string, Uint8Array> = {};
+      for (const [ch, g] of p.map) {
+        const blob = await new Promise<Blob | null>((res) => materialCanvas(g).toBlob(res, 'image/png'));
+        if (blob) files[`${letterFileName(ch)}.png`] = new Uint8Array(await blob.arrayBuffer());
+      }
+      files['How to use.txt'] = strToU8(
+        `These are the letters of ${name}, as pictures with see-through backgrounds.\r\n` +
+          `Drag them into Canva, Google Docs, Google Slides or PowerPoint and line them up to spell anything.\r\n`,
+      );
+      setLettersSave(await saveFile(new Blob([zipSync(files) as BlobPart], { type: 'application/zip' }), `${safeFileName(name)} letters.zip`));
+    } finally {
+      setPacking(false);
+    }
   };
   const savePoster = async () => {
-    const c = await renderPoster(p.text, p.map, p.material, name, p.maker, p.backdrop);
+    const c = await renderPoster(p.text, p.map, name, p.maker, p.backdrop);
     const blob = await new Promise<Blob | null>((res) => c.toBlob(res, 'image/png'));
     if (blob) setPosterSave(await saveFile(blob, `${safeFileName(name)} poster.png`));
   };
@@ -65,19 +96,28 @@ export function ExportStep(p: Props) {
           <label htmlFor="fontname" style={{ fontWeight: 900 }}>Your font's name</label>
           <input id="fontname" className="name-input" value={p.fontName} maxLength={40} onChange={(e) => p.onFontName(e.target.value)} placeholder={name} />
           <div className="row" style={{ marginTop: 18 }}>
-            <button className="btn big green" onClick={saveFont} disabled={p.map.size === 0}>
-              ⬇ Save my font
+            <button className="btn big green" onClick={saveFont} disabled={p.map.size === 0 || !!making}>
+              {making ? `Making your font… ${making.done} of ${making.total}` : '⬇ Save my font'}
             </button>
           </div>
           <p className="help">
-            {fontSave && <SaveNote outcome={fontSave} />}To install it: open <strong>{safeFileName(name)}.ttf</strong> from Downloads, then press <strong>Install</strong>. Then pick it in Word.
+            {fontSave && <SaveNote outcome={fontSave} />}Your font types your photo letters. To install it: open <strong>{safeFileName(name)}.ttf</strong> from Downloads, then
+            press <strong>Install</strong>. Then pick it in Pages, Keynote, Word or PowerPoint. If an app shows plain shapes instead of your photos, that app can't do
+            photo fonts: use your letter pictures there.
+          </p>
+          <div className="row" style={{ marginTop: 10 }}>
+            <button className="btn blue" onClick={saveLetters} disabled={p.map.size === 0 || packing}>
+              {packing ? 'Packing your letters…' : '⬇ Save letter pictures'}
+            </button>
+          </div>
+          <p className="help">
+            {lettersSave && <SaveNote outcome={lettersSave} />}Every letter as a picture, for Canva or Google Docs.
           </p>
         </div>
 
         <div className="card">
           {poster ? <img className="poster-preview" src={poster} alt="Your poster" /> : <div className="poster-preview" style={{ aspectRatio: '16/10' }} />}
-          <div className="row" style={{ marginTop: 14, justifyContent: 'space-between' }}>
-            <MaterialToggle material={p.material} onMaterial={p.onMaterial} />
+          <div className="row" style={{ marginTop: 14, justifyContent: 'flex-end' }}>
             <button className="btn big orange" onClick={savePoster}>
               ⬇ Save poster
             </button>
@@ -115,6 +155,19 @@ export function ExportStep(p: Props) {
       </div>
     </>
   );
+}
+
+const MARKS: Record<string, string> = {
+  '!': 'exclamation mark', '?': 'question mark', '.': 'full stop', ',': 'comma', "'": 'apostrophe', '-': 'dash', '&': 'and sign',
+  '"': 'quote', ':': 'colon', ';': 'semicolon', '+': 'plus', '=': 'equals', '#': 'hash',
+};
+
+/** File names that stay different on Windows and Macs, where A.png and a.png are the same file. */
+function letterFileName(ch: string): string {
+  if (/^[A-Z]$/.test(ch)) return `capital ${ch}`;
+  if (/^[a-z]$/.test(ch)) return `small ${ch}`;
+  if (/^[0-9]$/.test(ch)) return `number ${ch}`;
+  return MARKS[ch] ?? `U+${ch.codePointAt(0)!.toString(16).toUpperCase().padStart(4, '0')}`;
 }
 
 function SaveNote({ outcome }: { outcome: SaveOutcome }) {

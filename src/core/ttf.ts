@@ -1,22 +1,30 @@
+import { cbdtTables, sbixTable, strikeSizes, svgTable, type GlyphPicture } from './colourfont';
 import type { Contour } from './trace';
 import { CAP_HEIGHT, UNITS_PER_EM } from './trace';
 
 // Minimal TrueType (glyf outlines) font writer.
 // opentype.js only writes CFF-flavoured OpenType, which some Windows apps refuse when it is
 // named .ttf, so we write real TrueType tables ourselves: cmap, glyf, head, hhea, hmtx,
-// loca, maxp, name, OS/2, post.
+// loca, maxp, name, OS/2, post. Glyphs with a picture also go into the colour tables
+// (see colourfont.ts), so the font types the kid's photo letters.
 
 export interface FontGlyph {
   /** Unicode code points mapped to this glyph (e.g. 'P' and 'p'). */
   codepoints: number[];
   contours: Contour[];
   advance: number;
+  /** The letter's photo, drawn instead of the black outline wherever colour fonts work. */
+  picture?: Omit<GlyphPicture, 'advance' | 'outlineMin'>;
 }
+
+export type ColourTable = 'sbix' | 'CBDT' | 'SVG';
 
 export interface FontInfo {
   familyName: string;
   designer?: string;
   glyphs: FontGlyph[];
+  /** Which colour tables to write for glyphs with pictures (default: all of them). */
+  colour?: ColourTable[];
 }
 
 const ASCENT = 900;
@@ -125,7 +133,7 @@ export function buildTTF(info: FontInfo): Uint8Array {
   glyphs.forEach((g, gi) => g.codepoints.forEach((cp) => { if (cp <= 0xffff && !map.has(cp)) map.set(cp, gi); }));
   const cps = [...map.keys()].sort((a, b) => a - b);
 
-  const tables: Record<string, number[]> = {};
+  const tables: Record<string, number[] | Uint8Array> = {};
 
   // glyf + loca
   const glyf = new Writer();
@@ -291,7 +299,20 @@ export function buildTTF(info: FontInfo): Uint8Array {
   post.u32(0); post.u32(0); post.u32(0); post.u32(0);
   tables.post = post.bytes;
 
-  // Assemble.
+  const pics = glyphs.map((g, i) =>
+    g.picture && g.picture.strikes.length ? { ...g.picture, advance: g.advance, outlineMin: { x: bboxes[i]?.xMin ?? 0, y: bboxes[i]?.yMin ?? 0 } } : undefined,
+  );
+  if (pics.some(Boolean)) {
+    const want = new Set(info.colour ?? ['sbix', 'CBDT', 'SVG']);
+    const sizes = strikeSizes(pics);
+    if (want.has('sbix')) tables.sbix = sbixTable(pics, sizes);
+    const cb = want.has('CBDT') ? cbdtTables(pics, sizes, ASCENT, DESCENT) : null;
+    if (cb) Object.assign(tables, cb);
+    const svg = want.has('SVG') ? svgTable(pics) : null;
+    if (svg) tables['SVG '] = svg;
+  }
+
+  // Assemble. Colour tables can be megabytes, so this writes into one typed array.
   const tags = Object.keys(tables).sort();
   const numTables = tags.length;
   const sr = 16 * 2 ** Math.floor(Math.log2(numTables));
@@ -310,11 +331,9 @@ export function buildTTF(info: FontInfo): Uint8Array {
     out.u32(d.off);
     out.u32(d.len);
   }
-  for (const t of tags) {
-    out.bytes.push(...tables[t]);
-    out.pad4();
-  }
-  const bytes = Uint8Array.from(out.bytes);
+  const bytes = new Uint8Array(offset);
+  bytes.set(out.bytes);
+  for (const d of dir) bytes.set(tables[d.tag], d.off);
   const headOff = dir.find((d) => d.tag === 'head')!.off;
   const adj = (0xb1b0afba - checksum(bytes)) >>> 0;
   new DataView(bytes.buffer).setUint32(headOff + 8, adj);

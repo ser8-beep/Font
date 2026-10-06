@@ -1,6 +1,6 @@
 # Photo → Font Station
 
-A browser app that turns a photo of handmade letters (Lego, clay, wool, coffee beans, gummy bears…) into a font you can type with and install. It was built for the **Typography Type Play** kids' workshop.
+A browser app that turns a photo of handmade letters (Lego, clay, wool, coffee beans, gummy bears…) into a photographic font you can type with and install. Every letter is a cut-out of the real photo. It was built for the **Typography Type Play** kids' workshop.
 
 Everything happens inside the web page. Attendees add their photo and the page finds the letters, traces them and writes the `.ttf` file itself. They don't need a scanner, a separate program, an account or an internet connection. After the page has loaded once, it works offline.
 
@@ -8,10 +8,10 @@ Everything happens inside the web page. Attendees add their photo and the page f
 
 1. **Snap**: add a photo any way you like. Take it with the webcam, choose a file (on a phone this offers the camera *or* the gallery), drag it onto the page, or paste it with Ctrl+V. There's also a built-in Lego demo. The screen shows framing tips.
 2. **Check**: the app finds the letter blobs and labels them left to right (P, L, A, Y). Kids can drag a label onto a different box, tap a box to choose its letter, remove a box with ✕, or **draw a box around a letter** when detection misses one.
-3. **Neaten**: each letter gets a *Thinner ↔ Bolder* slider with the photo and the traced letter side by side. A **Fill the gaps** switch handles porous materials. It switches on by itself when a letter is made of separate pieces, such as beans, pasta or buttons.
+3. **Neaten**: each letter gets a *Thinner ↔ Bolder* slider with the photo and the cut-out letter side by side. A **Fill the gaps** switch handles porous materials. It switches on by itself when a letter is made of separate pieces, such as beans, pasta or buttons.
 4. **A–Z**: the app grows the rest of the alphabet, plus 0–9 and common punctuation, out of the same stuff as the photographed letters. The tiles fill in one by one (about 3–4 seconds for the lot on a laptop). The kid's own letters keep a 📷 badge, and any grown letter has a **Try another** button that makes a new version of it. If the photo spelt `play` in small letters, the alphabet grows in small letters; capitals give capitals.
-5. **Play**: a playground. A big text box shows what the kid types in their own letters as they type, with a keyboard made of their letters, a **🎲 Surprise me** word button, *Small / Medium / Big* sizes, background colours (one is sampled from their own table) and the *Ink / Photo letters* switch. The first time they type a word, it fills the screen with confetti.
-6. **Save**: download a `.ttf` named by the kid and a PNG poster of what they typed. A **Photo letters** switch draws the poster with the real materials, so Lego stays colourful. The `.ttf` always has plain single-colour letters. It holds every grown character, so it types anything in Word.
+5. **Play**: a playground. A big text box shows what the kid types in their own letters as they type, with a keyboard made of their letters, a **🎲 Surprise me** word button, *Small / Medium / Big* sizes, and background colours (one is sampled from their own table). Letters always show as photos, with a soft shadow like real things lying on a table. The first time they type a word, it fills the screen with confetti.
+6. **Save**: download a `.ttf` named by the kid, a PNG poster of what they typed, and **letter pictures** (a zip with one see-through PNG per letter). The `.ttf` is a colour font: typing with it shows the photo letters, and it holds every grown character. The letter pictures are for apps that can't use installed or colour fonts, such as Canva and Google Docs.
 
 Every step has **◀ Back** and **↶ Undo** buttons. Ctrl/Cmd+Z also works.
 
@@ -50,15 +50,27 @@ npm run room -- --reset     # start with an empty wall
 
 ## Installing the font
 
+The font is a **colour font**: each letter is stored as the kid's photo, plus a plain outline that apps without colour-font support fall back to.
+
 - **Windows:** open the `.ttf` from Downloads, press **Install**, then pick the font in Word.
 - **macOS:** double-click the `.ttf`, then **Install Font**.
-- **Canva:** uploading fonts needs a Canva Pro, Teams or Education account (Brand Kit → Upload a font).
-- **Google Docs can't use fonts installed on the computer**, only Google Fonts. No font file can work there. The brief lists Google Docs, so this needs a decision: either drop it from the test, or have kids paste the PNG poster into Docs.
+- **Canva:** uploading fonts needs a Canva Pro, Teams or Education account (Brand Kit → Upload a font), and Canva may draw it as plain shapes. The **letter pictures** zip always works: drag the PNGs in and line them up.
+- **Google Docs can't use fonts installed on the computer**, only Google Fonts. Use the letter pictures or the poster there.
+
+Where the photos show up. Each app family reads a different colour-font format, so the file carries the same pictures three ways:
+
+| Format | Read by | Checked |
+|---|---|---|
+| `sbix` | macOS and iOS (Pages, Keynote, TextEdit, Word for Mac, Safari), Chrome, Android, Linux | ✅ Chromium on Linux |
+| `CBDT`/`CBLC` | Chrome, Android, ChromeOS, Linux, Windows 10/11 | ✅ Chromium on Linux |
+| `SVG` | Microsoft 365 (Word, PowerPoint), Adobe apps, Firefox | written to the spec; not checked here |
+
+**Test the saved font in the actual apps on the workshop laptops before the day**, especially Word on Windows. An app that can't draw colour fonts shows the letters as solid shapes; the letter pictures are the fallback there.
 
 ## Testing (for developers only; attendees never need this)
 
 ```bash
-npm test               # unit tests: tracing, TTF structure and checksums, segmentation on samples, font build under 2 s
+npm test               # unit tests: tracing, TTF structure and checksums, colour tables and PNG, segmentation on samples, font build under 2 s
 npm run samples:test   # runs segmentation on every photo in /samples and reports letters found per photo
 npm run samples:test -- --debug   # also writes overlays and a .ttf per photo to samples/_debug/
 npm run samples:make   # regenerates the synthetic sample photos
@@ -81,7 +93,7 @@ photo ─► background model ─► "stands out" map ─► threshold ─► cl
 
 - **Segmentation** (`src/core/segment.ts`): it fits a smooth background colour surface (quadratic in x/y, per Lab channel) to the pixels that look like background, which copes with uneven lighting and vignetting. Each pixel's colour distance from that surface goes through an Otsu threshold. A closing then fuses separate pieces (beans, gummy bears) into one blob per letter. It tries several closing sizes and keeps the largest one that gives the expected count without bridging neighbouring letters. Fragments get merged and specks dropped, and blobs much wider than a letter are split at their thinnest column.
 - **Tracing** (`src/core/trace.ts`): it follows the pixel boundaries and simplifies them with Ramer–Douglas–Peucker. Gentle bends become TrueType off-curve points and sharp corners stay on-curve. Outer contours wind clockwise and holes counter-clockwise.
-- **Font writing** (`src/core/ttf.ts`): a small TrueType writer covering `cmap`, `glyf`, `head`, `hhea`, `hmtx`, `loca`, `maxp`, `name`, `OS/2` and `post`. Cap height is 700 of 1000 units, sitting on the baseline. Advance width is the letter width plus 60 units on each side. A font made only of capitals (or only small letters) maps the other case to the same glyphs. The output passes the OpenType Sanitizer (the font checker Chrome uses) and parses in fontTools and opentype.js.
+- **Font writing** (`src/core/ttf.ts`): a small TrueType writer covering `cmap`, `glyf`, `head`, `hhea`, `hmtx`, `loca`, `maxp`, `name`, `OS/2` and `post`, plus the colour tables below. Cap height is 700 of 1000 units, sitting on the baseline. Advance width is the letter width plus 60 units on each side. A font made only of capitals (or only small letters) maps the other case to the same glyphs. The output passes the OpenType Sanitizer (the font checker Chrome uses) and parses in fontTools and opentype.js.
 
 ### Growing the alphabet
 
@@ -99,6 +111,12 @@ The work runs in a Web Worker, so the page stays responsive while the tiles fill
 
 **Limits.** Grown letters are only as good as the photo. Busy backgrounds (wood floors, patterned cloth) and strong shadows confuse segmentation, and a shadow that gets picked up becomes part of the material. Objects that only appear once in PLAY (one big wine glass, say) get reused a lot, so a few grown letters can look repetitive. **Try another** usually helps. Try the workshop's real materials and table before the day.
 
+### Photo letters in the font
+
+`src/core/colourfont.ts` writes the colour tables and `src/core/picture.ts` makes each letter's pictures: the material cut-out resized to 128 and 256 pixels per em (`src/core/png.ts` has the resizer and a small PNG encoder, so this runs in Node too). The app makes the pictures in a worker (`src/pictures.ts`) and starts as soon as the alphabet is finished, so **Save my font** is quick. A typical A–Z font is about 3 MB.
+
+Two details found by testing in Chromium: `sbix` picture offsets are measured from the corner of the letter's outline box, not from its origin as the spec reads (Apple's behaviour, which FreeType copies). And `CBDT` stores sizes in single bytes, so it only gets the 128 ppem pictures.
+
 ### Where this differs from the brief's tech stack
 
 - **No OpenCV.js.** It adds about 8 MB to load and parse on slow laptops, and the pipeline only needs threshold, morphology and connected components. Those are written in plain TypeScript (`src/core/mask.ts`). The same code also runs in Node, which is what lets `npm run samples:test` work without a browser.
@@ -108,11 +126,12 @@ The work runs in a Web Worker, so the page stays responsive while the tiles fill
 ## Project layout
 
 ```
-src/core/      image, mask morphology, segmentation, tracing, TTF writer (framework-free, runs in Node too)
+src/core/      image, mask morphology, segmentation, tracing, TTF writer, colour tables, PNG (framework-free, runs in Node too)
 src/ui/        one React component per step + projector room view
 src/core/alphabet/  growing new letters: skeletons, style fitting, material painters
 src/grow.ts    runs the alphabet growing in a Web Worker (grow.worker.ts) and feeds the UI
-src/font.ts    letters → glyphs (cached), text layout, font build
+src/font.ts    letters → glyphs (cached), photo cut-outs, text layout, font build
+src/pictures.ts  makes the font's photo letters in a worker
 src/poster.ts  PNG poster
 src/room.ts    room wall client
 server/        room wall server (Node http + ws)

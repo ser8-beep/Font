@@ -46,7 +46,6 @@ export interface AppState extends Snapshot {
   text: string;
   fontName: string;
   maker: string;
-  material: boolean;
   celebrated: boolean;
   size: Size;
   backdrop: Backdrop;
@@ -62,7 +61,6 @@ export type Action =
   | { type: 'text'; text: string }
   | { type: 'fontName'; name: string }
   | { type: 'maker'; name: string }
-  | { type: 'material'; on: boolean }
   | { type: 'size'; size: Size }
   | { type: 'backdrop'; backdrop: Backdrop }
   | { type: 'celebrated' }
@@ -77,8 +75,6 @@ export const initialState: AppState = {
   text: '',
   fontName: '',
   maker: '',
-  // Grown letters are made of the kid's material: show that off first.
-  material: true,
   celebrated: false,
   size: 'M',
   backdrop: 'white',
@@ -116,8 +112,6 @@ export function reducer(s: AppState, a: Action): AppState {
       return { ...s, fontName: a.name };
     case 'maker':
       return { ...s, maker: a.name };
-    case 'material':
-      return { ...s, material: a.on };
     case 'size':
       return { ...s, size: a.size };
     case 'backdrop':

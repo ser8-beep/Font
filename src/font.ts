@@ -82,36 +82,46 @@ export function casesOf(chars: Iterable<string>): { upper: boolean; lower: boole
   return { upper, lower };
 }
 
+/** The letter's material picture, sized to outline.source, straight alpha. */
+export function materialRGBA(g: LetterGlyph): RGBAImage {
+  const src = g.outline.source;
+  if (g.picture.kind === 'art') return g.picture.image;
+  const { clean, photo } = g.picture;
+  const data = new Uint8ClampedArray(src.w * src.h * 4);
+  const soft = softAlpha(clean.mask, src.x, src.y, src.w, src.h);
+  for (let y = 0; y < src.h; y++) {
+    const py = clean.box.y + src.y + y;
+    for (let x = 0; x < src.w; x++) {
+      const px = clean.box.x + src.x + x;
+      const s = (py * photo.image.width + px) * 4;
+      const o = (y * src.w + x) * 4;
+      data[o] = photo.image.data[s];
+      data[o + 1] = photo.image.data[s + 1];
+      data[o + 2] = photo.image.data[s + 2];
+      data[o + 3] = soft[y * src.w + x];
+    }
+  }
+  return { width: src.w, height: src.h, data };
+}
+
+/** The letter's material picture on a canvas. Browser only. */
+export function materialCanvas(g: LetterGlyph): HTMLCanvasElement {
+  const img = materialRGBA(g);
+  const canvas = document.createElement('canvas');
+  canvas.width = img.width;
+  canvas.height = img.height;
+  const ctx = canvas.getContext('2d')!;
+  const data = ctx.createImageData(img.width, img.height);
+  data.data.set(img.data.subarray(0, img.width * img.height * 4));
+  ctx.putImageData(data, 0, 0);
+  return canvas;
+}
+
 /** The letter's material picture as a PNG data URL, sized to outline.source. Browser only. */
 export function materialImage(g: LetterGlyph): string {
   const hit = materialCache.get(g.id);
   if (hit) return hit;
-  const src = g.outline.source;
-  const canvas = document.createElement('canvas');
-  canvas.width = src.w;
-  canvas.height = src.h;
-  const ctx = canvas.getContext('2d')!;
-  const img = ctx.createImageData(src.w, src.h);
-  if (g.picture.kind === 'art') {
-    img.data.set(g.picture.image.data.subarray(0, src.w * src.h * 4));
-  } else {
-    const { clean, photo } = g.picture;
-    const soft = softAlpha(clean.mask, src.x, src.y, src.w, src.h);
-    for (let y = 0; y < src.h; y++) {
-      const py = clean.box.y + src.y + y;
-      for (let x = 0; x < src.w; x++) {
-        const px = clean.box.x + src.x + x;
-        const s = (py * photo.image.width + px) * 4;
-        const o = (y * src.w + x) * 4;
-        img.data[o] = photo.image.data[s];
-        img.data[o + 1] = photo.image.data[s + 1];
-        img.data[o + 2] = photo.image.data[s + 2];
-        img.data[o + 3] = soft[y * src.w + x];
-      }
-    }
-  }
-  ctx.putImageData(img, 0, 0);
-  const url = canvas.toDataURL('image/png');
+  const url = materialCanvas(g).toDataURL('image/png');
   if (materialCache.size > 300) materialCache.delete(materialCache.keys().next().value!);
   materialCache.set(g.id, url);
   return url;
@@ -194,23 +204,27 @@ export { CAP_HEIGHT };
 
 // ---------- the .ttf ----------
 
+/** A letter's photo, ready for the font's colour tables (made by pictures.ts). */
+export type FontPicture = NonNullable<FontGlyph['picture']>;
+
 /**
  * Every letter the font has, made or grown. A letter also answers for its other case when the
  * font has nothing of its own there, so a capitals-only font types capitals for small keys.
  */
-export function fontGlyphs(map: Map<string, LetterGlyph>): FontGlyph[] {
+export function fontGlyphs(map: Map<string, LetterGlyph>, pictures?: Map<string, FontPicture>): FontGlyph[] {
   const glyphs: FontGlyph[] = [];
   for (const [ch, g] of map) {
     const cps = [ch.codePointAt(0)!];
     const other = otherCase(ch);
     if (other !== ch && [...other].length === 1 && !map.has(other)) cps.push(other.codePointAt(0)!);
-    glyphs.push({ codepoints: cps, contours: g.outline.contours, advance: g.outline.advance });
+    glyphs.push({ codepoints: cps, contours: g.outline.contours, advance: g.outline.advance, picture: pictures?.get(g.id) });
   }
   return glyphs;
 }
 
-export function buildFont(map: Map<string, LetterGlyph>, name: string, maker: string): Uint8Array {
-  return buildTTF({ familyName: name, designer: maker, glyphs: fontGlyphs(map) });
+/** The .ttf. With pictures, every letter types as its photo wherever colour fonts work. */
+export function buildFont(map: Map<string, LetterGlyph>, name: string, maker: string, pictures?: Map<string, FontPicture>): Uint8Array {
+  return buildTTF({ familyName: name, designer: maker, glyphs: fontGlyphs(map, pictures) });
 }
 
 export function safeFileName(name: string): string {

@@ -10,7 +10,6 @@ interface Props {
   map: Map<string, LetterGlyph>;
   /** Every character the font will have, in keyboard order. */
   keys: string[];
-  material: boolean;
   celebrated: boolean;
   size: Size;
   backdrop: Backdrop;
@@ -18,7 +17,6 @@ interface Props {
   /** Letters still growing (they show as grey boxes until they arrive). */
   growing: boolean;
   onText: (t: string) => void;
-  onMaterial: (on: boolean) => void;
   onSize: (s: Size) => void;
   onBackdrop: (b: Backdrop) => void;
   onCelebrated: () => void;
@@ -26,19 +24,6 @@ interface Props {
 }
 
 const WORDS = ['PIZZA', 'ROBOT', 'JELLY', 'ZOOM!', 'HELLO', 'BANANA', 'QUIZ', 'DINOSAUR', 'WOW!', 'YUMMY', 'PLAY TIME', 'SUPER STAR', 'MAGIC', 'JUMP', 'SPLASH', 'FOX & OWL', 'ROCKET 123'];
-
-export function MaterialToggle({ material, onMaterial }: { material: boolean; onMaterial: (on: boolean) => void }) {
-  return (
-    <div className="row" role="group" aria-label="Letter style">
-      <button className={`btn small ${material ? '' : 'on'}`} onClick={() => onMaterial(false)} aria-pressed={!material}>
-        Ink letters
-      </button>
-      <button className={`btn small ${material ? 'on' : ''}`} onClick={() => onMaterial(true)} aria-pressed={material}>
-        Photo letters
-      </button>
-    </div>
-  );
-}
 
 /** The playground: type anything in the kid's own letters. */
 export function TypeStep(p: Props) {
@@ -98,11 +83,10 @@ export function TypeStep(p: Props) {
       </div>
 
       <div className="render" style={{ background: backdropColour(p.backdrop, p.table) }}>
-        <TextRender text={p.text || caseWord('PLAY')} map={p.map} material={p.material} maxWidth={WRAP[p.size]} caret={!!p.text} className={`size-${p.size}`} />
+        <TextRender text={p.text || caseWord('PLAY')} map={p.map} maxWidth={WRAP[p.size]} caret={!!p.text} className={`size-${p.size}`} />
       </div>
 
       <div className="play-controls">
-        <MaterialToggle material={p.material} onMaterial={p.onMaterial} />
         <div className="row" role="group" aria-label="Letter size">
           {(['S', 'M', 'L'] as Size[]).map((s) => (
             <button key={s} className={`btn small ${p.size === s ? 'on' : ''}`} onClick={() => p.onSize(s)} aria-pressed={p.size === s}>
@@ -131,7 +115,7 @@ export function TypeStep(p: Props) {
           const g = lookup(p.map, k);
           return (
             <button key={k} className="key" onClick={() => type(k)} aria-label={`Type ${k}`} disabled={!g}>
-              {g ? <GlyphView glyph={g} material={p.material} size={52} /> : <span className="key-wait">{k}</span>}
+              {g ? <GlyphView glyph={g} size={52} /> : <span className="key-wait">{k}</span>}
             </button>
           );
         })}
@@ -156,12 +140,12 @@ export function TypeStep(p: Props) {
           )}
         </div>
       )}
-      {party && <Celebrate text={p.text} map={p.map} material={p.material} onClose={() => setParty(false)} />}
+      {party && <Celebrate text={p.text} map={p.map} onClose={() => setParty(false)} />}
     </>
   );
 }
 
-function Celebrate({ text, map, material, onClose }: { text: string; map: Map<string, LetterGlyph>; material: boolean; onClose: () => void }) {
+function Celebrate({ text, map, onClose }: { text: string; map: Map<string, LetterGlyph>; onClose: () => void }) {
   const bits = useMemo(
     () =>
       Array.from({ length: 70 }, (_, i) => ({
@@ -189,7 +173,7 @@ function Celebrate({ text, map, material, onClose }: { text: string; map: Map<st
       ))}
       <div className="inner">
         <h2>You made a font! 🎉</h2>
-        <TextRender className="word" text={text.trim()} map={map} material={material} maxWidth={4200} />
+        <TextRender className="word" text={text.trim()} map={map} maxWidth={4200} />
         <p style={{ fontSize: 24, fontWeight: 900 }}>Tap anywhere to keep going</p>
       </div>
     </div>

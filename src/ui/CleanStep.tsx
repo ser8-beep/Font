@@ -74,7 +74,7 @@ export function CleanStep({ photos, currentPhotoId, letters, map, onChange }: Pr
 
       <div className="strip card">
         <strong>Your letters so far</strong>
-        <TextRender text={[...new Set(letters.map((l) => l.char).filter((c) => c && map.has(c)))].join('')} map={map} material={false} />
+        <TextRender text={[...new Set(letters.map((l) => l.char).filter((c) => c && map.has(c)))].join('')} map={map} />
       </div>
     </>
   );

@@ -11,8 +11,8 @@ function loadImage(src: string): Promise<HTMLImageElement> {
   });
 }
 
-/** A colour-block poster of whatever they typed, in their font, on the background they chose. */
-export async function renderPoster(text: string, map: Map<string, LetterGlyph>, material: boolean, fontName: string, maker: string, backdrop = '#ffd23f'): Promise<HTMLCanvasElement> {
+/** A colour-block poster of whatever they typed, in their photo letters, on the background they chose. */
+export async function renderPoster(text: string, map: Map<string, LetterGlyph>, fontName: string, maker: string, backdrop = '#ffd23f'): Promise<HTMLCanvasElement> {
   const canvas = document.createElement('canvas');
   canvas.width = W;
   canvas.height = H;
@@ -41,9 +41,7 @@ export async function renderPoster(text: string, map: Map<string, LetterGlyph>, 
   const ox = (W - lay.width * s) / 2;
   const oy = 70 + (boxH - textH * s) / 2;
   const images = new Map<string, HTMLImageElement>();
-  if (material) {
-    for (const it of lay.items) if (it.glyph && !images.has(it.glyph.id)) images.set(it.glyph.id, await loadImage(materialImage(it.glyph)));
-  }
+  for (const it of lay.items) if (it.glyph && !images.has(it.glyph.id)) images.set(it.glyph.id, await loadImage(materialImage(it.glyph)));
   for (const it of lay.items) {
     if (it.ch === ' ') continue;
     const x = ox + it.x * s;
@@ -60,23 +58,14 @@ export async function renderPoster(text: string, map: Map<string, LetterGlyph>, 
       continue;
     }
     const o = it.glyph.outline;
-    if (material) {
-      // Soft shadow, like real things lying on a table.
-      ctx.save();
-      ctx.shadowColor = 'rgba(27, 27, 58, 0.35)';
-      ctx.shadowBlur = 24 * s;
-      ctx.shadowOffsetX = 14 * s;
-      ctx.shadowOffsetY = 20 * s;
-      ctx.drawImage(images.get(it.glyph.id)!, x + o.lsb * s, base - o.top * s, o.inkWidth * s, (o.top - o.bottom) * s);
-      ctx.restore();
-    } else {
-      ctx.save();
-      ctx.translate(x, base);
-      ctx.scale(s, -s);
-      ctx.fillStyle = '#1b1b3a';
-      ctx.fill(new Path2D(it.glyph.svg));
-      ctx.restore();
-    }
+    // Soft shadow, like real things lying on a table.
+    ctx.save();
+    ctx.shadowColor = 'rgba(27, 27, 58, 0.35)';
+    ctx.shadowBlur = 24 * s;
+    ctx.shadowOffsetX = 14 * s;
+    ctx.shadowOffsetY = 20 * s;
+    ctx.drawImage(images.get(it.glyph.id)!, x + o.lsb * s, base - o.top * s, o.inkWidth * s, (o.top - o.bottom) * s);
+    ctx.restore();
   }
 
   // Footer.
