@@ -12,7 +12,8 @@
     "samples:test": "tsx scripts/segment-samples.ts",
     "alphabet:samples": "tsx scripts/alphabet-samples.ts",
     "room": "node server/room-server.js",
-    "build:artifact": "npm run build && node scripts/make-artifact-page.mjs"
+    "build:artifact": "npm run build && node scripts/make-artifact-page.mjs",
+    "repository": "tsx scripts/repository.ts"
   },
   "dependencies": {
     "fflate": "^0.8.3",

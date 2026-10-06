@@ -9,7 +9,7 @@ Everything happens inside the web page. Attendees add their photo and the page f
 1. **Snap**: add a photo any way you like. Take it with the webcam, choose a file (on a phone this offers the camera *or* the gallery), drag it onto the page, or paste it with Ctrl+V. There's also a built-in Lego demo. The screen shows framing tips.
 2. **Check**: the app finds the letter blobs and labels them left to right (P, L, A, Y). Kids can drag a label onto a different box, tap a box to choose its letter, remove a box with ✕, or **draw a box around a letter** when detection misses one.
 3. **Neaten**: each letter gets a *Thinner ↔ Bolder* slider with the photo and the cut-out letter side by side. A **Fill the gaps** switch handles porous materials. It switches on by itself when a letter is made of separate pieces, such as beans, pasta or buttons.
-4. **A–Z**: the app grows the rest of the alphabet, plus 0–9 and common punctuation, out of the same stuff as the photographed letters. The tiles fill in one by one (about 3–4 seconds for the lot on a laptop). The kid's own letters keep a 📷 badge, and any grown letter has a **Try another** button that makes a new version of it. If the photo spelt `play` in small letters, the alphabet grows in small letters; capitals give capitals.
+4. **A–Z**: the app grows the rest of the alphabet, plus 0–9 and common punctuation, out of the same stuff as the photographed letters. The tiles fill in one by one (about 3–4 seconds for the lot on a laptop). The kid's own letters keep a 📷 badge, and any grown letter has a **Try another** button that makes a new version of it. If the photo spelt `play` in small letters, the alphabet grows in small letters; capitals give capitals. At the top, the app says what kind of stuff it thinks the letters are made of (for example *🧸 Toys & games* or *✏️ Stationery*), using the object-type repository. **Not right? Change it** picks another category, and the new letters regrow the way makers in that category build theirs. Tapping a letter shows **ideas**: objects other makers used for that letter, with a button to photograph a real one.
 5. **Play**: a playground. A big text box shows what the kid types in their own letters as they type, with a keyboard made of their letters, a **🎲 Surprise me** word button, *Small / Medium / Big* sizes, and background colours (one is sampled from their own table). Letters always show as photos, with a soft shadow like real things lying on a table. The first time they type a word, it fills the screen with confetti.
 6. **Save**: download a `.ttf` named by the kid, a PNG poster of what they typed, and **letter pictures** (a zip with one see-through PNG per letter). The `.ttf` is a colour font: typing with it shows the photo letters, and it holds every grown character. The letter pictures are for apps that can't use installed or colour fonts, such as Canva and Google Docs.
 
@@ -70,7 +70,7 @@ Where the photos show up. Each app family reads a different colour-font format, 
 ## Testing (for developers only; attendees never need this)
 
 ```bash
-npm test               # unit tests: tracing, TTF structure and checksums, colour tables and PNG, segmentation on samples, font build under 2 s
+npm test               # unit tests: tracing, TTF structure and checksums, colour tables and PNG, categories, segmentation on samples, font build under 2 s
 npm run samples:test   # runs segmentation on every photo in /samples and reports letters found per photo
 npm run samples:test -- --debug   # also writes overlays and a .ttf per photo to samples/_debug/
 npm run samples:make   # regenerates the synthetic sample photos
@@ -107,9 +107,19 @@ photo ─► background model ─► "stands out" map ─► threshold ─► cl
    - **Flat**: the fallback, the letter shape filled with the photo's average colour and texture.
 3. **Glyph.** Each painted letter is traced with the same tracer as the photographed ones, so the `.ttf` and the photo preview always match.
 
-The work runs in a Web Worker, so the page stays responsive while the tiles fill in. `npm run alphabet:samples` grows an alphabet for every photo in `/samples` and writes a contact sheet PNG and a `.ttf` per photo to `samples/_debug/`. Add photo names to limit it (`-- lego clay`), `--chars=abcxyz` to pick characters, `--seed=3` for another roll, or `--refs` to use local test photos in `samples/_refs/` (not committed).
+The work runs in a Web Worker, so the page stays responsive while the tiles fill in. `npm run alphabet:samples` grows an alphabet for every photo in `/samples` and writes a contact sheet PNG and a `.ttf` per photo to `samples/_debug/`. Add photo names to limit it (`-- lego clay`), `--chars=abcxyz` to pick characters, `--seed=3` for another roll, `--category=tools` to build the letters the way another category does, or `--refs` to use local test photos in `samples/_refs/` (not committed).
 
 **Limits.** Grown letters are only as good as the photo. Busy backgrounds (wood floors, patterned cloth) and strong shadows confuse segmentation, and a shadow that gets picked up becomes part of the material. Objects that only appear once in PLAY (one big wine glass, say) get reused a lot, so a few grown letters can look repetitive. **Try another** usually helps. Try the workshop's real materials and table before the day.
+
+### The object-type repository
+
+`data/object-type-repository.json` lists 1,088 letters from real object alphabets, sorted into 20 categories (stationery, fruit & veg, tools, nuts & bolts, jewellery…). For each letter it records the objects used and how the letter was built: **single** (one object), **composite** (several different objects), **repeated** (copies of one object) or **formed** (bendy stuff such as wire, peel or cord). `npm run repository` turns it into `src/core/alphabet/repository-data.ts`, a 31 KB table with counts and object names per category and letter. `other` ("flag before use") and `body` are left out. The repository has no pictures, so the app never shows or copies the reference alphabets.
+
+`src/core/alphabet/category.ts` uses it three ways:
+
+1. **Matching the photo to a category.** It reads how each photographed letter is built (Lego and beans are *repeated*, a wool bowl is *formed*, a letter of a pencil and a ruler is *composite*) and what colours the letters are (metal grey, wood/biscuit brown, green, bright plastic). Each category is scored by how well those colours fit its usual look and how often its makers built these same letters that way, plus a few material clues (Lego bricks → toys, clay → art supplies). This is a guess, which is why kids can change it with one tap. On the 19 sample photos it gets 11 right: Lego (both), wool, pasta, gummy bears, honey, biscuits, engine parts, jewellery, packaging and pencil shavings. Of the misses, buttons, clay, coffee beans, books and carabiners have the right category second or third. Straws and the Christmas photo are further off.
+2. **Building each new letter the category's way.** For every character, the build is drawn from what that category's makers did for the same letter (falling back to the category's overall habits), so **Try another** can also try a different build. The painter then uses a photographed letter built the same way where the photo has one: *repeated* lines up copies of one whole object (a K of pencils), *single* stretches one object per stroke, *composite* mixes objects from different letters, and *formed* sweeps bendy stuff round curves or puts pieces single file. Lego and beans can only be built one way, so for them the category mainly changes the ideas.
+3. **Ideas.** Up to four objects per letter, most used first, shown when a kid taps a letter.
 
 ### Photo letters in the font
 
@@ -132,10 +142,11 @@ src/core/alphabet/  growing new letters: skeletons, style fitting, material pain
 src/grow.ts    runs the alphabet growing in a Web Worker (grow.worker.ts) and feeds the UI
 src/font.ts    letters → glyphs (cached), photo cut-outs, text layout, font build
 src/pictures.ts  makes the font's photo letters in a worker
+data/          object-type repository (how real object alphabets were built, by category)
 src/poster.ts  PNG poster
 src/room.ts    room wall client
 server/        room wall server (Node http + ws)
-scripts/       sample generator, segmentation report, alphabet contact sheets
+scripts/       sample generator, segmentation report, alphabet contact sheets, repository table
 samples/       test photos
 tests/         vitest
 ```

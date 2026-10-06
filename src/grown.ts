@@ -18,13 +18,14 @@ export function grownGlyph(
   ch: string,
   style: StyleProfile,
   seed: number,
-  render: (ch: string, style: StyleProfile, seed: number) => GeneratedArt | null,
-  material: (ch: string, style: StyleProfile, seed: number) => MaterialProfile,
+  category: string | undefined,
+  render: (ch: string, style: StyleProfile, seed: number, category?: string) => GeneratedArt | null,
+  material: (ch: string, style: StyleProfile, seed: number, category?: string) => MaterialProfile,
   range: (ch: string, weight?: number) => [number, number],
 ): GrownData | null {
-  const art = render(ch, style, seed);
+  const art = render(ch, style, seed, category);
   if (!art) return null;
-  const outline = maskToGlyph(art.mask, range(ch, material(ch, style, seed).weight));
+  const outline = maskToGlyph(art.mask, range(ch, material(ch, style, seed, category).weight));
   if (!outline) return null;
   return { outline, svg: contoursToSvg(outline.contours), image: cropImage(art.image, outline.source) };
 }

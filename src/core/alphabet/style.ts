@@ -1,3 +1,4 @@
+import { buildOf } from './category';
 import { fitGeometry } from './fit';
 import { extractFlat } from './materials/flat';
 import { detectGrid, gridFromPool, type GridMaterial } from './materials/grid';
@@ -13,6 +14,7 @@ export function analyseStyle(samples: StyleSample[]): StyleProfile {
   const geometry = fitGeometry(samples, measures);
   const materials = samples.map((s, i) => profileMaterial(s, measures[i]));
   harmonise(materials, samples);
+  for (const m of materials) m.build = buildOf(m);
   const heights = measures.map((m) => m.heightPx).sort((a, b) => a - b);
   const weights = materials.map((m) => m.weight).sort((a, b) => a - b);
   const w = weights[weights.length >> 1];
@@ -58,5 +60,6 @@ export function profileMaterial(s: StyleSample, m: Measure): MaterialProfile {
     fillGaps: s.porous,
     fillRadius: s.porous ? s.fillRadius / Math.max(1, m.heightPx) : 0,
     material,
+    build: 'single',
   };
 }

@@ -124,6 +124,8 @@ export interface MaterialProfile {
   /** Closing radius for fillGaps, rel units. */
   fillRadius: number;
   material: Material;
+  /** How the source letter is built, in the object-type repository's words (see category.ts). */
+  build: 'single' | 'composite' | 'repeated' | 'formed';
 }
 
 export interface StyleProfile {

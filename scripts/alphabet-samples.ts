@@ -4,6 +4,8 @@
 //   npm run alphabet:samples -- lego clay         # only photos whose name contains these words
 //   npm run alphabet:samples -- --chars=abcxyz    # choose the characters to grow
 //   npm run alphabet:samples -- --seed=3          # another roll of the dice
+//   npm run alphabet:samples -- --category=tools  # build letters the way that category does
+//                                                 # (default: the category the photo matches)
 //
 // For each photo it writes samples/_debug/alphabet-<name>.png:
 //   top block    : the kid's captured letters (thick bar under them), then every grown character
@@ -15,7 +17,7 @@ import { basename, dirname, join } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import jpeg from 'jpeg-js';
 import { PNG } from 'pngjs';
-import { alphabetChars, analyseStyle, materialFor, renderLetter, verticalRange, type StyleSample } from '../src/core/alphabet';
+import { alphabetChars, analyseStyle, matchCategory, materialFor, renderLetter, verticalRange, type StyleSample } from '../src/core/alphabet';
 import { cropImage, type Mask, type RGBAImage } from '../src/core/image';
 import { maskBounds } from '../src/core/mask';
 import { analyse, cleanLetter } from '../src/core/segment';
@@ -108,6 +110,7 @@ for (const f of files) {
   const t0 = performance.now();
   const style = analyseStyle(samples);
   const tStyle = performance.now() - t0;
+  const category = opt('category') ?? matchCategory(samples, style).ranked[0].id;
   const chars = opt('chars') ? [...opt('chars')!] : alphabetChars({ upper: word !== word.toLowerCase(), lower: word !== word.toUpperCase() });
 
   const cells: Cell[] = samples.map((s) => ({ art: cutout(s.image, s.mask), ink: s.mask, captured: true }));
@@ -118,12 +121,12 @@ for (const f of files) {
   const t1 = performance.now();
   let made = 0;
   for (const ch of chars) {
-    const art = renderLetter(ch, style, seed);
+    const art = renderLetter(ch, style, seed, category);
     if (!art) continue;
     made++;
     cells.push({ art: art.image, ink: art.mask, captured: false });
     if (!glyphs.some((g) => g.ch === ch)) {
-      const o = maskToGlyph(art.mask, verticalRange(ch, materialFor(ch, style, seed).weight));
+      const o = maskToGlyph(art.mask, verticalRange(ch, materialFor(ch, style, seed, category).weight));
       if (o) glyphs.push({ ch, outline: o });
     }
   }
@@ -156,7 +159,7 @@ for (const f of files) {
 
   const kinds = style.materials.map((m) => `${m.source}:${m.material.kind}`).join(' ');
   console.log(
-    `${name.padEnd(18)} style ${tStyle.toFixed(0).padStart(4)}ms  grew ${made}/${chars.length} in ${tGrow.toFixed(0).padStart(5)}ms` +
+    `${name.padEnd(18)} ${category.padEnd(13)} style ${tStyle.toFixed(0).padStart(4)}ms  grew ${made}/${chars.length} in ${tGrow.toFixed(0).padStart(5)}ms` +
       `  materials [${kinds}]  weight ${style.materials.map((m) => m.weight.toFixed(2)).join('/')}  geometry ${JSON.stringify(style.geometry)}`,
   );
 }

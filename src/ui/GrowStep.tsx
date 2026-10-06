@@ -1,3 +1,5 @@
+import { useState } from 'react';
+import { CATEGORY_IDS, CATEGORY_LABELS, ideasFor } from '../core/alphabet';
 import type { LetterGlyph } from '../font';
 import type { Alphabet } from '../grow';
 import { GlyphView } from './TextRender';
@@ -5,23 +7,72 @@ import { GlyphView } from './TextRender';
 interface Props {
   alphabet: Alphabet;
   captured: Map<string, LetterGlyph>;
+  /** The category the kid picked (null = the app's guess). */
+  chosen: string | null;
+  onCategory: (id: string | null) => void;
   onReroll: (ch: string) => void;
+  onAddMore: () => void;
 }
 
+const nameOf = (id: string) => CATEGORY_LABELS[id] ?? { label: id, emoji: '✨' };
+
 /** The whole alphabet filling in, letter by letter, in the kid's own stuff. */
-export function GrowStep({ alphabet, captured, onReroll }: Props) {
-  const { chars, grown, done, total, failed } = alphabet;
+export function GrowStep({ alphabet, captured, chosen, onCategory, onReroll, onAddMore }: Props) {
+  const { chars, grown, done, total, failed, category, guess } = alphabet;
+  const [picking, setPicking] = useState(false);
+  const [selected, setSelected] = useState<string | null>(null);
   const finished = done >= total;
   const yours = [...captured.keys()].join(' ');
+  // Best guesses first, then the rest in the usual order.
+  const order = [...guess.slice(0, 3), ...CATEGORY_IDS.filter((id) => !guess.slice(0, 3).includes(id))];
+  const sel = selected ?? chars.find((c) => !captured.has(c) && grown.has(c)) ?? null;
+  const ideas = sel && category ? ideasFor(sel, category) : [];
+
   return (
     <>
       <h1>
         <span className="tag">{finished ? 'Your whole alphabet!' : 'Growing your alphabet…'}</span>
       </h1>
       <p>
-        We used your <strong>{yours}</strong> to make all the other letters out of the same stuff.
-        {' '}Don't like one? Press <strong>Try another</strong>.
+        We used your <strong>{yours}</strong> to make all the other letters out of the same stuff, the way other makers build letters from things like
+        yours. Don't like one? Press <strong>Try another</strong>.
       </p>
+
+      <div className="card made-from">
+        <div className="row" style={{ justifyContent: 'space-between' }}>
+          <div className="row">
+            <span>{chosen ? 'You made it from' : 'Looks like you used'}</span>
+            {category ? (
+              <span className="cat-chip on">
+                {nameOf(category).emoji} {nameOf(category).label}
+              </span>
+            ) : (
+              <span className="cat-chip">Looking…</span>
+            )}
+          </div>
+          <button className="btn small" onClick={() => setPicking(!picking)} aria-expanded={picking}>
+            {picking ? 'Done' : 'Not right? Change it'}
+          </button>
+        </div>
+        {picking && (
+          <div className="cat-grid" role="group" aria-label="What did you make your letters from?">
+            {order.map((id) => (
+              <button
+                key={id}
+                className={`cat-chip ${id === category ? 'on' : ''}`}
+                aria-pressed={id === category}
+                onClick={() => {
+                  onCategory(id === guess[0] ? null : id);
+                  setPicking(false);
+                }}
+              >
+                {nameOf(id).emoji} {nameOf(id).label}
+              </button>
+            ))}
+          </div>
+        )}
+      </div>
+
       <div className="row" style={{ margin: '10px 0 16px' }}>
         <div className="grow-meter" aria-label={`${done} of ${total} letters made`}>
           <div style={{ width: `${total ? (done / total) * 100 : 100}%` }} />
@@ -29,15 +80,37 @@ export function GrowStep({ alphabet, captured, onReroll }: Props) {
         </div>
       </div>
       {failed && <p className="card" style={{ background: 'var(--pink)' }}>We couldn't grow new letters from this photo. Try neatening your letters, or add another photo.</p>}
+
+      {sel && ideas.length > 0 && (
+        <div className="card ideas">
+          <div className="ideas-glyph">
+            <GlyphView glyph={grown.get(sel) ?? captured.get(sel) ?? null} size={110} />
+          </div>
+          <div>
+            <strong style={{ fontSize: 22 }}>{captured.has(sel) ? `💡 Other ways to build ${sel}` : `💡 Build a real ${sel} too?`}</strong>
+            <p style={{ margin: '6px 0' }}>
+              Makers who use {nameOf(category).label.toLowerCase()} built {sel} from: <strong>{ideas.join(' · ')}</strong>
+            </p>
+            {!captured.has(sel) && (
+              <button className="btn small pink" onClick={onAddMore}>
+                + Photograph my own {sel}
+              </button>
+            )}
+          </div>
+        </div>
+      )}
+
       <div className="alpha-grid">
         {chars.map((ch) => {
           const own = captured.get(ch);
           const g = own ?? grown.get(ch) ?? null;
           return (
-            <div key={ch} className={`alpha-tile ${own ? 'own' : ''} ${g ? 'ready' : 'waiting'}`}>
+            <div key={ch} className={`alpha-tile ${own ? 'own' : ''} ${g ? 'ready' : 'waiting'} ${ch === sel ? 'picked' : ''}`}>
               <span className="alpha-char">{ch}</span>
               {own && <span className="alpha-badge" title="You made this one">📷</span>}
-              <div className="alpha-glyph">{g ? <GlyphView glyph={g} size={96} /> : <div className="alpha-wait" />}</div>
+              <button className="alpha-glyph" onClick={() => setSelected(ch)} aria-label={`Ideas for ${ch}`} disabled={!g}>
+                {g ? <GlyphView glyph={g} size={96} /> : <div className="alpha-wait" />}
+              </button>
               {!own && g && (
                 <button className="alpha-again" onClick={() => onReroll(ch)} aria-label={`Try another ${ch}`}>
                   Try another

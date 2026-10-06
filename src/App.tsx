@@ -42,7 +42,7 @@ function Station() {
 
   // The letters the kid made, then the whole font: grown letters with the kid's own on top.
   const captured = useMemo(() => glyphMap(s.letters, s.photos), [s.letters, s.photos]);
-  const alphabet = useAlphabet(captured, s.letters, s.photos, s.seeds, GROW_STEPS.includes(s.step));
+  const alphabet = useAlphabet(captured, s.letters, s.photos, s.seeds, GROW_STEPS.includes(s.step), s.category);
   const map = useMemo(() => new Map([...alphabet.grown, ...captured]), [alphabet.grown, captured]);
   // Once the alphabet is finished, quietly start on the font's photo letters for the Save step.
   const finished = alphabet.done >= alphabet.total;
@@ -139,7 +139,10 @@ function Station() {
           <GrowStep
             alphabet={alphabet}
             captured={captured}
+            chosen={s.category}
+            onCategory={(category) => dispatch({ type: 'category', category })}
             onReroll={(ch) => dispatch({ type: 'reroll', char: ch })}
+            onAddMore={addMore}
           />
         )}
         {s.step === 'type' && (

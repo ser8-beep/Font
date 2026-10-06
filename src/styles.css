@@ -194,7 +194,20 @@ input[type='range']::-webkit-slider-thumb { width: 36px; height: 36px; }
 .alpha-tile.ready { animation: pop 0.35s ease-out; }
 .alpha-char { position: absolute; top: 4px; left: 8px; font-weight: 900; font-size: 18px; color: #8a8aa0; }
 .alpha-badge { position: absolute; top: 2px; right: 6px; font-size: 20px; }
-.alpha-glyph { width: 96px; height: 96px; display: grid; place-items: center; margin-top: 10px; }
+.alpha-glyph { width: 96px; height: 96px; display: grid; place-items: center; margin-top: 10px; padding: 0; border: 0; background: none; cursor: pointer; border-radius: 12px; }
+.alpha-glyph:disabled { cursor: default; }
+.alpha-tile.picked { outline: 4px solid var(--purple); outline-offset: 2px; }
+.made-from { padding: 12px 16px; margin: 6px 0 4px; }
+.made-from .row > span:first-child { font-weight: 800; font-size: 20px; }
+.cat-chip {
+  display: inline-flex; align-items: center; gap: 6px; min-height: 48px; padding: 6px 14px; border: 3px solid var(--ink); border-radius: 999px;
+  background: white; font: inherit; font-size: 18px; font-weight: 800; color: var(--ink); cursor: pointer;
+}
+.cat-chip.on { background: var(--purple); color: white; }
+.cat-grid { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 12px; }
+.ideas { display: flex; gap: 16px; align-items: center; margin-bottom: 16px; background: #fff4c2; }
+.ideas-glyph { flex: none; background: white; border-radius: 14px; border: 3px solid var(--ink); }
+@media (max-width: 520px) { .ideas { flex-direction: column; align-items: flex-start; } }
 .alpha-wait { width: 56px; height: 56px; border-radius: 12px; border: 4px dashed var(--grey); animation: spin 1.6s linear infinite; }
 @keyframes spin { to { transform: rotate(360deg); } }
 .alpha-again { min-height: 48px; width: 100%; border: 3px solid var(--ink); border-radius: 12px; background: var(--yellow); font-weight: 900; font-size: 16px; cursor: pointer; }

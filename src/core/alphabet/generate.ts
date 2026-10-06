@@ -1,4 +1,5 @@
 import { closePadded, fillHoles, keepBig } from '../mask';
+import { buildFor, type Build } from './category';
 import { buildField } from './field';
 import { renderFlat } from './materials/flat';
 import { renderGrid, type GridMaterial } from './materials/grid';
@@ -10,19 +11,46 @@ import type { GeneratedArt, MaterialProfile, P2, Rng, Skeleton, StyleProfile } f
 
 const ORDER = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789';
 
-/** Which captured letter's material a generated character borrows. Changes with the seed. */
-export function materialFor(ch: string, style: StyleProfile, seed: number): MaterialProfile {
-  const n = style.materials.length;
+/** If the photo has no letter built the wanted way, the next best ways, in order. */
+const NEXT_BEST: Record<Build, Build[]> = {
+  single: ['single', 'composite', 'repeated', 'formed'],
+  composite: ['composite', 'single', 'repeated', 'formed'],
+  repeated: ['repeated', 'composite', 'formed', 'single'],
+  formed: ['formed', 'repeated', 'composite', 'single'],
+};
+
+/**
+ * Which captured letter's material a generated character borrows. Changes with the seed. With a
+ * category, the character is built the way makers in that category built it (see category.ts),
+ * using a captured letter built the same way when the photo has one.
+ */
+export function materialFor(ch: string, style: StyleProfile, seed: number, category?: string): MaterialProfile {
   const i = ORDER.indexOf(ch.toUpperCase());
   const base = i >= 0 ? i : hashString(ch);
-  return style.materials[(base + seed) % n];
+  let from = style.materials;
+  if (category) {
+    const want = buildFor(ch, category, seed);
+    for (const b of NEXT_BEST[want]) {
+      const ms = style.materials.filter((m) => m.build === b);
+      if (ms.length) {
+        from = ms;
+        break;
+      }
+    }
+  }
+  return from[(base + seed) % from.length];
 }
 
-/** Paint one character in the kid's style. Null if there is no drawing for it. */
-export function renderLetter(ch: string, style: StyleProfile, seed = 0): GeneratedArt | null {
+/**
+ * Paint one character in the kid's style. Null if there is no drawing for it. With a category
+ * (from the object-type repository), the letter is built the way that category's makers built it:
+ * one object, a mix of objects, copies of one object, or bent stuff.
+ */
+export function renderLetter(ch: string, style: StyleProfile, seed = 0, category?: string): GeneratedArt | null {
   const sk = skeletonFor(ch, style.geometry);
   if (!sk || !sk.strokes.length) return null;
-  const mp = materialFor(ch, style, seed);
+  const mp = materialFor(ch, style, seed, category);
+  const build: Build | undefined = category ? buildFor(ch, category, seed) : undefined;
   const rng = makeRng(hashString(ch) ^ Math.imul(seed + 1, 0x9e3779b1));
   const ppu = style.pxPerUnit;
   const w = Math.min(0.4, Math.max(0.03, mp.weight));
@@ -36,9 +64,10 @@ export function renderLetter(ch: string, style: StyleProfile, seed = 0): Generat
     const m = mp.material;
     const pool = <T extends { kind: string }>(kind: T['kind']) => style.materials.map((x) => x.material).filter((x): x is T & typeof x => x.kind === kind);
     art =
-      m.kind === 'pieces' ? renderPieces(field, m, relPx, rng, pool<PiecesMaterial>('pieces'))
+      // Bent stuff in a row: pieces go single file along the strokes, like beads on a wire.
+      m.kind === 'pieces' ? renderPieces(field, build === 'formed' && !m.single ? { ...m, single: true } : m, relPx, rng, pool<PiecesMaterial>('pieces'))
       : m.kind === 'grid' ? renderGrid(field, m, relPx, rng, pool<GridMaterial>('grid'))
-      : m.kind === 'strokes' ? renderStrokes(field, m, relPx, rng, pool<StrokesMaterial>('strokes'))
+      : m.kind === 'strokes' ? renderStrokes(field, m, relPx, rng, pool<StrokesMaterial>('strokes'), build)
       : renderFlat(field, m);
   } catch (e) {
     console.warn(`material renderer failed for ${ch}, using flat colour`, e);

@@ -1,6 +1,7 @@
 import { makeMask, type RGBAImage } from '../../image';
 import type { StrokeField } from '../field';
 import { medialAxis, type AxisPath } from '../measure';
+import type { Build } from '../category';
 import type { GeneratedArt, Measure, P2, Rng, StyleSample } from '../types';
 
 // Letters built from a few whole objects or continuous lengths of stuff: markers, pencils, books,
@@ -346,20 +347,42 @@ interface TargetPart {
  * pool: every strokes material learned from this photo (including mat), for borrowing a part
  * mat lacks (e.g. a round part for a bowl when this letter only had straight sticks).
  */
-export function renderStrokes(f: StrokeField, mat: StrokesMaterial, relPx: number, rng: Rng, pool: StrokesMaterial[]): GeneratedArt {
+export function renderStrokes(f: StrokeField, mat: StrokesMaterial, relPx: number, rng: Rng, pool: StrokesMaterial[], build?: Build): GeneratedArt {
   const W = f.width, Hh = f.height;
   const acc = new Float32Array(W * Hh * 4);
   const mask = makeMask(W, Hh);
   const others = pool.filter((p) => p !== mat);
-  const strips = [...mat.strips.map((p) => ({ p, own: true })), ...others.flatMap((o) => o.strips.map((p) => ({ p, own: false })))];
-  const rounds = [...mat.rounds.map((p) => ({ p, own: true })), ...others.flatMap((o) => o.rounds.map((p) => ({ p, own: false })))];
+  let strips = [...mat.strips.map((p) => ({ p, own: true })), ...others.flatMap((o) => o.strips.map((p) => ({ p, own: false })))];
+  let rounds = [...mat.rounds.map((p) => ({ p, own: true })), ...others.flatMap((o) => o.rounds.map((p) => ({ p, own: false })))];
   if (!strips.length && !rounds.length) throw new Error('no parts');
+  // How the category's makers build this letter (object-type repository):
+  //   repeated   copies of one object all the way round (a P of pencils)
+  //   single     one object per stroke, stretched to fit, kept from the letter's own objects
+  //   composite  a mix: every stroke a different object, borrowed from other letters too
+  // Without a build the parts are picked by fit alone.
+  const own = strips.filter((x) => x.own);
+  if (build === 'repeated' && strips.length) {
+    // A whole object, not a scrap: one of the longer sticks (the roll picks which, so "Try
+    // another" can try a different object).
+    const from = own.length ? own : strips;
+    const byLen = [...from].sort((a, b) => b.p.lengthRel - a.p.lengthRel);
+    // Long thin things (pencils, sticks) line up well; chunky ones (a glass) pile up, so they
+    // are only used when there is nothing thinner.
+    const whole0 = byLen.filter((x) => x.p.lengthRel >= 0.3);
+    const thin = whole0.filter((x) => x.p.img.width >= x.p.img.height * 3);
+    const whole = thin.length ? thin : whole0;
+    const choices = whole.length ? whole.slice(0, Math.ceil(whole.length / 2)) : byLen.slice(0, 1);
+    strips = [choices[Math.floor(rng() * choices.length)]];
+    // Bowls and loops too are built from that object, as chords.
+    rounds = [];
+  }
+  const ownPenalty = build === 'composite' ? 0.05 : build === 'single' ? 0.6 : 0.35;
+  const reusePenalty = build === 'composite' ? 0.6 : build === 'repeated' ? 0 : 0.3;
   const used = new Map<StripPart, number>();
   const hw = f.halfWidth;
   // Bendy stuff (clay, wool, cable, chain) is swept round curves; rigid objects (pencils, wafers,
   // books) build curves from short straight sticks, as real object alphabets do.
-  // It counts as bendy when the kid bent some of it into a real curve (a clay bowl, a wool loop).
-  const bendy = strips.some(({ p }) => !p.straight && Math.abs(p.bend) > 1.0 && p.lengthRel > 0.35);
+  const bendy = strips.some(({ p }) => bentPart(p)) || (build === 'formed' && strips.some(({ p }) => !p.straight));
 
   type Job = { order: number; draw: () => void };
   const jobs: Job[] = [];
@@ -395,12 +418,13 @@ export function renderStrokes(f: StrokeField, mat: StrokesMaterial, relPx: numbe
     const parts = splitTarget(st.pts).flatMap((t) => (t.straight || bendy ? [t] : chords(t)));
     for (const part of parts) {
       if (!strips.length) continue;
-      const sp = pickStrip(strips, part, relPx, used, rng, bendy);
+      const sp = pickStrip(strips, part, relPx, used, rng, bendy, ownPenalty, reusePenalty);
       used.set(sp, (used.get(sp) ?? 0) + 1);
       const flip = !sp.straight && !part.straight ? Math.sign(sp.bend) !== Math.sign(part.bend) : rng() < 0.5;
       // Object length vs the stroke: stretch a little, or line up several copies end to end.
+      // One-object letters stretch instead; repeated ones line up copies more readily.
       const natural = (sp.lengthRel * relPx) / part.length;
-      const copies = natural < 0.68 ? Math.min(4, Math.round(1 / natural)) : 1;
+      const copies = build === 'single' ? 1 : build === 'repeated' ? Math.max(1, Math.min(6, Math.round(1 / natural))) : natural < 0.68 ? Math.min(4, Math.round(1 / natural)) : 1;
       jobs.push({
         order: part.straight ? rng() : 1 + rng(),
         draw: () => {
@@ -426,6 +450,27 @@ export function renderStrokes(f: StrokeField, mat: StrokesMaterial, relPx: numbe
   return { image: { width: W, height: Hh, data }, mask };
 }
 
+/** The kid bent this part into a real curve (a clay bowl, a wool loop), so the stuff is bendy. */
+const bentPart = (p: StripPart) => !p.straight && Math.abs(p.bend) > 1.0 && p.lengthRel > 0.35;
+
+/** Made of bendy stuff (clay, wool, cable, peel) rather than rigid objects. */
+export const isBendy = (mat: StrokesMaterial) => mat.strips.some(bentPart);
+
+/** Each stick or curve part: mean colour, length (rel units) and length / width. */
+export function partStats(mat: StrokesMaterial): { colour: [number, number, number]; lengthRel: number; widthPx: number; aspect: number }[] {
+  const out: { colour: [number, number, number]; lengthRel: number; widthPx: number; aspect: number }[] = [];
+  for (const p of mat.strips) {
+    const d = p.img.data;
+    let r = 0, g = 0, b = 0, a = 0;
+    for (let i = 0; i < d.length; i += 16) {
+      const w = d[i + 3];
+      r += d[i] * w; g += d[i + 1] * w; b += d[i + 2] * w; a += w;
+    }
+    if (a > 0) out.push({ colour: [r / a, g / a, b / a], lengthRel: p.lengthRel, widthPx: p.img.height, aspect: p.img.width / Math.max(1, p.img.height) });
+  }
+  return out;
+}
+
 function pickRound(rounds: { p: RoundPart; own: boolean }[], rng: Rng): RoundPart | null {
   if (!rounds.length) return null;
   const own = rounds.filter((r) => r.own);
@@ -433,15 +478,15 @@ function pickRound(rounds: { p: RoundPart; own: boolean }[], rng: Rng): RoundPar
   return from[Math.floor(rng() * from.length)].p;
 }
 
-function pickStrip(strips: { p: StripPart; own: boolean }[], t: TargetPart, relPx: number, used: Map<StripPart, number>, rng: Rng, bendy: boolean): StripPart {
+function pickStrip(strips: { p: StripPart; own: boolean }[], t: TargetPart, relPx: number, used: Map<StripPart, number>, rng: Rng, bendy: boolean, ownPenalty: number, reusePenalty: number): StripPart {
   let best = strips[0].p, bestScore = Infinity;
   const tRel = t.length / relPx;
   for (const { p, own } of strips) {
     let s = Math.abs(Math.log(Math.max(0.05, p.lengthRel) / Math.max(0.05, tRel)));
     // Bendy stuff can be bent or straightened freely, so keeping the letter's own colour matters more.
     if (t.straight !== p.straight) s += bendy ? 0.12 : t.straight ? 0.7 : 0.45;
-    if (!own) s += 0.35;
-    s += (used.get(p) ?? 0) * 0.3;
+    if (!own) s += ownPenalty;
+    s += (used.get(p) ?? 0) * reusePenalty;
     s += rng() * 0.35;
     if (s < bestScore) { bestScore = s; best = p; }
   }
