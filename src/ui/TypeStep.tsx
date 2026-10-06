@@ -23,7 +23,7 @@ interface Props {
   onAddMore: () => void;
 }
 
-const WORDS = ['PIZZA', 'ROBOT', 'JELLY', 'ZOOM!', 'HELLO', 'BANANA', 'QUIZ', 'DINOSAUR', 'WOW!', 'YUMMY', 'PLAY TIME', 'SUPER STAR', 'MAGIC', 'JUMP', 'SPLASH', 'FOX & OWL', 'ROCKET 123'];
+const WORDS = ['PIZZA', 'ROBOT', 'JELLY', 'ZOOM', 'HELLO', 'BANANA', 'QUIZ', 'DINOSAUR', 'WOW', 'YUMMY', 'PLAY TIME', 'SUPER STAR', 'MAGIC', 'JUMP', 'SPLASH', 'FOX AND OWL', 'ROCKET'];
 
 /** The playground: type anything in the kid's own letters. */
 export function TypeStep(p: Props) {
@@ -130,7 +130,7 @@ export function TypeStep(p: Props) {
       {missing.length > 0 && (
         <div className="missing" style={{ marginTop: 16 }}>
           <span>
-            {p.growing ? 'Still growing: ' : 'Grey boxes are letters your font doesn’t have: '}
+            {p.growing ? 'Still coming: ' : 'Grey boxes are letters your font doesn’t have: '}
             <strong>{missing.join(' ')}</strong>
           </span>
           {!p.growing && (

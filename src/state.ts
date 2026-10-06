@@ -42,6 +42,8 @@ export interface Snapshot {
   seeds: Record<string, number>;
   /** Object-type category the kid picked for building new letters (null = the app's guess). */
   category: string | null;
+  /** Letter-library alphabet the kid picked (null = the best one for the category). */
+  alphabet: string | null;
 }
 
 export interface AppState extends Snapshot {
@@ -60,6 +62,7 @@ export type Action =
   | { type: 'letters'; letters: Letter[]; record?: boolean }
   | { type: 'reroll'; char: string }
   | { type: 'category'; category: string | null }
+  | { type: 'alphabet'; alphabet: string | null }
   | { type: 'undo' }
   | { type: 'text'; text: string }
   | { type: 'fontName'; name: string }
@@ -76,6 +79,7 @@ export const initialState: AppState = {
   currentPhotoId: null,
   seeds: {},
   category: null,
+  alphabet: null,
   text: '',
   fontName: '',
   maker: '',
@@ -85,7 +89,7 @@ export const initialState: AppState = {
   past: [],
 };
 
-const snap = (s: AppState): Snapshot => ({ photos: s.photos, letters: s.letters, step: s.step, currentPhotoId: s.currentPhotoId, seeds: s.seeds, category: s.category });
+const snap = (s: AppState): Snapshot => ({ photos: s.photos, letters: s.letters, step: s.step, currentPhotoId: s.currentPhotoId, seeds: s.seeds, category: s.category, alphabet: s.alphabet });
 const remember = (s: AppState) => [...s.past, snap(s)].slice(-60);
 
 export function reducer(s: AppState, a: Action): AppState {
@@ -104,7 +108,10 @@ export function reducer(s: AppState, a: Action): AppState {
     case 'letters':
       return { ...s, past: a.record === false ? s.past : remember(s), letters: a.letters };
     case 'category':
-      return { ...s, past: remember(s), category: a.category };
+      // A new category starts from its best alphabet and first-choice letters.
+      return { ...s, past: remember(s), category: a.category, alphabet: null, seeds: {} };
+    case 'alphabet':
+      return { ...s, past: remember(s), alphabet: a.alphabet, seeds: {} };
     case 'reroll':
       return { ...s, past: remember(s), seeds: { ...s.seeds, [a.char]: (s.seeds[a.char] ?? 0) + 1 } };
     case 'undo': {

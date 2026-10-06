@@ -9,8 +9,8 @@ import type { Letter, Photo } from './state';
 export type Picture =
   /** A letter the kid made: cut out of their photo along the cleaned letter shape. */
   | { kind: 'photo'; photo: Photo; clean: CleanResult; letter: Letter }
-  /** A grown letter: the material painting, already cropped to outline.source (straight RGBA). */
-  | { kind: 'art'; image: RGBAImage };
+  /** A letter from the library of real object alphabets, cropped to outline.source (straight RGBA). */
+  | { kind: 'art'; image: RGBAImage; objects: string; from: string };
 
 export interface LetterGlyph {
   /** Unique per look: changes whenever the outline or picture would change. */
@@ -19,7 +19,7 @@ export interface LetterGlyph {
   outline: GlyphOutline;
   /** SVG path data, font units, y up. */
   svg: string;
-  /** Grown by the app (false = the kid made it and photographed it). */
+  /** Filled in by the app from the letter library (false = the kid made it and photographed it). */
   generated: boolean;
   picture: Picture;
 }

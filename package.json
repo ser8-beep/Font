@@ -10,10 +10,10 @@
     "test": "vitest run",
     "samples:make": "tsx scripts/make-samples.ts",
     "samples:test": "tsx scripts/segment-samples.ts",
-    "alphabet:samples": "tsx scripts/alphabet-samples.ts",
     "room": "node server/room-server.js",
     "build:artifact": "npm run build && node scripts/make-artifact-page.mjs",
-    "repository": "tsx scripts/repository.ts"
+    "repository": "tsx scripts/repository.ts",
+    "library": "tsx scripts/library.ts"
   },
   "dependencies": {
     "fflate": "^0.8.3",

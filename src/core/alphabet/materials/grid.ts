@@ -1,7 +1,6 @@
-import { makeMask, type RGBAImage } from '../../image';
+import type { RGBAImage } from '../../image';
 import { dilate } from '../../mask';
-import type { StrokeField } from '../field';
-import type { GeneratedArt, Measure, Rng, StyleSample } from '../types';
+import type { Measure, StyleSample } from '../types';
 
 // Blocks on a grid: Lego bricks and plates, square tiles, Hama beads, pixel art.
 //
@@ -226,48 +225,6 @@ function countOn(m: { data: Uint8Array }): number {
 }
 
 // ---------- rendering ----------
-
-/** pool: every grid material learned from this photo (including mat), e.g. to borrow brick colours. */
-export function renderGrid(f: StrokeField, mat: GridMaterial, relPx: number, rng: Rng, pool: GridMaterial[]): GeneratedArt {
-  const W = f.width, H = f.height;
-  const cell = Math.max(3, mat.cellRel * relPx);
-  // Stroke width in whole cells.
-  const n = Math.max(1, Math.round((2 * f.halfWidth) / cell));
-  const hq = (n * cell) / 2;
-  // Line the grid up with the stem at x = 0 and the baseline.
-  const x0 = f.originX - hq, y0 = f.baselineY + hq;
-  const main = mat.tiles.filter((t) => t.group === mat.dominant);
-  const others = pool.flatMap((p) => p.tiles.filter((t) => p !== mat || t.group !== mat.dominant));
-  const data = new Uint8ClampedArray(W * H * 4);
-  const mask = makeMask(W, H);
-  const i0 = Math.floor(-x0 / cell) - 1, i1 = Math.ceil((W - x0) / cell) + 1;
-  const j0 = Math.floor((y0 - H) / cell) - 1, j1 = Math.ceil(y0 / cell) + 1;
-  for (let j = j0; j <= j1; j++) {
-    for (let i = i0; i <= i1; i++) {
-      const cx0 = x0 + i * cell, cy1 = y0 - j * cell, cy0 = cy1 - cell;
-      // Fill the cell when most of it lies within the stroke.
-      let inside = 0;
-      for (let sy = 0; sy < 4; sy++) for (let sx = 0; sx < 4; sx++) {
-        const px = Math.floor(cx0 + ((sx + 0.5) / 4) * cell), py = Math.floor(cy0 + ((sy + 0.5) / 4) * cell);
-        if (px >= 0 && py >= 0 && px < W && py < H && f.dist[py * W + px] <= hq) inside++;
-      }
-      if (inside < 8) continue;
-      const set = others.length && rng() < Math.min(0.35, mat.odd) ? others : main.length ? main : mat.tiles;
-      const t = set[Math.floor(rng() * set.length)].img;
-      const ax = Math.round(cx0), ay = Math.round(cy0), bx = Math.round(cx0 + cell), by = Math.round(cy1);
-      for (let y = Math.max(0, ay); y < Math.min(H, by); y++) {
-        for (let x = Math.max(0, ax); x < Math.min(W, bx); x++) {
-          const tx = Math.min(t.width - 1, Math.floor(((x - ax + 0.5) / (bx - ax)) * t.width));
-          const ty = Math.min(t.height - 1, Math.floor(((y - ay + 0.5) / (by - ay)) * t.height));
-          const s = (ty * t.width + tx) * 4, o = (y * W + x) * 4;
-          data[o] = t.data[s]; data[o + 1] = t.data[s + 1]; data[o + 2] = t.data[s + 2]; data[o + 3] = 255;
-          mask.data[y * W + x] = 1;
-        }
-      }
-    }
-  }
-  return { image: { width: W, height: H, data }, mask };
-}
 
 /**
  * A grid material for a letter that is built like its neighbours but was not detected (a thin L

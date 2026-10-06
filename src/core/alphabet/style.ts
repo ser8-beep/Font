@@ -1,5 +1,4 @@
 import { buildOf } from './category';
-import { fitGeometry } from './fit';
 import { extractFlat } from './materials/flat';
 import { detectGrid, gridFromPool, type GridMaterial } from './materials/grid';
 import { extractPieces, type PiecesMaterial } from './materials/pieces';
@@ -7,26 +6,14 @@ import { extractStrokes } from './materials/strokes';
 import { measureSample } from './measure';
 import type { Material, MaterialProfile, Measure, StyleProfile, StyleSample } from './types';
 
-/** Learn the kid's style from their captured letters. */
+/** What the kid's captured letters are made of (one profile per letter). */
 export function analyseStyle(samples: StyleSample[]): StyleProfile {
   if (!samples.length) throw new Error('analyseStyle needs at least one captured letter');
   const measures = samples.map(measureSample);
-  const geometry = fitGeometry(samples, measures);
   const materials = samples.map((s, i) => profileMaterial(s, measures[i]));
   harmonise(materials, samples);
   for (const m of materials) m.build = buildOf(m);
-  const heights = measures.map((m) => m.heightPx).sort((a, b) => a - b);
-  const weights = materials.map((m) => m.weight).sort((a, b) => a - b);
-  const w = weights[weights.length >> 1];
-  // Render near the photo's own scale (materials look right), within limits that stay fast.
-  const letterPx = Math.min(300, Math.max(150, heights[heights.length >> 1]));
-  const wobbles = measures.map((m) => m.wobble).sort((a, b) => a - b);
-  return {
-    geometry,
-    materials,
-    pxPerUnit: letterPx * (1 - w),
-    wobble: Math.min(0.03, wobbles[wobbles.length >> 1] ?? 0),
-  };
+  return { materials };
 }
 
 /**

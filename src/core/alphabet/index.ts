@@ -1,6 +1,6 @@
-// Public API for growing a whole alphabet from a few captured letters.
+// Reading a kid's photographed letters: what they are made of, and which category of the
+// object-type repository they belong to.
 export { analyseStyle } from './style';
-export { CATEGORY_IDS, CATEGORY_LABELS, buildFor, ideasFor, matchCategory, type Build, type CategoryGuess } from './category';
-export { materialFor, renderLetter } from './generate';
-export { alphabetChars, skeletonFor, supportedChars, verticalRange } from './skeletons';
-export type { GeneratedArt, MaterialProfile, StyleProfile, StyleSample } from './types';
+export { CATEGORY_IDS, CATEGORY_LABELS, ideasFor, looksOf, matchCategory, type CategoryGuess } from './category';
+export { alphabetChars, verticalRange } from './letters';
+export type { MaterialProfile, StyleProfile, StyleSample } from './types';

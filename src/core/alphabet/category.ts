@@ -1,15 +1,13 @@
 import { isBendy, partStats } from './materials/strokes';
 import { REPOSITORY } from './repository-data';
-import { hashString } from './rng';
 import type { MaterialProfile, StyleProfile, StyleSample } from './types';
 
 // The object-type repository (data/object-type-repository.json) records how real object alphabets
 // were built, letter by letter, in 18 categories (stationery, fruit & veg, tools...). Here it is
-// used three ways:
-//   1. matchCategory: guess which category the kid's photo belongs to.
-//   2. buildFor: for each new letter, how makers in that category usually built it (one object,
-//      a mix of objects, copies of one object, or bendy stuff), so the painter can do the same.
-//   3. ideasFor: the objects they used, as ideas for kids who want to build more letters for real.
+// used two ways:
+//   1. matchCategory: guess which category the kid's photo belongs to, so the app can fill in
+//      the other letters from that category's alphabets (see src/library.ts).
+//   2. ideasFor: the objects makers used, as ideas for kids who want to build more letters.
 
 /** How a letter is built, using the repository's words. */
 export type Build = 'single' | 'composite' | 'repeated' | 'formed';
@@ -238,23 +236,6 @@ export function matchCategory(samples: StyleSample[], style: StyleProfile): Cate
     return { id, score };
   }).sort((a, b) => b.score - a.score);
   return { ranked };
-}
-
-/**
- * How to build this character in this category: drawn from what makers did for the same letter
- * (falling back to the category's habits), so different rolls of "Try another" try different builds.
- */
-export function buildFor(ch: string, category: string, seed: number): Build {
-  if (!REPOSITORY[category]) return 'single';
-  const shares = BUILDS.map((b) => buildShare(category, b, ch));
-  const total = shares.reduce((s, v) => s + v, 0);
-  // A stable roll per character and seed.
-  let r = ((hashString(`${category}|${ch.toUpperCase()}|${seed}`) >>> 0) % 10007) / 10007 * total;
-  for (let i = 0; i < BUILDS.length; i++) {
-    r -= shares[i];
-    if (r < 0) return BUILDS[i];
-  }
-  return BUILDS[BUILDS.length - 1];
 }
 
 /** Objects makers in this category used for this letter (empty when the repository has none). */

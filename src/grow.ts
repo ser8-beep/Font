@@ -1,193 +1,69 @@
-import { useEffect, useMemo, useSyncExternalStore } from 'react';
-import { alphabetChars, analyseStyle, matchCategory, materialFor, renderLetter, verticalRange, type StyleProfile, type StyleSample } from './core/alphabet';
-import { hashString } from './core/alphabet/rng';
-import { cropImage } from './core/image';
+import { useEffect, useMemo, useState } from 'react';
+import { alphabetChars, type StyleSample } from './core/alphabet';
+import { cropImage, type RGBAImage } from './core/image';
 import { casesOf, type LetterGlyph } from './font';
-import GrowWorker from './grow.worker?worker&inline';
-import { grownGlyph, type GrownData } from './grown';
+import MatchWorker from './grow.worker?worker&inline';
+import { libraryGlyph, loadAtlas, optionsFor, rankSets } from './library';
+import type { LibrarySet } from './library-types';
+import { looksOfArray, matchLetters } from './match';
 import type { Letter, Photo } from './state';
 
-// Grows the letters the kid didn't photograph, in a worker, and hands them to React as they
-// arrive. Results are kept per (letters the kid made, category, character, "try another" roll).
-// The worker also says which category of the object-type repository the letters look like.
+// Fills in every letter the kid didn't make from a real object alphabet in the letter library:
+// the photo is matched to a category of the object-type repository, the best alphabet in that
+// category is picked, and each missing letter comes from it (or, if it lacks one, from the next
+// alphabet that has it). "Try another" walks through the other alphabets' versions of a letter.
 
-type Msg =
-  | { type: 'glyph'; sig: string; category: string; ch: string; seed: number; glyph: GrownData | null }
-  | { type: 'guess'; sig: string; ranked: string[] }
-  | { type: 'error'; sig: string; message: string };
+type Match = { sig: string; ranked: string[]; looks: number[] } | { sig: string; error: string };
 
-interface Port {
-  post(msg: unknown): void;
-}
+let worker: Worker | null | undefined;
+const waiting = new Map<string, (m: Match) => void>();
 
-class Grower {
-  private port: Port;
-  private sig = '';
-  private results = new Map<string, LetterGlyph | null>();
-  private pending = new Set<string>();
-  private listeners = new Set<() => void>();
-  private category = '';
-  version = 0;
-  failed = false;
-  /** Categories the letters look like, best first (null until the worker has looked). */
-  guess: string[] | null = null;
-
-  constructor() {
-    this.port = makePort((m) => this.receive(m));
-  }
-
-  subscribe = (fn: () => void) => {
-    this.listeners.add(fn);
-    return () => this.listeners.delete(fn);
-  };
-
-  getVersion = () => this.version;
-
-  setStyle(sig: string, samples: StyleSample[]) {
-    if (sig === this.sig) return;
-    this.sig = sig;
-    this.results.clear();
-    this.pending.clear();
-    this.failed = false;
-    this.guess = null;
-    this.port.post({ type: 'style', sig, samples });
-  }
-
-  request(chars: { ch: string; seed: number }[], category: string) {
-    // Switching category: the worker drops the old category's queue, so forget it here too.
-    if (category !== this.category) {
-      const prefix = `${this.sig}|${category}|`;
-      for (const k of this.pending) if (!k.startsWith(prefix)) this.pending.delete(k);
-      this.category = category;
+/** Look at the kid's letters in a worker, or right here when the page can't start one. */
+function match(sig: string, samples: StyleSample[]): Promise<Match> {
+  const here = (): Match => {
+    try {
+      return { sig, ranked: matchLetters(samples), looks: looksOfArray(samples) };
+    } catch (e) {
+      return { sig, error: String(e) };
     }
-    const jobs = chars.filter(({ ch, seed }) => {
-      const k = key(this.sig, category, ch, seed);
-      if (this.results.has(k) || this.pending.has(k)) return false;
-      this.pending.add(k);
-      return true;
-    });
-    if (jobs.length) this.port.post({ type: 'grow', sig: this.sig, category, jobs });
-  }
-
-  get(ch: string, seed: number, category: string): LetterGlyph | null | undefined {
-    return this.results.get(key(this.sig, category, ch, seed));
-  }
-
-  private receive(m: Msg) {
-    if (m.sig !== this.sig) return;
-    if (m.type === 'error') {
-      this.failed = true;
-    } else if (m.type === 'guess') {
-      this.guess = m.ranked;
-    } else {
-      const k = key(m.sig, m.category, m.ch, m.seed);
-      this.pending.delete(k);
-      this.results.set(
-        k,
-        m.glyph
-          ? { id: `grown|${hashString(m.sig)}|${m.category}|${m.ch}|${m.seed}`, char: m.ch, outline: m.glyph.outline, svg: m.glyph.svg, generated: true, picture: { kind: 'art', image: m.glyph.image } }
-          : null,
-      );
+  };
+  if (worker === undefined) {
+    try {
+      worker = new MatchWorker();
+      worker.onmessage = (e) => {
+        waiting.get(e.data.sig)?.(e.data);
+        waiting.delete(e.data.sig);
+      };
+      worker.onerror = () => {
+        worker?.terminate();
+        worker = null;
+        for (const [, done] of waiting) done({ sig: '', error: 'retry' });
+      };
+    } catch {
+      worker = null;
     }
-    this.version++;
-    this.listeners.forEach((fn) => fn());
   }
+  if (!worker) return new Promise((res) => setTimeout(() => res(here()), 0));
+  const w = worker;
+  return new Promise((res) => {
+    let settled = false;
+    const done = (m: Match) => {
+      if (settled) return;
+      settled = true;
+      // A worker that died or never answered: do it here instead.
+      res('error' in m && m.error === 'retry' ? here() : m);
+    };
+    waiting.set(sig, done);
+    setTimeout(() => {
+      if (!settled) {
+        w.terminate();
+        if (worker === w) worker = null;
+        done({ sig, error: 'retry' });
+      }
+    }, 8000);
+    w.postMessage({ sig, samples });
+  });
 }
-
-const key = (sig: string, category: string, ch: string, seed: number) => `${sig}|${category}|${ch}|${seed}`;
-
-/** A real worker when the page may start one, otherwise the same work in small main-thread slices. */
-function makePort(receive: (m: Msg) => void): Port {
-  // Some hosts (the claude.ai viewer, strict school proxies) refuse workers made from inline
-  // code, sometimes only after the fact. Until the worker answers, keep what was sent so it can
-  // be replayed on the main thread.
-  let fallback: Port | null = null;
-  let heard = false;
-  let style: unknown = null;
-  const sent: unknown[] = [];
-  const toMain = (w?: Worker) => {
-    if (fallback) return;
-    w?.terminate();
-    fallback = mainThreadPort(receive);
-    if (style) fallback.post(style);
-    for (const m of sent) fallback.post(m);
-  };
-  let w: Worker;
-  try {
-    w = new GrowWorker();
-  } catch {
-    return mainThreadPort(receive);
-  }
-  w.onmessage = (e) => {
-    heard = true;
-    sent.length = 0;
-    receive(e.data);
-  };
-  w.onerror = () => toMain(w);
-  return {
-    post: (msg) => {
-      if (fallback) return fallback.post(msg);
-      if (!heard) {
-        if ((msg as { type: string }).type === 'style') {
-          style = msg;
-          sent.length = 0;
-        } else sent.push(msg);
-        // The first letter takes well under a second; silence for 6 s means the worker is dead.
-        setTimeout(() => !heard && toMain(w), 6000);
-      }
-      w.postMessage(msg);
-    },
-  };
-}
-
-/** Same messages as grow.worker.ts, run on the page itself one letter per tick. */
-function mainThreadPort(receive: (m: Msg) => void): Port {
-  let style: { sig: string; profile: StyleProfile } | null = null;
-  let queue: { sig: string; category: string; ch: string; seed: number }[] = [];
-  let running = false;
-  const pump = () => {
-    const job = queue.shift();
-    if (!job) {
-      running = false;
-      return;
-    }
-    if (style && style.sig === job.sig) {
-      let glyph: GrownData | null = null;
-      try {
-        glyph = grownGlyph(job.ch, style.profile, job.seed, job.category, renderLetter, materialFor, verticalRange);
-      } catch {
-        /* skip this one */
-      }
-      receive({ type: 'glyph', sig: job.sig, category: job.category, ch: job.ch, seed: job.seed, glyph });
-    }
-    setTimeout(pump, 16);
-  };
-  return {
-    post: (msg) => {
-      const m = msg as { type: string; sig: string; category?: string; samples?: StyleSample[]; jobs?: { ch: string; seed: number }[] };
-      if (m.type === 'style') {
-        try {
-          style = { sig: m.sig, profile: analyseStyle(m.samples!) };
-          receive({ type: 'guess', sig: m.sig, ranked: matchCategory(m.samples!, style.profile).ranked.map((r) => r.id) });
-        } catch (e) {
-          style = null;
-          receive({ type: 'error', sig: m.sig, message: String(e) });
-        }
-        queue = queue.filter((j) => j.sig === m.sig);
-      } else if (m.type === 'grow') {
-        queue = queue.filter((j) => j.sig === m.sig && j.category === m.category);
-        for (const j of m.jobs!) queue.push({ sig: m.sig, category: m.category!, ...j });
-      }
-      if (!running) {
-        running = true;
-        setTimeout(pump, 16);
-      }
-    },
-  };
-}
-
-let grower: Grower | null = null;
-const getGrower = () => (grower ??= new Grower());
 
 /** Style samples from the letters the kid made (one per character, newest wins). */
 export function styleSamples(captured: Map<string, LetterGlyph>, letters: Letter[], photos: Photo[]): StyleSample[] {
@@ -211,13 +87,19 @@ export function styleSamples(captured: Map<string, LetterGlyph>, letters: Letter
 }
 
 export interface Alphabet {
-  /** The object-type category the letters are built like ('' until it is known). */
+  /** The object-type category the letters come from ('' until the photo has been looked at). */
   category: string;
   /** Categories the photo looks like, best first (empty until known). */
   guess: string[];
-  /** Grown letters ready so far. */
+  /** Alphabets to fill from, the one in use first. */
+  sets: LibrarySet[];
+  /** The alphabet "Try a different alphabet" moves on to (null when there is no other). */
+  nextSet: string | null;
+  /** Letters filled in so far. */
   grown: Map<string, LetterGlyph>;
-  /** Every character the font will have, in display order (captured ones included). */
+  /** How many versions "Try another" can choose from, per character. */
+  options: Map<string, number>;
+  /** Every character the font will have, in display order (the kid's own included). */
   chars: string[];
   done: number;
   total: number;
@@ -225,32 +107,83 @@ export interface Alphabet {
 }
 
 /**
- * Grow (and keep growing) the rest of the alphabet while `enabled`, built the way makers in
- * `chosen` (a repository category) build letters, or in the category the photo looks like.
+ * The kid's whole alphabet while `enabled`: their own letters plus real object letters from the
+ * library, from `chosen` (a repository category) or the category the photo looks like, and from
+ * `alphabet` (a set id) or the best set in it.
  */
-export function useAlphabet(captured: Map<string, LetterGlyph>, letters: Letter[], photos: Photo[], seeds: Record<string, number>, enabled: boolean, chosen: string | null): Alphabet {
-  const g = getGrower();
-  useSyncExternalStore(g.subscribe, g.getVersion);
-  const guess = g.guess ?? [];
-  const category = chosen ?? guess[0] ?? '';
+export function useAlphabet(
+  captured: Map<string, LetterGlyph>,
+  letters: Letter[],
+  photos: Photo[],
+  seeds: Record<string, number>,
+  enabled: boolean,
+  chosen: string | null,
+  alphabet: string | null,
+): Alphabet {
   const sig = useMemo(() => [...captured.values()].map((x) => x.id).join(';'), [captured]);
   const chars = useMemo(() => alphabetChars(casesOf(captured.keys())), [captured]);
   const todo = useMemo(() => chars.filter((c) => !captured.has(c)), [chars, captured]);
+  const [matched, setMatched] = useState<Match | null>(null);
+  const [atlases, setAtlases] = useState<Map<string, RGBAImage>>(new Map());
 
   useEffect(() => {
-    if (!enabled || !captured.size) return;
-    g.setStyle(sig, styleSamples(captured, letters, photos));
-    // The first time, the worker says which category the photo looks like before anything grows.
-    if (category) g.request(todo.map((ch) => ({ ch, seed: seeds[ch] ?? 0 })), category);
+    if (!enabled || !captured.size || matched?.sig === sig) return;
+    let live = true;
+    match(sig, styleSamples(captured, letters, photos)).then((m) => live && setMatched(m));
+    return () => {
+      live = false;
+    };
     // letters/photos only matter through `captured` (its ids make up sig).
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [enabled, sig, todo, seeds, category]);
-  const grown = new Map<string, LetterGlyph>();
-  let done = 0;
-  for (const ch of todo) {
-    const r = category ? g.get(ch, seeds[ch] ?? 0, category) : undefined;
-    if (r !== undefined) done++;
-    if (r) grown.set(ch, r);
-  }
-  return { category, guess, grown, chars, done, total: todo.length, failed: g.failed };
+  }, [enabled, sig]);
+
+  const current = matched?.sig === sig ? matched : null;
+  const guess = current && 'ranked' in current ? current.ranked : [];
+  const category = chosen ?? guess[0] ?? '';
+  const { sets, nextSet } = useMemo(() => {
+    if (!category) return { sets: [], nextSet: null };
+    const ranked = rankSets(category, todo, current && 'looks' in current ? current.looks : null);
+    const at = Math.max(0, ranked.findIndex((s) => s.id === alphabet));
+    const pick = ranked[at];
+    return { sets: pick ? [pick, ...ranked.filter((s) => s !== pick)] : ranked, nextSet: ranked.length > 1 ? ranked[(at + 1) % ranked.length].id : null };
+  }, [category, todo, current, alphabet]);
+
+  const picks = useMemo(() => {
+    const out = new Map<string, { choice: ReturnType<typeof optionsFor>[number]; count: number }>();
+    for (const ch of todo) {
+      const opts = optionsFor(ch, sets);
+      if (opts.length) out.set(ch, { choice: opts[(seeds[ch] ?? 0) % opts.length], count: opts.length });
+    }
+    return out;
+  }, [todo, sets, seeds]);
+
+  // Load the alphabets the picks come from.
+  useEffect(() => {
+    if (!enabled) return;
+    let live = true;
+    const need = new Set([...picks.values()].map((p) => p.choice.set).filter((s) => !atlases.has(s.id)));
+    for (const set of need) {
+      loadAtlas(set)
+        .then((img) => live && setAtlases((m) => new Map(m).set(set.id, img)))
+        .catch((e) => console.warn(e));
+    }
+    return () => {
+      live = false;
+    };
+  }, [enabled, picks, atlases]);
+
+  const { grown, options } = useMemo(() => {
+    const grown = new Map<string, LetterGlyph>();
+    const options = new Map<string, number>();
+    for (const [ch, { choice, count }] of picks) {
+      options.set(ch, count);
+      const atlas = atlases.get(choice.set.id);
+      if (atlas) grown.set(ch, libraryGlyph(choice, atlas, ch));
+    }
+    return { grown, options };
+  }, [picks, atlases]);
+  const failed = !!current && 'error' in current;
+  // Until the photo has been looked at, every missing letter is still to come.
+  const total = category ? picks.size : todo.length;
+  return { category, guess, sets, nextSet, grown, options, chars, done: failed ? total : grown.size, total, failed };
 }

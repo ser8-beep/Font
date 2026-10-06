@@ -1,22 +1,12 @@
-// Shared types for growing a whole alphabet from the few letters a kid photographed.
+// Shared types for reading the letters a kid photographed.
 //
-// Pipeline:
 //   captured letters (StyleSample[])
-//     -> measure each (measure.ts)          stroke width, skeleton paths, slant, wobble
-//     -> fit letter geometry (fit.ts)       how wide / slanted / where bars and bowls sit
+//     -> measure each (measure.ts)          stroke width, medial-axis paths, colour
 //     -> profile each letter's material     grid | pieces | strokes | flat (materials/*)
-//   = StyleProfile
-//   renderLetter(char, style, seed)
-//     -> skeleton for char (skeletons.ts) with the fitted geometry
-//     -> rasterised stroke field (field.ts)
-//     -> material renderer paints it       -> GeneratedArt (RGBA picture + ink mask)
+//   = StyleProfile, which category.ts matches to the object-type repository.
 //
-// Coordinate systems:
-//   - Skeleton units: x right, y UP, baseline y = 0, cap height y = 1, x-height 0.7,
-//     descender y = -0.3. Strokes are centrelines; stroke thickness is added at render time.
-//   - Pixels: x right, y DOWN, as in every image in this codebase.
-//   - Material measurements are stored relative to the source letter's height ("rel" units:
-//     1 = the height of the letter they were measured on) so they scale to any render size.
+// Pixels: x right, y DOWN, as in every image in this codebase. Material measurements are stored
+// relative to the source letter's height ("rel" units: 1 = the height of the letter).
 
 import type { Mask, RGBAImage } from '../image';
 import type { FlatMaterial } from './materials/flat';
@@ -25,44 +15,6 @@ import type { PiecesMaterial } from './materials/pieces';
 import type { StrokesMaterial } from './materials/strokes';
 
 export type P2 = [number, number];
-
-/**
- * What a stroke is for, so object-based materials can pick a fitting object:
- * a straight stick for a 'line', a bent one for an 'arc', a ring / disc / round object for a
- * 'bowl' (the round part attached to a stem, as in P B R D b d p q) or a 'loop' (a closed ring as in
- * O o 0), and a small round thing for a 'dot'.
- */
-export type StrokeRole = 'line' | 'arc' | 'bowl' | 'loop' | 'dot';
-
-/** An open polyline in skeleton units. A closed loop repeats its first point at the end. A single point is a dot. */
-export interface Stroke {
-  points: P2[];
-  role?: StrokeRole;
-  /** For bowls and loops: the circle (or ellipse, rx/ry) the shape follows, skeleton units. */
-  circle?: { cx: number; cy: number; rx: number; ry: number };
-}
-
-export interface Skeleton {
-  strokes: Stroke[];
-}
-
-/** Letter-shape settings shared by the whole alphabet, fitted to the captured letters. */
-export interface GeometryParams {
-  /** Horizontal scale (1 = reference proportions). */
-  width: number;
-  /** Shear applied after width scaling: x += slant * y. Positive leans right. */
-  slant: number;
-  /** Added to the height (skeleton units) where bowls join stems: P, B, R and similar. */
-  bowl: number;
-  /** Added to crossbar heights: A, H, E, F, e, t and similar. */
-  bar: number;
-  /** Added to junction heights where arms meet: Y, K, X, k, y and similar. */
-  fork: number;
-  /** 0 = square corners on bowls and round letters (blocky), 1 = fully round. */
-  round: number;
-}
-
-export const DEFAULT_GEOMETRY: GeometryParams = { width: 1, slant: 0, bowl: 0, bar: 0, fork: 0, round: 1 };
 
 /** One captured letter, ready for style analysis. All images share the same pixel grid. */
 export interface StyleSample {
@@ -129,22 +81,7 @@ export interface MaterialProfile {
 }
 
 export interface StyleProfile {
-  geometry: GeometryParams;
-  /** One per captured letter, in capture order. Generated letters cycle through them. */
+  /** One per captured letter, in capture order. */
   materials: MaterialProfile[];
-  /** Render scale: pixels per skeleton unit (about the captured letters' height). */
-  pxPerUnit: number;
-  /** Centreline wobble amplitude, skeleton units. */
-  wobble: number;
 }
 
-/** A generated letter: a picture made of the kid's material, plus the ink mask for the font. */
-export interface GeneratedArt {
-  /** Straight (not premultiplied) RGBA; alpha = how much material covers the pixel. */
-  image: RGBAImage;
-  /** 0/1 ink mask on the same grid, already gap-filled when the material needs it. Trace this. */
-  mask: Mask;
-}
-
-/** Deterministic random numbers in [0, 1). */
-export type Rng = () => number;

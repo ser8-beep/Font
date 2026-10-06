@@ -9,9 +9,9 @@ Everything happens inside the web page. Attendees add their photo and the page f
 1. **Snap**: add a photo any way you like. Take it with the webcam, choose a file (on a phone this offers the camera *or* the gallery), drag it onto the page, or paste it with Ctrl+V. There's also a built-in Lego demo. The screen shows framing tips.
 2. **Check**: the app finds the letter blobs and labels them left to right (P, L, A, Y). Kids can drag a label onto a different box, tap a box to choose its letter, remove a box with ✕, or **draw a box around a letter** when detection misses one.
 3. **Neaten**: each letter gets a *Thinner ↔ Bolder* slider with the photo and the cut-out letter side by side. A **Fill the gaps** switch handles porous materials. It switches on by itself when a letter is made of separate pieces, such as beans, pasta or buttons.
-4. **A–Z**: the app grows the rest of the alphabet, plus 0–9 and common punctuation, out of the same stuff as the photographed letters. The tiles fill in one by one (about 3–4 seconds for the lot on a laptop). The kid's own letters keep a 📷 badge, and any grown letter has a **Try another** button that makes a new version of it. If the photo spelt `play` in small letters, the alphabet grows in small letters; capitals give capitals. At the top, the app says what kind of stuff it thinks the letters are made of (for example *🧸 Toys & games* or *✏️ Stationery*), using the object-type repository. **Not right? Change it** picks another category, and the new letters regrow the way makers in that category build theirs. Tapping a letter shows **ideas**: objects other makers used for that letter, with a button to photograph a real one.
+4. **A–Z**: the app fills in every other letter from a **real object alphabet** in its letter library. It works out what the kid's letters are made of (for example *🧸 Toys & games* or *✏️ Stationery*), picks the alphabet in that category that has the most of the letters needed and looks most like the photo, and uses its cut-outs. The kid's own letters keep a 📷 badge. **Try another** swaps a letter for the same letter from another alphabet, **🔀 Try a different alphabet** switches the whole set, and **Not right? Change it** picks another category. Tapping a letter says what it is made of ("This K is made of scissors, open") and gives ideas for building a real one. Fonts are letters only for now (no numbers or punctuation). If the photo spelt `play` in small letters, the font gets small letters where an alphabet has them, and capitals where none does.
 5. **Play**: a playground. A big text box shows what the kid types in their own letters as they type, with a keyboard made of their letters, a **🎲 Surprise me** word button, *Small / Medium / Big* sizes, and background colours (one is sampled from their own table). Letters always show as photos, with a soft shadow like real things lying on a table. The first time they type a word, it fills the screen with confetti.
-6. **Save**: download a `.ttf` named by the kid, a PNG poster of what they typed, and **letter pictures** (a zip with one see-through PNG per letter). The `.ttf` is a colour font: typing with it shows the photo letters, and it holds every grown character. The letter pictures are for apps that can't use installed or colour fonts, such as Canva and Google Docs.
+6. **Save**: download a `.ttf` named by the kid, a PNG poster of what they typed, and **letter pictures** (a zip with one see-through PNG per letter). The `.ttf` is a colour font: typing with it shows the photo letters. The letter pictures are for apps that can't use installed or colour fonts, such as Canva and Google Docs.
 
 Every step has **◀ Back** and **↶ Undo** buttons. Ctrl/Cmd+Z also works.
 
@@ -70,7 +70,7 @@ Where the photos show up. Each app family reads a different colour-font format, 
 ## Testing (for developers only; attendees never need this)
 
 ```bash
-npm test               # unit tests: tracing, TTF structure and checksums, colour tables and PNG, categories, segmentation on samples, font build under 2 s
+npm test               # unit tests: tracing, TTF structure and checksums, colour tables and PNG, categories, letter library, segmentation on samples, font build under 2 s
 npm run samples:test   # runs segmentation on every photo in /samples and reports letters found per photo
 npm run samples:test -- --debug   # also writes overlays and a .ttf per photo to samples/_debug/
 npm run samples:make   # regenerates the synthetic sample photos
@@ -95,31 +95,43 @@ photo ─► background model ─► "stands out" map ─► threshold ─► cl
 - **Tracing** (`src/core/trace.ts`): it follows the pixel boundaries and simplifies them with Ramer–Douglas–Peucker. Gentle bends become TrueType off-curve points and sharp corners stay on-curve. Outer contours wind clockwise and holes counter-clockwise.
 - **Font writing** (`src/core/ttf.ts`): a small TrueType writer covering `cmap`, `glyf`, `head`, `hhea`, `hmtx`, `loca`, `maxp`, `name`, `OS/2` and `post`, plus the colour tables below. Cap height is 700 of 1000 units, sitting on the baseline. Advance width is the letter width plus 60 units on each side. A font made only of capitals (or only small letters) maps the other case to the same glyphs. The output passes the OpenType Sanitizer (the font checker Chrome uses) and parses in fontTools and opentype.js.
 
-### Growing the alphabet
+### The letter library
 
-`src/core/alphabet/` makes the missing letters. It never invents a texture: every grown letter is painted from pixels of the kid's own photo.
+Every letter a kid doesn't make comes from a real object alphabet: a cut-out of a letter someone built from objects and photographed. `src/library/` holds them, one packed WebP picture per alphabet plus `manifest.json` (where each letter sits in its picture, its outline for the `.ttf`, what it is made of). It is built from a folder of cut-outs:
 
-1. **Shape.** Each character has a skeleton of strokes in font units (`skeletons.ts`): lines, arcs, bowls, loops and dots, on a baseline / x-height / cap-height grid. The photographed letters are measured (`measure.ts`, `fit.ts`) and the skeletons are bent to match them: width, slant, how round the bowls are, where the crossbar sits, stroke weight.
-2. **Material.** `style.ts` decides what the photographed letters are made of, and the matching painter draws each new letter:
-   - **Grid** (`materials/grid.ts`): Lego and other bricks. It finds the stud grid, and new letters are built from whole cells cut from the photo, so bricks stay square and the colours match.
-   - **Pieces** (`materials/pieces.ts`): beans, buttons, gummy bears, pasta, stars. It separates the photo into single pieces and lays copies along the new strokes, single file for thin strokes or scattered for thick ones, keeping the same spacing.
-   - **Strokes** (`materials/strokes.ts`): clay, wool, pipe cleaners, and whole objects such as biscuits, carabiners or engine parts. It cuts each photographed letter into its parts (straight bars, curves, rings, discs). Bendy materials are swept along the new strokes. Rigid objects are placed as whole parts and fitted to straight pieces or chords of a curve. Round parts fill bowls and dots.
-   - **Flat**: the fallback, the letter shape filled with the photo's average colour and texture.
-3. **Glyph.** Each painted letter is traced with the same tracer as the photographed ones, so the `.ttf` and the photo preview always match.
+```bash
+npm run library -- path/to/object-alphabets data/cutouts-extra
+```
 
-The work runs in a Web Worker, so the page stays responsive while the tiles fill in. `npm run alphabet:samples` grows an alphabet for every photo in `/samples` and writes a contact sheet PNG and a `.ttf` per photo to `samples/_debug/`. Add photo names to limit it (`-- lego clay`), `--chars=abcxyz` to pick characters, `--seed=3` for another roll, `--category=tools` to build the letters the way another category does, or `--refs` to use local test photos in `samples/_refs/` (not committed).
+The cut-out folder (`object-alphabets.zip`, not in git) has `manifest.json` and `<category>/<set>/<letter>_<case>.png`, transparent where the background was plain. `data/cutouts-extra/` uses the same layout for letters cut out here (the climbing-gear alphabet). Numbers and punctuation are skipped.
 
-**Limits.** Grown letters are only as good as the photo. Busy backgrounds (wood floors, patterned cloth) and strong shadows confuse segmentation, and a shadow that gets picked up becomes part of the material. Objects that only appear once in PLAY (one big wine glass, say) get reused a lot, so a few grown letters can look repetitive. **Try another** usually helps. Try the workshop's real materials and table before the day.
+At the moment the library has 39 alphabets and about 930 letters. Every category has all 26 capitals from its own alphabets except these, which borrow from the nearest category until generated letters fill them (`NEAREST` in `src/library.ts`):
+
+| Category | Missing capitals |
+|---|---|
+| Fabric & thread | all (no alphabet yet) |
+| Nuts & bolts | all (its only alphabet is lowercase) |
+| Toys & games | C D O P Q X |
+| Boxes & packaging | G I R |
+| Electronics | F |
+| Nature | H |
+
+Small letters exist only in a few alphabets (nuts & bolts, binder clips, pencil shavings and some partial sets); elsewhere a small-letter font uses capitals.
+
+How a letter is chosen (`src/library.ts`):
+
+1. **Alphabets are ranked** for the kid's category: the category's own alphabets first, by how many of the needed letters they have in the right case and how close their colours are to the kid's letters; then the nearest categories' alphabets.
+2. **Each missing letter** comes from the first alphabet that has it; **Try another** walks down the list. The other case is used only when no alphabet has the right one.
+3. The cut-out goes into the font as is: its traced outline in `glyf`, its photo in the colour tables.
 
 ### The object-type repository
 
 `data/object-type-repository.json` lists 1,088 letters from real object alphabets, sorted into 20 categories (stationery, fruit & veg, tools, nuts & bolts, jewellery…). For each letter it records the objects used and how the letter was built: **single** (one object), **composite** (several different objects), **repeated** (copies of one object) or **formed** (bendy stuff such as wire, peel or cord). `npm run repository` turns it into `src/core/alphabet/repository-data.ts`, a 31 KB table with counts and object names per category and letter. `other` ("flag before use") and `body` are left out. The repository has no pictures, so the app never shows or copies the reference alphabets.
 
-`src/core/alphabet/category.ts` uses it three ways:
+`src/core/alphabet/category.ts` uses it two ways:
 
 1. **Matching the photo to a category.** It reads how each photographed letter is built (Lego and beans are *repeated*, a wool bowl is *formed*, a letter of a pencil and a ruler is *composite*) and what colours the letters are (metal grey, wood/biscuit brown, green, bright plastic). Each category is scored by how well those colours fit its usual look and how often its makers built these same letters that way, plus a few material clues (Lego bricks → toys, clay → art supplies). This is a guess, which is why kids can change it with one tap. On the 19 sample photos it gets 11 right: Lego (both), wool, pasta, gummy bears, honey, biscuits, engine parts, jewellery, packaging and pencil shavings. Of the misses, buttons, clay, coffee beans, books and carabiners have the right category second or third. Straws and the Christmas photo are further off.
-2. **Building each new letter the category's way.** For every character, the build is drawn from what that category's makers did for the same letter (falling back to the category's overall habits), so **Try another** can also try a different build. The painter then uses a photographed letter built the same way where the photo has one: *repeated* lines up copies of one whole object (a K of pencils), *single* stretches one object per stroke, *composite* mixes objects from different letters, and *formed* sweeps bendy stuff round curves or puts pieces single file. Lego and beans can only be built one way, so for them the category mainly changes the ideas.
-3. **Ideas.** Up to four objects per letter, most used first, shown when a kid taps a letter.
+2. **Ideas.** Up to four objects per letter, most used first, shown when a kid taps a letter.
 
 ### Photo letters in the font
 
@@ -138,15 +150,17 @@ Two details found by testing in Chromium: `sbix` picture offsets are measured fr
 ```
 src/core/      image, mask morphology, segmentation, tracing, TTF writer, colour tables, PNG (framework-free, runs in Node too)
 src/ui/        one React component per step + projector room view
-src/core/alphabet/  growing new letters: skeletons, style fitting, material painters
-src/grow.ts    runs the alphabet growing in a Web Worker (grow.worker.ts) and feeds the UI
+src/core/alphabet/  reading the kid's letters: what they're made of, which repository category
+src/library.ts letter library: ranking alphabets, choosing letters, loading cut-outs
+src/library/   the library itself (built by scripts/library.ts)
+src/grow.ts    the kid's whole alphabet: matching (in grow.worker.ts) + library letters
 src/font.ts    letters → glyphs (cached), photo cut-outs, text layout, font build
 src/pictures.ts  makes the font's photo letters in a worker
-data/          object-type repository (how real object alphabets were built, by category)
+data/          object-type repository, extra cut-outs
 src/poster.ts  PNG poster
 src/room.ts    room wall client
 server/        room wall server (Node http + ws)
-scripts/       sample generator, segmentation report, alphabet contact sheets, repository table
+scripts/       sample generator, segmentation report, repository table, letter library builder
 samples/       test photos
 tests/         vitest
 ```
