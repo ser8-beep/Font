@@ -72,7 +72,7 @@ function wobble(sk: Skeleton, amp: number, rng: Rng): Skeleton {
         const off = amp * Math.sin(Math.PI * t) * (0.65 * Math.sin(s0 * 9 + p1) + 0.35 * Math.sin(s0 * 21 + p2));
         return [p[0] - (dy / len) * off, p[1] + (dx / len) * off];
       });
-      return { points: out };
+      return { ...s, points: out };
     }),
   };
 }
