@@ -15,7 +15,7 @@ import { basename, dirname, join } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import jpeg from 'jpeg-js';
 import { PNG } from 'pngjs';
-import { alphabetChars, analyseStyle, renderLetter, verticalRange, type StyleSample } from '../src/core/alphabet';
+import { alphabetChars, analyseStyle, materialFor, renderLetter, verticalRange, type StyleSample } from '../src/core/alphabet';
 import { cropImage, type Mask, type RGBAImage } from '../src/core/image';
 import { maskBounds } from '../src/core/mask';
 import { analyse, cleanLetter } from '../src/core/segment';
@@ -123,7 +123,7 @@ for (const f of files) {
     made++;
     cells.push({ art: art.image, ink: art.mask, captured: false });
     if (!glyphs.some((g) => g.ch === ch)) {
-      const o = maskToGlyph(art.mask, verticalRange(ch));
+      const o = maskToGlyph(art.mask, verticalRange(ch, materialFor(ch, style, seed).weight));
       if (o) glyphs.push({ ch, outline: o });
     }
   }
