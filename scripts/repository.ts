@@ -4,25 +4,24 @@
 //
 //   npm run repository          # after editing the JSON
 //
-// Writes src/core/alphabet/repository-data.ts. Only the counts and object names go into the app.
+// Writes src/core/alphabet/repository-data.ts, one entry per kid-facing category (groups.ts), each
+// pooling the finer catalogue categories it takes in. Only counts and object names go into the app.
 import { readFileSync, writeFileSync } from 'node:fs';
 import { dirname, join } from 'node:path';
 import { fileURLToPath } from 'node:url';
+import { GROUPS } from '../src/core/alphabet/groups';
 
 const ROOT = join(dirname(fileURLToPath(import.meta.url)), '..');
 const SRC = join(ROOT, 'data', 'object-type-repository.json');
 const OUT = join(ROOT, 'src', 'core', 'alphabet', 'repository-data.ts');
 const BUILDS = ['single', 'composite', 'repeated', 'formed'] as const;
-// Not offered to kids: "other" is marked "flag before use", and body poses can't be photographed as objects.
-const SKIP = new Set(['other', 'body']);
 
 interface Glyph { char: string; letter: string; case: string; category: string; objects: string; construction: string; confidence: string }
-const repo = JSON.parse(readFileSync(SRC, 'utf8')) as { meta: { version: string }; categories: Record<string, string>; glyphs: Glyph[] };
+const repo = JSON.parse(readFileSync(SRC, 'utf8')) as { meta: { version: string }; glyphs: Glyph[] };
 
 const out: Record<string, { description: string; count: number; build: number[]; letters: Record<string, { build: number[]; ideas: string[] }> }> = {};
-for (const [id, description] of Object.entries(repo.categories)) {
-  if (SKIP.has(id)) continue;
-  const glyphs = repo.glyphs.filter((g) => g.category === id && BUILDS.includes(g.construction as (typeof BUILDS)[number]));
+for (const [id, { description, takes }] of Object.entries(GROUPS)) {
+  const glyphs = repo.glyphs.filter((g) => takes.includes(g.category) && BUILDS.includes(g.construction as (typeof BUILDS)[number]));
   const build = BUILDS.map((b) => glyphs.filter((g) => g.construction === b).length);
   const letters: Record<string, { build: number[]; ideas: string[] }> = {};
   for (const L of 'ABCDEFGHIJKLMNOPQRSTUVWXYZ') {

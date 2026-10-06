@@ -113,7 +113,7 @@ export function SplitStep({ photo, letters, onChange }: Props) {
     setDraft(null);
     setDrawing(false);
     if (b.w < 8 || b.h < 8) return;
-    const letter: Letter = { id: uid(), photoId: photo.id, char: tray[0] ?? null, region: { box: b }, rev: 0, bolder: 0, fillHoles: false };
+    const letter: Letter = { id: uid(), photoId: photo.id, char: null, region: { box: b }, rev: 0, bolder: 0, fillHoles: false };
     onChange([...letters, letter]);
   };
 
@@ -123,9 +123,11 @@ export function SplitStep({ photo, letters, onChange }: Props) {
   return (
     <>
       <h1>
-        <span className="tag">Check your letters</span>
+        <span className="tag">Match your letters</span>
       </h1>
-      <p>Is every letter in the right box? Drag a letter tile onto a different box to fix it.</p>
+      <p>
+        We marked every shape we found with a <strong>?</strong>. Drag each letter onto its shape, or tap a shape to choose its letter.
+      </p>
 
       <div
         ref={stage}
@@ -166,7 +168,7 @@ export function SplitStep({ photo, letters, onChange }: Props) {
                 visibility: drag?.from === l.id && drag.moved ? 'hidden' : 'visible',
               }}
               onPointerDown={(e) => !drawing && startDrag(e, l.char ?? '?', l.id)}
-              aria-label={l.char ? `Letter ${l.char}` : 'Unknown letter'}
+              aria-label={l.char ? `Letter ${l.char}` : 'Which letter is this? Tap to choose'}
             >
               {l.char ?? '?'}
             </div>
@@ -187,7 +189,7 @@ export function SplitStep({ photo, letters, onChange }: Props) {
       <div className="tray">
         {tray.length > 0 ? (
           <>
-            <strong>Missing:</strong>
+            <strong>Letters to match:</strong>
             {tray.map((c, i) => (
               <div
                 key={i}
@@ -200,10 +202,10 @@ export function SplitStep({ photo, letters, onChange }: Props) {
                 {c}
               </div>
             ))}
-            <span>Drag onto a box, or draw a new box.</span>
+            <span>Drag each one onto its shape. Missed a letter? Draw a box around it.</span>
           </>
         ) : (
-          <strong>All {photo.word.length} letters found! 🎉</strong>
+          <strong>All {photo.word.length} letters matched! 🎉</strong>
         )}
       </div>
 

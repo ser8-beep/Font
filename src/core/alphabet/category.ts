@@ -1,10 +1,11 @@
 import { isBendy, partStats } from './materials/strokes';
+import { GROUPS } from './groups';
 import { REPOSITORY } from './repository-data';
 import type { MaterialProfile, StyleProfile, StyleSample } from './types';
 
 // The object-type repository (data/object-type-repository.json) records how real object alphabets
-// were built, letter by letter, in 18 categories (stationery, fruit & veg, tools...). Here it is
-// used two ways:
+// were built, letter by letter. Pooled into the five kid-facing categories (groups.ts), it is used
+// two ways:
 //   1. matchCategory: guess which category the kid's photo belongs to, so the app can fill in
 //      the other letters from that category's alphabets (see src/library.ts).
 //   2. ideasFor: the objects makers used, as ideas for kids who want to build more letters.
@@ -16,26 +17,9 @@ export const BUILDS: Build[] = ['single', 'composite', 'repeated', 'formed'];
 export const CATEGORY_IDS = Object.keys(REPOSITORY);
 
 /** Kid-friendly names, in the order the picker shows them. */
-export const CATEGORY_LABELS: Record<string, { label: string; emoji: string }> = {
-  leisure: { label: 'Toys & games', emoji: '🧸' },
-  stationery: { label: 'Stationery', emoji: '✏️' },
-  art: { label: 'Art supplies', emoji: '🎨' },
-  produce: { label: 'Fruit & veg', emoji: '🥕' },
-  prepared_food: { label: 'Snacks & food', emoji: '🍪' },
-  household: { label: 'Home stuff', emoji: '🏠' },
-  tools: { label: 'Tools', emoji: '🔧' },
-  hardware: { label: 'Nuts & bolts', emoji: '🔩' },
-  fashion: { label: 'Jewellery & clothes', emoji: '💍' },
-  textiles: { label: 'Fabric & thread', emoji: '🧵' },
-  nature: { label: 'Nature', emoji: '🌿' },
-  packaging: { label: 'Boxes & packaging', emoji: '📦' },
-  books: { label: 'Books', emoji: '📚' },
-  decor: { label: 'Party & festive', emoji: '🎄' },
-  found: { label: 'Found things', emoji: '🗝️' },
-  electronics: { label: 'Electronics', emoji: '🔌' },
-  vehicle: { label: 'Bike parts', emoji: '🚲' },
-  furniture: { label: 'Furniture', emoji: '🪑' },
-};
+export const CATEGORY_LABELS: Record<string, { label: string; emoji: string }> = Object.fromEntries(
+  Object.entries(GROUPS).map(([id, g]) => [id, { label: g.label, emoji: g.emoji }]),
+);
 
 /** How one captured letter is built, read from its material. */
 export function buildOf(mp: MaterialProfile): Build {
@@ -139,27 +123,15 @@ function buildShare(c: string, b: Build, letter?: string): number {
  * Rough guesses from the reference alphabets; they only need to rank categories sensibly.
  */
 const TYPICAL: Record<string, [metal: number, dark: number, green: number, brown: number, bright: number, hues: number][]> = {
-  // Toys (Lego, plastic) and sports gear (carabiners, slings).
-  leisure: [[0.1, 0.05, 0.15, 0.03, 0.7, 0.8], [0.4, 0.08, 0.05, 0.05, 0.2, 0.6]],
-  // Bright school things, and desk things (clips, tape, scissors).
-  stationery: [[0.2, 0.05, 0.08, 0.12, 0.55, 0.6], [0.4, 0.03, 0.06, 0.12, 0.15, 0.6]],
-  art: [[0.1, 0.05, 0.08, 0.2, 0.75, 0.6]],
+  // Bright school things, desk things (clips, tape, scissors) and art supplies (paint, brushes, clay).
+  stationery: [[0.2, 0.05, 0.08, 0.12, 0.55, 0.6], [0.4, 0.03, 0.06, 0.12, 0.15, 0.6], [0.1, 0.05, 0.08, 0.2, 0.75, 0.6]],
+  // Hand tools, bare metal hardware, greasy bike parts.
+  tools: [[0.55, 0.15, 0.03, 0.05, 0.25, 0.4], [0.8, 0.05, 0, 0.03, 0.05, 0.1], [0.55, 0.3, 0, 0.03, 0.08, 0.15]],
   produce: [[0.05, 0.02, 0.35, 0.15, 0.5, 0.45]],
   // Baked things (biscuits, bread, pasta, coffee) and sweets (gummies, candy).
-  prepared_food: [[0.1, 0.05, 0.02, 0.45, 0.3, 0.25], [0.3, 0.02, 0.1, 0.05, 0.5, 0.5]],
-  household: [[0.35, 0.05, 0.08, 0.06, 0.5, 0.8], [0.5, 0.1, 0.03, 0.08, 0.15, 0.3]],
-  tools: [[0.55, 0.15, 0.03, 0.05, 0.25, 0.4]],
-  hardware: [[0.8, 0.05, 0, 0.03, 0.05, 0.1]],
-  fashion: [[0.5, 0.05, 0.01, 0.08, 0.15, 0.2]],
-  textiles: [[0.1, 0.02, 0.15, 0.03, 0.6, 0.7]],
-  nature: [[0.1, 0.05, 0.3, 0.35, 0.2, 0.3]],
-  packaging: [[0.45, 0.05, 0.15, 0.12, 0.2, 0.8]],
-  books: [[0.18, 0.15, 0.02, 0.45, 0.15, 0.35]],
-  decor: [[0.25, 0.02, 0.1, 0.25, 0.25, 0.35]],
-  found: [[0.45, 0.1, 0.02, 0.3, 0.1, 0.2]],
-  electronics: [[0.4, 0.3, 0.12, 0.05, 0.15, 0.4]],
-  vehicle: [[0.55, 0.3, 0, 0.03, 0.08, 0.15]],
-  furniture: [[0.2, 0.1, 0.02, 0.45, 0.1, 0.2]],
+  food: [[0.1, 0.05, 0.02, 0.45, 0.3, 0.25], [0.3, 0.02, 0.1, 0.05, 0.5, 0.5]],
+  // Twigs, bark and dry leaves; fresh leaves and flowers.
+  plants: [[0.1, 0.05, 0.3, 0.35, 0.2, 0.3], [0.05, 0.02, 0.35, 0.05, 0.6, 0.6]],
 };
 const LOOK_WEIGHTS = [3, 3, 4, 4, 3, 1.5];
 
@@ -177,19 +149,12 @@ interface Kinds {
 
 function materialHints(c: string, k: Kinds): number {
   switch (c) {
-    case 'leisure': return 2.5 * k.grid;
-    case 'prepared_food': return 0.9 * k.pieces + 0.6 * k.round;
-    case 'produce': return 0.4 * k.pieces + 0.3 * k.formed + 0.6 * k.round;
-    case 'household': return 0.5 * k.pieces;
-    case 'stationery': return 0.3 * k.rigid + 0.9 * k.thin;
-    case 'art': return 0.8 * k.formed;
-    case 'textiles': return 0.8 * k.formed;
-    case 'fashion': return 0.3 * k.formed;
-    case 'decor': return 0.3 * k.round;
+    // Lego, clay and wool are craft supplies more than anything else on the list.
+    case 'stationery': return 1.5 * k.grid + 0.3 * k.rigid + 0.9 * k.thin + 1.0 * k.formed;
     case 'tools': return 0.3 * k.rigid + 0.4 * k.thin;
-    case 'hardware': return 0.3 * k.rigid + 0.3 * k.thin;
-    case 'books': case 'packaging': case 'furniture': return 0.3 * k.rigid - 0.6 * k.thin - 0.8 * k.pieces;
-    case 'vehicle': return 0.3 * k.rigid;
+    case 'produce': return 0.4 * k.pieces + 0.3 * k.formed + 0.6 * k.round;
+    case 'food': return 0.9 * k.pieces + 0.6 * k.round;
+    case 'plants': return 0.2 * k.formed;
     default: return 0;
   }
 }

@@ -48,11 +48,11 @@ export async function processPhoto(blob: Blob, word: string): Promise<{ photo: P
   await nextFrame();
   const analysis = analyse(image, { expected: Math.max(1, word.length) });
   const photo: Photo = { id: uid(), image, url, analysis, word };
-  const chars = [...word];
-  const letters: Letter[] = analysis.blobs.map((b, i) => ({
+  // Every shape found is only marked; the kid says which letter each one is.
+  const letters: Letter[] = analysis.blobs.map((b) => ({
     id: uid(),
     photoId: photo.id,
-    char: chars[i] ?? null,
+    char: null,
     region: { box: b.box, region: b.region },
     rev: 0,
     bolder: 0,

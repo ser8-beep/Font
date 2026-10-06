@@ -45,7 +45,7 @@ describe('letter library', () => {
   });
 
   it('takes each capital from the best alphabet that has it, in the right case', () => {
-    const sets = rankSets('hardware', UPPER, null);
+    const sets = rankSets('tools', UPPER, null);
     for (const ch of UPPER) {
       const first = optionsFor(ch, sets)[0];
       expect(first.letter.char).toBe(ch);

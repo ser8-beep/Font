@@ -1,6 +1,6 @@
 // Adds generated letter photographs to the alphabet repository, cut out like the rest.
 //
-//   npm run repository:add -- <folder of generated images>
+//   npm run repository:add -- <folder of generated images> [--repo <copy of the repository>]
 //
 // Each image is named <category>_<LETTER>_<variation>.(png|jpg|webp), one row of
 // alphabet-repository/generation_brief.csv. The letter is found on its plain background with the
@@ -17,10 +17,13 @@ import type { RGBAImage } from '../src/core/image';
 import { analyse, cleanLetter } from '../src/core/segment';
 
 const ROOT = join(dirname(fileURLToPath(import.meta.url)), '..');
-const REPO = join(ROOT, 'alphabet-repository');
-const folder = process.argv[2];
+const args = process.argv.slice(2);
+// --repo <dir> works on a copy, for trying things out.
+const repoAt = args.indexOf('--repo');
+const REPO = repoAt >= 0 ? args.splice(repoAt, 2)[1] : join(ROOT, 'alphabet-repository');
+const folder = args[0];
 if (!folder) {
-  console.error('usage: npm run repository:add -- <folder of generated images>');
+  console.error('usage: npm run repository:add -- <folder of generated images> [--repo <dir>]');
   process.exit(1);
 }
 

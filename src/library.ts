@@ -16,24 +16,11 @@ export const SETS: LibrarySet[] = (manifest as LibraryManifest).sets;
  * Generated alphabets fill these gaps; this keeps the app working without them.
  */
 const NEAREST: Record<string, string[]> = {
-  leisure: ['household', 'stationery'],
-  textiles: ['fashion', 'household'],
-  hardware: ['tools', 'vehicle'],
-  electronics: ['household', 'tools'],
-  decor: ['household', 'nature'],
-  packaging: ['household', 'stationery'],
-  books: ['stationery', 'household'],
-  nature: ['produce', 'found'],
-  furniture: ['household', 'found'],
-  vehicle: ['tools', 'hardware'],
-  fashion: ['found', 'household'],
-  found: ['tools', 'household'],
-  art: ['stationery', 'household'],
-  stationery: ['art', 'household'],
-  produce: ['prepared_food', 'nature'],
-  prepared_food: ['produce', 'household'],
-  household: ['found', 'stationery'],
-  tools: ['hardware', 'found'],
+  stationery: ['tools'],
+  tools: ['stationery'],
+  produce: ['food', 'plants'],
+  food: ['produce'],
+  plants: ['produce'],
 };
 
 const has = (s: LibrarySet, ch: string) => s.letters.some((l) => l.char === ch);

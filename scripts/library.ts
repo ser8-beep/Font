@@ -14,6 +14,7 @@ import { dirname, join } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { PNG } from 'pngjs';
 import { CATEGORY_LABELS, looksOf } from '../src/core/alphabet/category';
+import { groupOf } from '../src/core/alphabet/groups';
 import { verticalRange } from '../src/core/alphabet/letters';
 import { makeMask, type Mask, type RGBAImage } from '../src/core/image';
 import { components, maskBounds } from '../src/core/mask';
@@ -33,8 +34,13 @@ const entries = (JSON.parse(readFileSync(join(REPO, 'manifest.json'), 'utf8')) a
   .filter((e) => /^[A-Za-z]$/.test(e.char) && e.category in CATEGORY_LABELS)
   // Primary picks first, so they come first wherever the app offers a choice.
   .sort((a, b) => Number(b.primary !== false) - Number(a.primary !== false));
-const catalogue = JSON.parse(readFileSync(join(ROOT, 'data', 'object-type-repository.json'), 'utf8')) as { sources: { id: string; description: string }[] };
-const titles = new Map(catalogue.sources.map((s) => [s.id, s.description]));
+const catalogue = JSON.parse(readFileSync(join(ROOT, 'data', 'object-type-repository.json'), 'utf8')) as { sources: { id: string; description: string; default_category: string }[] };
+const sourceInfo = new Map(catalogue.sources.map((s) => [s.id, s]));
+/** The source picture's description, when that picture is mostly this category (else it misleads). */
+const titleOf = (source: string, category: string) => {
+  const s = sourceInfo.get(source);
+  return s && groupOf(s.default_category) === category ? tidy(s.description) : undefined;
+};
 
 function load(path: string): RGBAImage {
   const png = PNG.sync.read(readFileSync(path));
@@ -158,7 +164,7 @@ for (const [category, sets] of [...byCategory].sort((a, b) => a[0].localeCompare
       id: `${category}/${source}`,
       category,
       // The catalogue describes the reference sets; newer and generated ones get a plain name.
-      title: tidy(titles.get(source)) ?? `${CATEGORY_LABELS[category].label} alphabet ${++unnamed}`,
+      title: titleOf(source, category) ?? `${CATEGORY_LABELS[category].label} alphabet ${++unnamed}`,
       atlas: atlasName,
       looks: [L.metal, L.dark, L.green, L.brown, L.bright, Math.min(1, L.hues / 6)].map((v) => +v.toFixed(3)),
       ...(generated ? { generated: true } : {}),

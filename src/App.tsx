@@ -13,7 +13,7 @@ import { RoomView } from './ui/RoomView';
 import { SplitStep } from './ui/SplitStep';
 import { TypeStep } from './ui/TypeStep';
 
-const LABELS: Record<Step, string> = { capture: 'Snap', split: 'Check', clean: 'Neaten', grow: 'A–Z', type: 'Play', export: 'Save' };
+const LABELS: Record<Step, string> = { capture: 'Snap', split: 'Match', clean: 'Neaten', grow: 'A–Z', type: 'Play', export: 'Save' };
 const COLOURS: Record<Step, string> = {
   capture: 'var(--yellow)',
   split: 'var(--pink)',

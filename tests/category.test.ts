@@ -3,6 +3,7 @@ import { join } from 'node:path';
 import jpeg from 'jpeg-js';
 import { describe, expect, it } from 'vitest';
 import { CATEGORY_IDS, CATEGORY_LABELS, ideasFor, matchCategory } from '../src/core/alphabet/category';
+import { GROUPS, groupOf } from '../src/core/alphabet/groups';
 import { REPOSITORY } from '../src/core/alphabet/repository-data';
 import { analyseStyle, type StyleSample } from '../src/core/alphabet';
 import { cropImage } from '../src/core/image';
@@ -22,26 +23,34 @@ function samplesOf(name: string): StyleSample[] {
 }
 
 describe('object-type repository', () => {
-  it('has every category the picker offers, with a name and letter records', () => {
-    expect(CATEGORY_IDS.length).toBe(18);
+  it('offers the five categories, each pooling its finer catalogue categories', () => {
+    expect(CATEGORY_IDS).toEqual(['stationery', 'tools', 'produce', 'food', 'plants']);
     for (const id of CATEGORY_IDS) {
       expect(CATEGORY_LABELS[id]).toBeDefined();
       expect(REPOSITORY[id].build).toHaveLength(4);
+      expect(REPOSITORY[id].count).toBeGreaterThan(20);
     }
-    expect(CATEGORY_IDS).not.toContain('other');
+  });
+
+  it('keeps the five apart: every finer category belongs to at most one', () => {
+    const all = Object.values(GROUPS).flatMap((g) => g.takes);
+    expect(new Set(all).size).toBe(all.length);
+    expect(groupOf('hardware')).toBe('tools');
+    expect(groupOf('art')).toBe('stationery');
+    expect(groupOf('household')).toBeNull();
   });
 
   it('gives object ideas for letters and none for unknown categories', () => {
-    expect(ideasFor('S', 'hardware')).toContain('S-hook');
+    expect(ideasFor('S', 'tools')).toContain('S-hook');
     expect(ideasFor('S', 'nope')).toEqual([]);
   });
 });
 
 describe.skipIf(!existsSync(join(SAMPLES, 'lego.jpg')))('matching photos to categories', () => {
-  it('sees Lego as toys and pasta as food', () => {
-    const lego = samplesOf('lego.jpg');
-    expect(matchCategory(lego, analyseStyle(lego)).ranked[0].id).toBe('leisure');
+  it('sees pasta as food and Lego as craft supplies (stationery)', () => {
     const pasta = samplesOf('pasta.jpg');
-    expect(matchCategory(pasta, analyseStyle(pasta)).ranked[0].id).toBe('prepared_food');
+    expect(matchCategory(pasta, analyseStyle(pasta)).ranked[0].id).toBe('food');
+    const lego = samplesOf('lego.jpg');
+    expect(matchCategory(lego, analyseStyle(lego)).ranked[0].id).toBe('stationery');
   });
 });
