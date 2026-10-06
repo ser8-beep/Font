@@ -1,18 +1,31 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
-import type { LetterGlyph } from '../font';
+import { BACKDROPS, backdropColour, WRAP } from '../backdrop';
+import { lookup, type LetterGlyph } from '../font';
+import type { Backdrop, Size } from '../state';
 import { COLOURS } from './SplitStep';
-import { TextRender } from './TextRender';
+import { GlyphView, TextRender } from './TextRender';
 
 interface Props {
   text: string;
   map: Map<string, LetterGlyph>;
+  /** Every character the font will have, in keyboard order. */
+  keys: string[];
   material: boolean;
   celebrated: boolean;
+  size: Size;
+  backdrop: Backdrop;
+  table: string;
+  /** Letters still growing (they show as grey boxes until they arrive). */
+  growing: boolean;
   onText: (t: string) => void;
   onMaterial: (on: boolean) => void;
+  onSize: (s: Size) => void;
+  onBackdrop: (b: Backdrop) => void;
   onCelebrated: () => void;
   onAddMore: () => void;
 }
+
+const WORDS = ['PIZZA', 'ROBOT', 'JELLY', 'ZOOM!', 'HELLO', 'BANANA', 'QUIZ', 'DINOSAUR', 'WOW!', 'YUMMY', 'PLAY TIME', 'SUPER STAR', 'MAGIC', 'JUMP', 'SPLASH', 'FOX & OWL', 'ROCKET 123'];
 
 export function MaterialToggle({ material, onMaterial }: { material: boolean; onMaterial: (on: boolean) => void }) {
   return (
@@ -27,56 +40,123 @@ export function MaterialToggle({ material, onMaterial }: { material: boolean; on
   );
 }
 
-export function TypeStep({ text, map, material, celebrated, onText, onMaterial, onCelebrated, onAddMore }: Props) {
+/** The playground: type anything in the kid's own letters. */
+export function TypeStep(p: Props) {
   const [party, setParty] = useState(false);
+  const [word, setWord] = useState(0);
   const input = useRef<HTMLInputElement>(null);
-  const missing = useMemo(() => [...new Set([...text.toUpperCase()].filter((c) => c.trim() && !map.has(c)))], [text, map]);
+  const missing = useMemo(() => [...new Set([...p.text].filter((c) => c.trim() && !lookup(p.map, c)))], [p.text, p.map]);
+  // Words come out in the font's own case: capitals, small letters, or both.
+  const hasUpper = p.keys.some((k) => /[A-Z]/.test(k)), hasLower = p.keys.some((k) => /[a-z]/.test(k));
+  const caseWord = (w: string) => (hasLower && !hasUpper ? w.toLowerCase() : hasLower && hasUpper ? w.charAt(0) + w.slice(1).toLowerCase() : w);
 
   useEffect(() => input.current?.focus(), []);
 
   // The first time they type a word (2+ letters, then a short pause), throw a party.
   useEffect(() => {
-    if (celebrated || text.trim().length < 2) return;
+    if (p.celebrated || p.text.trim().length < 2) return;
     const t = setTimeout(() => {
       setParty(true);
-      onCelebrated();
+      p.onCelebrated();
     }, 1100);
     return () => clearTimeout(t);
-  }, [text, celebrated, onCelebrated]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [p.text, p.celebrated]);
+
+  const type = (s: string) => {
+    p.onText((p.text + s).slice(0, 60));
+    input.current?.focus();
+  };
 
   return (
     <>
       <h1>
-        <span className="tag">Type with your font!</span>
+        <span className="tag">Play with your font!</span>
       </h1>
-      <input
-        ref={input}
-        className="typebox"
-        value={text}
-        maxLength={60}
-        placeholder="Type your name!"
-        onChange={(e) => onText(e.target.value)}
-        autoComplete="off"
-        spellCheck={false}
-        aria-label="Type here"
-      />
-      <div className="render">
-        <TextRender text={text || 'PLAY'} map={map} material={material} caret={!!text} />
+      <div className="row" style={{ alignItems: 'stretch' }}>
+        <input
+          ref={input}
+          className="typebox"
+          style={{ flex: 1, minWidth: 0 }}
+          value={p.text}
+          maxLength={60}
+          placeholder="Type your name!"
+          onChange={(e) => p.onText(e.target.value)}
+          autoComplete="off"
+          spellCheck={false}
+          aria-label="Type here"
+        />
+        <button
+          className="btn yellow"
+          onClick={() => {
+            p.onText(caseWord(WORDS[word % WORDS.length]));
+            setWord(word + 1);
+          }}
+        >
+          🎲 Surprise me
+        </button>
       </div>
-      <div className="row" style={{ justifyContent: 'space-between' }}>
-        <MaterialToggle material={material} onMaterial={onMaterial} />
+
+      <div className="render" style={{ background: backdropColour(p.backdrop, p.table) }}>
+        <TextRender text={p.text || caseWord('PLAY')} map={p.map} material={p.material} maxWidth={WRAP[p.size]} caret={!!p.text} className={`size-${p.size}`} />
       </div>
+
+      <div className="play-controls">
+        <MaterialToggle material={p.material} onMaterial={p.onMaterial} />
+        <div className="row" role="group" aria-label="Letter size">
+          {(['S', 'M', 'L'] as Size[]).map((s) => (
+            <button key={s} className={`btn small ${p.size === s ? 'on' : ''}`} onClick={() => p.onSize(s)} aria-pressed={p.size === s}>
+              {s === 'S' ? 'Small' : s === 'M' ? 'Medium' : 'Big'}
+            </button>
+          ))}
+        </div>
+        <div className="row swatches" role="group" aria-label="Background">
+          {BACKDROPS.map((b) => (
+            <button
+              key={b}
+              className={`swatch ${p.backdrop === b ? 'on' : ''}`}
+              style={{ background: backdropColour(b, p.table) }}
+              onClick={() => p.onBackdrop(b)}
+              aria-label={b === 'table' ? 'Your table' : b}
+              title={b === 'table' ? 'Your table' : b}
+            >
+              {b === 'table' ? '📷' : ''}
+            </button>
+          ))}
+        </div>
+      </div>
+
+      <div className="keyboard" aria-label="Your letters keyboard">
+        {p.keys.map((k) => {
+          const g = lookup(p.map, k);
+          return (
+            <button key={k} className="key" onClick={() => type(k)} aria-label={`Type ${k}`} disabled={!g}>
+              {g ? <GlyphView glyph={g} material={p.material} size={52} /> : <span className="key-wait">{k}</span>}
+            </button>
+          );
+        })}
+        <button className="key wide" onClick={() => type(' ')} aria-label="Space">
+          space
+        </button>
+        <button className="key wide" onClick={() => p.onText([...p.text].slice(0, -1).join(''))} aria-label="Delete the last letter">
+          ⌫
+        </button>
+      </div>
+
       {missing.length > 0 && (
         <div className="missing" style={{ marginTop: 16 }}>
           <span>
-            Grey boxes are letters you haven't made yet: <strong>{missing.join(' ')}</strong>
+            {p.growing ? 'Still growing: ' : 'Grey boxes are letters your font doesn’t have: '}
+            <strong>{missing.join(' ')}</strong>
           </span>
-          <button className="btn pink" onClick={onAddMore}>
-            + Add more letters
-          </button>
+          {!p.growing && (
+            <button className="btn pink" onClick={p.onAddMore}>
+              + Add more letters
+            </button>
+          )}
         </div>
       )}
-      {party && <Celebrate text={text} map={map} material={material} onClose={() => setParty(false)} />}
+      {party && <Celebrate text={p.text} map={p.map} material={p.material} onClose={() => setParty(false)} />}
     </>
   );
 }
@@ -85,11 +165,11 @@ function Celebrate({ text, map, material, onClose }: { text: string; map: Map<st
   const bits = useMemo(
     () =>
       Array.from({ length: 70 }, (_, i) => ({
-        left: Math.random() * 100,
-        delay: Math.random() * 1.2,
-        dur: 2.2 + Math.random() * 2,
+        left: (i * 37) % 100,
+        delay: ((i * 13) % 12) / 10,
+        dur: 2.2 + ((i * 7) % 20) / 10,
         colour: COLOURS[i % COLOURS.length],
-        rot: Math.random() * 360,
+        rot: (i * 53) % 360,
       })),
     [],
   );

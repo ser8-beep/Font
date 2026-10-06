@@ -1,49 +1,64 @@
-import { CAP_HEIGHT, LINE, layoutText, materialImage, type LetterGlyph } from '../font';
+import { useId } from 'react';
+import { LINE, layoutText, materialImage, type LetterGlyph } from '../font';
 
 interface Props {
   text: string;
   map: Map<string, LetterGlyph>;
+  /** Photo letters (the kid's material) instead of ink. */
   material: boolean;
   maxWidth?: number;
   className?: string;
   color?: string;
+  /** Background colour painted behind the letters (none = transparent). */
+  backdrop?: string;
   /** Show a blinking caret after the text. */
   caret?: boolean;
 }
 
-/** Draws text with the kid's letters. Unknown letters become grey boxes. */
-export function TextRender({ text, map, material, maxWidth = 5200, className, color = '#1b1b3a', caret }: Props) {
-  const { items, lines, width } = layoutText(text, map, maxWidth);
+/** Draws text with the kid's letters. Characters the font doesn't have become grey boxes. */
+export function TextRender({ text, map, material, maxWidth = 5200, className, color = '#1b1b3a', backdrop, caret }: Props) {
+  const shadowId = useId().replace(/:/g, '');
+  const lay = layoutText(text, map, maxWidth);
   const pad = 80;
-  const w = Math.max(width, 1200) + pad * 2;
-  const h = lines * LINE + pad;
-  // Font units are y-up with the baseline at 0; each line's baseline sits at LINE*(line+1) - 200.
-  const base = (line: number) => pad / 2 + line * LINE + 850;
-  const last = items[items.length - 1];
+  const w = Math.max(lay.width, 1200) + pad * 2;
+  // Each line: top of the tallest letter to the bottom of the lowest tail.
+  const lineTop = lay.top + 40, lineBottom = -lay.bottom + 40;
+  const firstBase = pad / 2 + lineTop;
+  const base = (line: number) => firstBase + line * LINE;
+  const h = firstBase + (lay.lines - 1) * LINE + lineBottom + pad / 2;
+  const last = lay.items[lay.items.length - 1];
   return (
     <svg className={className} viewBox={`0 0 ${w} ${h}`} role="img" aria-label={text}>
-      {items.map((it, i) => {
-        const x = pad + it.x;
-        const y = base(it.line);
-        if (it.ch === ' ') return null;
-        if (!it.glyph) {
-          return (
-            <g key={i}>
-              <rect x={x + 40} y={y - CAP_HEIGHT} width={it.advance - 80} height={CAP_HEIGHT} rx={40} fill="#d6d6e0" stroke="#a5a5b8" strokeWidth={14} strokeDasharray="40 30" />
-              <text x={x + it.advance / 2} y={y - CAP_HEIGHT / 2 + 70} textAnchor="middle" fontSize={200} fontWeight={900} fill="#9a9ab0">
-                {it.ch.toUpperCase()}
-              </text>
-            </g>
-          );
-        }
-        const o = it.glyph.outline;
-        if (material) {
-          return <image key={i} href={materialImage(it.glyph)} x={x + o.lsb} y={y - CAP_HEIGHT} width={o.inkWidth} height={CAP_HEIGHT} preserveAspectRatio="none" />;
-        }
-        return <path key={i} d={it.glyph.svg} transform={`translate(${x} ${y}) scale(1 -1)`} fill={color} />;
-      })}
+      <defs>
+        <filter id={shadowId} x="-20%" y="-20%" width="140%" height="140%">
+          <feDropShadow dx="16" dy="22" stdDeviation="16" floodColor="#1b1b3a" floodOpacity="0.32" />
+        </filter>
+      </defs>
+      {backdrop && <rect x="0" y="0" width={w} height={h} fill={backdrop} />}
+      <g filter={material ? `url(#${shadowId})` : undefined}>
+        {lay.items.map((it, i) => {
+          const x = pad + it.x;
+          const y = base(it.line);
+          if (it.ch === ' ') return null;
+          if (!it.glyph) {
+            return (
+              <g key={i}>
+                <rect x={x + 40} y={y - 700} width={it.advance - 80} height={700} rx={40} fill="#d6d6e0" stroke="#a5a5b8" strokeWidth={14} strokeDasharray="40 30" />
+                <text x={x + it.advance / 2} y={y - 280} textAnchor="middle" fontSize={200} fontWeight={900} fill="#9a9ab0">
+                  {it.ch}
+                </text>
+              </g>
+            );
+          }
+          const o = it.glyph.outline;
+          if (material) {
+            return <image key={i} href={materialImage(it.glyph)} x={x + o.lsb} y={y - o.top} width={o.inkWidth} height={o.top - o.bottom} preserveAspectRatio="none" />;
+          }
+          return <path key={i} d={it.glyph.svg} transform={`translate(${x} ${y}) scale(1 -1)`} fill={color} />;
+        })}
+      </g>
       {caret && (
-        <rect className="caret" x={pad + (last && last.line === lines - 1 ? last.x + last.advance : 0) + 20} y={base(lines - 1) - CAP_HEIGHT - 50} width={40} height={CAP_HEIGHT + 100} fill="#ff5d8f">
+        <rect x={pad + (last && last.line === lay.lines - 1 ? last.x + last.advance : 0) + 20} y={base(lay.lines - 1) - 750} width={40} height={850} fill="#ff5d8f">
           <animate attributeName="opacity" values="1;0;1" dur="1s" repeatCount="indefinite" />
         </rect>
       )}
@@ -51,7 +66,7 @@ export function TextRender({ text, map, material, maxWidth = 5200, className, co
   );
 }
 
-/** A single glyph, fitted into a square. */
+/** A single letter, fitted into a square. */
 export function GlyphView({ glyph, material, size = 200 }: { glyph: LetterGlyph | null; material?: boolean; size?: number }) {
   if (!glyph) {
     return (
@@ -63,14 +78,16 @@ export function GlyphView({ glyph, material, size = 200 }: { glyph: LetterGlyph 
     );
   }
   const o = glyph.outline;
-  const box = Math.max(o.advance, CAP_HEIGHT + 120);
+  const box = Math.max(o.advance, 940);
   const ox = (box - o.advance) / 2;
+  // Baseline placed so that the -210..700 band sits in the middle of the square.
+  const base = (box + 700 - 210) / 2;
   return (
     <svg viewBox={`0 0 ${box} ${box}`} width={size} height={size}>
       {material ? (
-        <image href={materialImage(glyph)} x={ox + o.lsb} y={(box - CAP_HEIGHT) / 2} width={o.inkWidth} height={CAP_HEIGHT} preserveAspectRatio="none" />
+        <image href={materialImage(glyph)} x={ox + o.lsb} y={base - o.top} width={o.inkWidth} height={o.top - o.bottom} preserveAspectRatio="none" />
       ) : (
-        <path d={glyph.svg} transform={`translate(${ox} ${(box + CAP_HEIGHT) / 2}) scale(1 -1)`} fill="#1b1b3a" />
+        <path d={glyph.svg} transform={`translate(${ox} ${base}) scale(1 -1)`} fill="#1b1b3a" />
       )}
     </svg>
   );

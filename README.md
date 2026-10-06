@@ -4,13 +4,14 @@ A browser app that turns a photo of handmade letters (Lego, clay, wool, coffee b
 
 Everything happens inside the web page. Attendees add their photo and the page finds the letters, traces them and writes the `.ttf` file itself. They don't need a scanner, a separate program, an account or an internet connection. After the page has loaded once, it works offline.
 
-## The five steps
+## The six steps
 
 1. **Snap**: add a photo any way you like. Take it with the webcam, choose a file (on a phone this offers the camera *or* the gallery), drag it onto the page, or paste it with Ctrl+V. There's also a built-in Lego demo. The screen shows framing tips.
 2. **Check**: the app finds the letter blobs and labels them left to right (P, L, A, Y). Kids can drag a label onto a different box, tap a box to choose its letter, remove a box with ✕, or **draw a box around a letter** when detection misses one.
 3. **Neaten**: each letter gets a *Thinner ↔ Bolder* slider with the photo and the traced letter side by side. A **Fill the gaps** switch handles porous materials. It switches on by itself when a letter is made of separate pieces, such as beans, pasta or buttons.
-4. **Type**: a big text box shows what the kid types in their own letters as they type. Letters they haven't made yet show as grey boxes, next to an **Add more letters** button. The first time they type a word, it fills the screen with confetti.
-5. **Save**: download a `.ttf` named by the kid and a PNG poster of what they typed. A **Photo letters** switch draws the poster and the preview with the real photo, so Lego stays colourful. The `.ttf` always has plain single-colour letters.
+4. **A–Z**: the app grows the rest of the alphabet, plus 0–9 and common punctuation, out of the same stuff as the photographed letters. The tiles fill in one by one (about 3–4 seconds for the lot on a laptop). The kid's own letters keep a 📷 badge, and any grown letter has a **Try another** button that makes a new version of it. If the photo spelt `play` in small letters, the alphabet grows in small letters; capitals give capitals.
+5. **Play**: a playground. A big text box shows what the kid types in their own letters as they type, with a keyboard made of their letters, a **🎲 Surprise me** word button, *Small / Medium / Big* sizes, background colours (one is sampled from their own table) and the *Ink / Photo letters* switch. The first time they type a word, it fills the screen with confetti.
+6. **Save**: download a `.ttf` named by the kid and a PNG poster of what they typed. A **Photo letters** switch draws the poster with the real materials, so Lego stays colourful. The `.ttf` always has plain single-colour letters. It holds every grown character, so it types anything in Word.
 
 Every step has **◀ Back** and **↶ Undo** buttons. Ctrl/Cmd+Z also works.
 
@@ -80,7 +81,23 @@ photo ─► background model ─► "stands out" map ─► threshold ─► cl
 
 - **Segmentation** (`src/core/segment.ts`): it fits a smooth background colour surface (quadratic in x/y, per Lab channel) to the pixels that look like background, which copes with uneven lighting and vignetting. Each pixel's colour distance from that surface goes through an Otsu threshold. A closing then fuses separate pieces (beans, gummy bears) into one blob per letter. It tries several closing sizes and keeps the largest one that gives the expected count without bridging neighbouring letters. Fragments get merged and specks dropped, and blobs much wider than a letter are split at their thinnest column.
 - **Tracing** (`src/core/trace.ts`): it follows the pixel boundaries and simplifies them with Ramer–Douglas–Peucker. Gentle bends become TrueType off-curve points and sharp corners stay on-curve. Outer contours wind clockwise and holes counter-clockwise.
-- **Font writing** (`src/core/ttf.ts`): a small TrueType writer covering `cmap`, `glyf`, `head`, `hhea`, `hmtx`, `loca`, `maxp`, `name`, `OS/2` and `post`. Cap height is 700 of 1000 units, sitting on the baseline. Advance width is the letter width plus 60 units on each side. Uppercase and lowercase map to the same glyph. The output passes the OpenType Sanitizer (the font checker Chrome uses) and parses in fontTools and opentype.js.
+- **Font writing** (`src/core/ttf.ts`): a small TrueType writer covering `cmap`, `glyf`, `head`, `hhea`, `hmtx`, `loca`, `maxp`, `name`, `OS/2` and `post`. Cap height is 700 of 1000 units, sitting on the baseline. Advance width is the letter width plus 60 units on each side. A font made only of capitals (or only small letters) maps the other case to the same glyphs. The output passes the OpenType Sanitizer (the font checker Chrome uses) and parses in fontTools and opentype.js.
+
+### Growing the alphabet
+
+`src/core/alphabet/` makes the missing letters. It never invents a texture: every grown letter is painted from pixels of the kid's own photo.
+
+1. **Shape.** Each character has a skeleton of strokes in font units (`skeletons.ts`): lines, arcs, bowls, loops and dots, on a baseline / x-height / cap-height grid. The photographed letters are measured (`measure.ts`, `fit.ts`) and the skeletons are bent to match them: width, slant, how round the bowls are, where the crossbar sits, stroke weight.
+2. **Material.** `style.ts` decides what the photographed letters are made of, and the matching painter draws each new letter:
+   - **Grid** (`materials/grid.ts`): Lego and other bricks. It finds the stud grid, and new letters are built from whole cells cut from the photo, so bricks stay square and the colours match.
+   - **Pieces** (`materials/pieces.ts`): beans, buttons, gummy bears, pasta, stars. It separates the photo into single pieces and lays copies along the new strokes, single file for thin strokes or scattered for thick ones, keeping the same spacing.
+   - **Strokes** (`materials/strokes.ts`): clay, wool, pipe cleaners, and whole objects such as biscuits, carabiners or engine parts. It cuts each photographed letter into its parts (straight bars, curves, rings, discs). Bendy materials are swept along the new strokes. Rigid objects are placed as whole parts and fitted to straight pieces or chords of a curve. Round parts fill bowls and dots.
+   - **Flat**: the fallback, the letter shape filled with the photo's average colour and texture.
+3. **Glyph.** Each painted letter is traced with the same tracer as the photographed ones, so the `.ttf` and the photo preview always match.
+
+The work runs in a Web Worker, so the page stays responsive while the tiles fill in. `npm run alphabet:samples` grows an alphabet for every photo in `/samples` and writes a contact sheet PNG and a `.ttf` per photo to `samples/_debug/`. Add photo names to limit it (`-- lego clay`), `--chars=abcxyz` to pick characters, `--seed=3` for another roll, or `--refs` to use local test photos in `samples/_refs/` (not committed).
+
+**Limits.** Grown letters are only as good as the photo. Busy backgrounds (wood floors, patterned cloth) and strong shadows confuse segmentation, and a shadow that gets picked up becomes part of the material. Objects that only appear once in PLAY (one big wine glass, say) get reused a lot, so a few grown letters can look repetitive. **Try another** usually helps. Try the workshop's real materials and table before the day.
 
 ### Where this differs from the brief's tech stack
 
@@ -93,11 +110,13 @@ photo ─► background model ─► "stands out" map ─► threshold ─► cl
 ```
 src/core/      image, mask morphology, segmentation, tracing, TTF writer (framework-free, runs in Node too)
 src/ui/        one React component per step + projector room view
+src/core/alphabet/  growing new letters: skeletons, style fitting, material painters
+src/grow.ts    runs the alphabet growing in a Web Worker (grow.worker.ts) and feeds the UI
 src/font.ts    letters → glyphs (cached), text layout, font build
 src/poster.ts  PNG poster
 src/room.ts    room wall client
 server/        room wall server (Node http + ws)
-scripts/       sample generator and segmentation report
+scripts/       sample generator, segmentation report, alphabet contact sheets
 samples/       test photos
 tests/         vitest
 ```

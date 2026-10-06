@@ -1,4 +1,4 @@
-import { CAP_HEIGHT, LINE, layoutText, materialImage, type LetterGlyph } from './font';
+import { LINE, layoutText, materialImage, type LetterGlyph } from './font';
 
 const W = 1600, H = 1000;
 
@@ -11,8 +11,8 @@ function loadImage(src: string): Promise<HTMLImageElement> {
   });
 }
 
-/** A colour-block poster of whatever they typed, in their font. */
-export async function renderPoster(text: string, map: Map<string, LetterGlyph>, material: boolean, fontName: string, maker: string): Promise<HTMLCanvasElement> {
+/** A colour-block poster of whatever they typed, in their font, on the background they chose. */
+export async function renderPoster(text: string, map: Map<string, LetterGlyph>, material: boolean, fontName: string, maker: string, backdrop = '#ffd23f'): Promise<HTMLCanvasElement> {
   const canvas = document.createElement('canvas');
   canvas.width = W;
   canvas.height = H;
@@ -21,7 +21,7 @@ export async function renderPoster(text: string, map: Map<string, LetterGlyph>, 
   // Colour blocks.
   ctx.fillStyle = '#fffaf0';
   ctx.fillRect(0, 0, W, H);
-  ctx.fillStyle = '#ffd23f';
+  ctx.fillStyle = backdrop;
   ctx.fillRect(0, 0, W, 760);
   const strip = ['#ff5d8f', '#3a86ff', '#06d6a0', '#ff8c42'];
   strip.forEach((c, i) => {
@@ -35,24 +35,25 @@ export async function renderPoster(text: string, map: Map<string, LetterGlyph>, 
   const content = text.trim() || 'PLAY';
   const lay = layoutText(content, map, 5600);
   const boxW = W - 160, boxH = 620;
-  const textH = lay.lines * LINE - (LINE - CAP_HEIGHT) + 40;
+  // From the top of the tallest letter on the first line to the lowest tail on the last.
+  const textH = (lay.lines - 1) * LINE + lay.top - lay.bottom + 40;
   const s = Math.min(boxW / Math.max(lay.width, 1), boxH / textH, 0.6);
   const ox = (W - lay.width * s) / 2;
   const oy = 70 + (boxH - textH * s) / 2;
   const images = new Map<string, HTMLImageElement>();
   if (material) {
-    for (const it of lay.items) if (it.glyph && !images.has(it.glyph.letterId)) images.set(it.glyph.letterId, await loadImage(materialImage(it.glyph)));
+    for (const it of lay.items) if (it.glyph && !images.has(it.glyph.id)) images.set(it.glyph.id, await loadImage(materialImage(it.glyph)));
   }
   for (const it of lay.items) {
     if (it.ch === ' ') continue;
     const x = ox + it.x * s;
-    const base = oy + (it.line * LINE + CAP_HEIGHT) * s;
+    const base = oy + (it.line * LINE + lay.top) * s;
     if (!it.glyph) {
       ctx.fillStyle = '#d6d6e0';
       ctx.strokeStyle = '#a5a5b8';
       ctx.lineWidth = Math.max(2, 14 * s);
       ctx.setLineDash([40 * s, 30 * s]);
-      roundRect(ctx, x + 40 * s, base - CAP_HEIGHT * s, (it.advance - 80) * s, CAP_HEIGHT * s, 40 * s);
+      roundRect(ctx, x + 40 * s, base - 700 * s, (it.advance - 80) * s, 700 * s, 40 * s);
       ctx.fill();
       ctx.stroke();
       ctx.setLineDash([]);
@@ -60,7 +61,14 @@ export async function renderPoster(text: string, map: Map<string, LetterGlyph>, 
     }
     const o = it.glyph.outline;
     if (material) {
-      ctx.drawImage(images.get(it.glyph.letterId)!, x + o.lsb * s, base - CAP_HEIGHT * s, o.inkWidth * s, CAP_HEIGHT * s);
+      // Soft shadow, like real things lying on a table.
+      ctx.save();
+      ctx.shadowColor = 'rgba(27, 27, 58, 0.35)';
+      ctx.shadowBlur = 24 * s;
+      ctx.shadowOffsetX = 14 * s;
+      ctx.shadowOffsetY = 20 * s;
+      ctx.drawImage(images.get(it.glyph.id)!, x + o.lsb * s, base - o.top * s, o.inkWidth * s, (o.top - o.bottom) * s);
+      ctx.restore();
     } else {
       ctx.save();
       ctx.translate(x, base);

@@ -7,7 +7,12 @@ import { MaterialToggle } from './TypeStep';
 
 interface Props {
   text: string;
+  /** The whole font: the kid's letters and the grown ones. */
   map: Map<string, LetterGlyph>;
+  /** Only the letters the kid made (these go to the room wall). */
+  captured: Map<string, LetterGlyph>;
+  /** Poster background colour. */
+  backdrop: string;
   material: boolean;
   fontName: string;
   maker: string;
@@ -28,21 +33,21 @@ export function ExportStep(p: Props) {
   useEffect(() => {
     let live = true;
     const t = setTimeout(async () => {
-      const c = await renderPoster(p.text, p.map, p.material, name, p.maker);
+      const c = await renderPoster(p.text, p.map, p.material, name, p.maker, p.backdrop);
       if (live) setPoster(c.toDataURL('image/png'));
     }, 150);
     return () => {
       live = false;
       clearTimeout(t);
     };
-  }, [p.text, p.map, p.material, name, p.maker]);
+  }, [p.text, p.map, p.material, name, p.maker, p.backdrop]);
 
   const saveFont = async () => {
     const ttf = buildFont(p.map, name, p.maker);
     setFontSave(await saveFile(new Blob([ttf as BlobPart], { type: 'font/ttf' }), `${safeFileName(name)}.ttf`));
   };
   const savePoster = async () => {
-    const c = await renderPoster(p.text, p.map, p.material, name, p.maker);
+    const c = await renderPoster(p.text, p.map, p.material, name, p.maker, p.backdrop);
     const blob = await new Promise<Blob | null>((res) => c.toBlob(res, 'image/png'));
     if (blob) setPosterSave(await saveFile(blob, `${safeFileName(name)} poster.png`));
   };
@@ -86,7 +91,7 @@ export function ExportStep(p: Props) {
       </div>
 
       {/* The room wall talks to a server on the local network, which a claude.ai page can't reach. */}
-      {!inClaudeViewer && <RoomPanel map={p.map} team={p.maker} />}
+      {!inClaudeViewer && <RoomPanel map={p.captured} team={p.maker} />}
 
       <div className="row" style={{ marginTop: 24 }}>
         <button className="btn pink" onClick={p.onAddMore}>

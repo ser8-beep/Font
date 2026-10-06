@@ -37,7 +37,7 @@ export function CleanStep({ photos, currentPhotoId, letters, map, onChange }: Pr
               </h2>
               <div className="before-after">
                 <figure>
-                  <div className="pane">{g && <Crop image={photo.image} box={g.clean.box} />}</div>
+                  <div className="pane">{g && g.picture.kind === 'photo' && <Crop image={photo.image} box={g.picture.clean.box} />}</div>
                   <figcaption>Your photo</figcaption>
                 </figure>
                 <figure>

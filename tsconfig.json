@@ -15,5 +15,6 @@
     "allowImportingTsExtensions": false,
     "types": ["node"]
   },
-  "include": ["src", "scripts", "tests", "vite.config.ts"]
+  "include": ["src", "scripts", "tests", "vite.config.ts"],
+  "exclude": ["scripts/tmp"]
 }

@@ -2,4 +2,4 @@
 export { analyseStyle } from './style';
 export { materialFor, renderLetter } from './generate';
 export { alphabetChars, skeletonFor, supportedChars, verticalRange } from './skeletons';
-export type { GeneratedArt, StyleProfile, StyleSample } from './types';
+export type { GeneratedArt, MaterialProfile, StyleProfile, StyleSample } from './types';

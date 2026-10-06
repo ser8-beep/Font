@@ -1,16 +1,26 @@
 import { useCallback, useEffect, useMemo, useReducer, useState } from 'react';
+import { backdropColour, tableColour } from './backdrop';
 import { glyphMap } from './font';
+import { useAlphabet } from './grow';
 import { processPhoto } from './photo';
-import { initialState, reducer, STEPS, type Letter, type Step } from './state';
+import { GROW_STEPS, initialState, reducer, STEPS, type Letter, type Step } from './state';
 import { CaptureStep } from './ui/CaptureStep';
 import { CleanStep } from './ui/CleanStep';
 import { ExportStep } from './ui/ExportStep';
+import { GrowStep } from './ui/GrowStep';
 import { RoomView } from './ui/RoomView';
 import { SplitStep } from './ui/SplitStep';
 import { TypeStep } from './ui/TypeStep';
 
-const LABELS: Record<Step, string> = { capture: 'Snap', split: 'Check', clean: 'Neaten', type: 'Type', export: 'Save' };
-const COLOURS: Record<Step, string> = { capture: 'var(--yellow)', split: 'var(--pink)', clean: 'var(--blue)', type: 'var(--green)', export: 'var(--orange)' };
+const LABELS: Record<Step, string> = { capture: 'Snap', split: 'Check', clean: 'Neaten', grow: 'A–Z', type: 'Play', export: 'Save' };
+const COLOURS: Record<Step, string> = {
+  capture: 'var(--yellow)',
+  split: 'var(--pink)',
+  clean: 'var(--blue)',
+  grow: 'var(--purple)',
+  type: 'var(--green)',
+  export: 'var(--orange)',
+};
 
 export default function App() {
   const [hash, setHash] = useState(location.hash);
@@ -29,7 +39,11 @@ function Station() {
   const [error, setError] = useState<string | null>(null);
   const [addingMore, setAddingMore] = useState(false);
 
-  const map = useMemo(() => glyphMap(s.letters, s.photos), [s.letters, s.photos]);
+  // The letters the kid made, then the whole font: grown letters with the kid's own on top.
+  const captured = useMemo(() => glyphMap(s.letters, s.photos), [s.letters, s.photos]);
+  const alphabet = useAlphabet(captured, s.letters, s.photos, s.seeds, GROW_STEPS.includes(s.step));
+  const map = useMemo(() => new Map([...alphabet.grown, ...captured]), [alphabet.grown, captured]);
+  const table = tableColour(s.photos[0] ?? null);
   const photo = s.photos.find((p) => p.id === s.currentPhotoId) ?? null;
   const photoLetters = s.letters.filter((l) => l.photoId === s.currentPhotoId);
   const idx = STEPS.indexOf(s.step);
@@ -82,7 +96,10 @@ function Station() {
   }, []);
 
   const canNext =
-    s.step === 'capture' ? !!photo && !addingMore : s.step === 'split' ? photoLetters.some((l) => l.char) : s.step === 'clean' ? map.size > 0 : s.step === 'type';
+    s.step === 'capture' ? !!photo && !addingMore
+    : s.step === 'split' ? photoLetters.some((l) => l.char)
+    : s.step === 'clean' ? captured.size > 0
+    : s.step === 'grow' || s.step === 'type';
 
   // Default the maker's name to the first word they typed.
   const maker = s.maker || (s.text.trim().split(/\s+/)[0] ?? '').slice(0, 30);
@@ -110,16 +127,32 @@ function Station() {
         {s.step === 'capture' && <CaptureStep addingMore={addingMore} busy={busy} error={error} onPhoto={onPhoto} />}
         {s.step === 'split' && photo && <SplitStep photo={photo} letters={photoLetters} onChange={(ls) => setLetters(photo.id, ls)} />}
         {s.step === 'clean' && (
-          <CleanStep photos={s.photos} currentPhotoId={s.currentPhotoId} letters={s.letters} map={map} onChange={(ls, record) => dispatch({ type: 'letters', letters: ls, record })} />
+          <CleanStep photos={s.photos} currentPhotoId={s.currentPhotoId} letters={s.letters} map={captured} onChange={(ls, record) => dispatch({ type: 'letters', letters: ls, record })} />
+        )}
+        {s.step === 'grow' && (
+          <GrowStep
+            alphabet={alphabet}
+            captured={captured}
+            material={s.material}
+            onMaterial={(on) => dispatch({ type: 'material', on })}
+            onReroll={(ch) => dispatch({ type: 'reroll', char: ch })}
+          />
         )}
         {s.step === 'type' && (
           <TypeStep
             text={s.text}
             map={map}
+            keys={alphabet.chars}
             material={s.material}
             celebrated={s.celebrated}
+            size={s.size}
+            backdrop={s.backdrop}
+            table={table}
+            growing={alphabet.done < alphabet.total}
             onText={(t) => dispatch({ type: 'text', text: t })}
             onMaterial={(on) => dispatch({ type: 'material', on })}
+            onSize={(size) => dispatch({ type: 'size', size })}
+            onBackdrop={(backdrop) => dispatch({ type: 'backdrop', backdrop })}
             onCelebrated={onCelebrated}
             onAddMore={addMore}
           />
@@ -128,6 +161,8 @@ function Station() {
           <ExportStep
             text={s.text}
             map={map}
+            captured={captured}
+            backdrop={backdropColour(s.backdrop === 'white' ? 'yellow' : s.backdrop, table)}
             material={s.material}
             fontName={s.fontName}
             maker={maker}
