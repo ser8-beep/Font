@@ -156,7 +156,8 @@ export function CaptureStep({ photos, adding, busy, error, onPhoto }: Props) {
             </span>{' '}
             out of things you find, then take a photo.
           </p>
-          <div className="mode-switch" role="group" aria-label="How will you photograph it?">
+          <p className="section-label" id="mode-title">How will you take it?</p>
+          <div className="mode-switch" role="group" aria-labelledby="mode-title">
             <button className={mode === 'word' ? 'on' : ''} aria-pressed={mode === 'word'} onClick={() => setMode('word')}>
               All four letters in one photo
             </button>
@@ -178,25 +179,29 @@ export function CaptureStep({ photos, adding, busy, error, onPhoto }: Props) {
         </>
       )}
 
-      <div className="tips">
-        <Tip colour="var(--yellow)" text="Plain table or paper behind">
-          <rect x="6" y="6" width="44" height="44" rx="8" fill="white" stroke="#1b1b3a" strokeWidth="4" />
-        </Tip>
-        <Tip colour="var(--pink)" text={mode === 'letters' || adding !== null ? 'Fill the photo with your letter' : 'Leave gaps between letters'}>
-          <>
-            <rect x="4" y="16" width="14" height="24" rx="3" fill="#ff5d8f" stroke="#1b1b3a" strokeWidth="3" />
-            <rect x="38" y="16" width="14" height="24" rx="3" fill="#3a86ff" stroke="#1b1b3a" strokeWidth="3" />
-            <path d="M22 28h12M22 28l4-4M22 28l4 4M34 28l-4-4M34 28l-4 4" stroke="#1b1b3a" strokeWidth="3" fill="none" />
-          </>
-        </Tip>
-        <Tip colour="var(--blue)" text="Hold the camera straight above">
-          <>
-            <rect x="14" y="4" width="28" height="18" rx="4" fill="#3a86ff" stroke="#1b1b3a" strokeWidth="3" />
-            <path d="M28 24v14M22 32l6 6 6-6" stroke="#1b1b3a" strokeWidth="4" fill="none" />
-            <rect x="6" y="42" width="44" height="10" rx="3" fill="#ffd23f" stroke="#1b1b3a" strokeWidth="3" />
-          </>
-        </Tip>
-      </div>
+      {/* Tips are information, not buttons: a flat panel with no outline or shadow. */}
+      <section className="tips" aria-labelledby="tips-title">
+        <h2 id="tips-title">Tips for a good photo</h2>
+        <ul>
+          <Tip text="Plain table or paper behind">
+            <rect x="6" y="6" width="44" height="44" rx="8" fill="white" stroke="#1b1b3a" strokeWidth="4" />
+          </Tip>
+          <Tip text={mode === 'letters' || adding !== null ? 'Fill the photo with your letter' : 'Leave gaps between letters'}>
+            <>
+              <rect x="4" y="16" width="14" height="24" rx="3" fill="#ff5d8f" stroke="#1b1b3a" strokeWidth="3" />
+              <rect x="38" y="16" width="14" height="24" rx="3" fill="#3a86ff" stroke="#1b1b3a" strokeWidth="3" />
+              <path d="M22 28h12M22 28l4-4M22 28l4 4M34 28l-4-4M34 28l-4 4" stroke="#1b1b3a" strokeWidth="3" fill="none" />
+            </>
+          </Tip>
+          <Tip text="Hold the camera straight above">
+            <>
+              <rect x="14" y="4" width="28" height="18" rx="4" fill="#3a86ff" stroke="#1b1b3a" strokeWidth="3" />
+              <path d="M28 24v14M22 32l6 6 6-6" stroke="#1b1b3a" strokeWidth="4" fill="none" />
+              <rect x="6" y="42" width="44" height="10" rx="3" fill="#ffd23f" stroke="#1b1b3a" strokeWidth="3" />
+            </>
+          </Tip>
+        </ul>
+      </section>
 
       {(hint || error) && <p className="card" style={{ background: 'var(--pink)' }}>{hint || error}</p>}
 
@@ -263,12 +268,12 @@ export function CaptureStep({ photos, adding, busy, error, onPhoto }: Props) {
   );
 }
 
-function Tip({ colour, text, children }: { colour: string; text: string; children: React.ReactNode }) {
+function Tip({ text, children }: { text: string; children: React.ReactNode }) {
   return (
-    <div className="tip card" style={{ background: colour === 'var(--blue)' ? '#d7e6ff' : 'white' }}>
-      <svg width="56" height="56" viewBox="0 0 56 56" aria-hidden>{children}</svg>
+    <li className="tip">
+      <svg width="40" height="40" viewBox="0 0 56 56" aria-hidden>{children}</svg>
       {text}
-    </div>
+    </li>
   );
 }
 
