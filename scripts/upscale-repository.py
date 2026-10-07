@@ -3,6 +3,7 @@
 #
 #   python3 -m venv .venv-sr && .venv-sr/bin/pip install realesrgan-ncnn-py   (needs libomp5)
 #   .venv-sr/bin/python -I scripts/upscale-repository.py [--limit N]
+#   (the model's memory grows with each picture: for big runs, repeat with --limit 40)
 #
 # For every cut-out the app uses (the five categories, letters A-Z) shorter than MIN_H, writes
 # alphabet-repository/_upscaled/<same path>.webp; npm run library then uses it instead of the
@@ -40,7 +41,12 @@ def fill_clear(rgb, alpha):
 
 
 def upscale(img):
-    a = np.asarray(img.convert('RGBA'))
+    img = img.convert('RGBA')
+    # The result is kept at most MAX_H tall, so bigger inputs only cost time and memory.
+    cap = round(MAX_H * 1.25 / 4)
+    if img.height > cap:
+        img = img.resize((max(1, round(img.width * cap / img.height)), cap), Image.LANCZOS)
+    a = np.asarray(img)
     rgb, alpha = fill_clear(a[..., :3].copy(), a[..., 3]), a[..., 3]
     rgb = cv2.copyMakeBorder(rgb, PAD, PAD, PAD, PAD, cv2.BORDER_REPLICATE)
     big = np.asarray(model.process_pil(Image.fromarray(rgb)))[4 * PAD:-4 * PAD, 4 * PAD:-4 * PAD]
