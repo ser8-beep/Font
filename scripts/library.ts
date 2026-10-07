@@ -215,7 +215,7 @@ for (const [category, sets] of [...byCategory].sort((a, b) => a[0].localeCompare
     const pngPath = join(OUT, 'atlases', p.name.replace(/\.webp$/, '.png'));
     writeFileSync(pngPath, PNG.sync.write(atlas));
     // WebP keeps photos with see-through edges about 5x smaller than PNG.
-    execFileSync('python3', ['-I', '-c', 'import sys; from PIL import Image; Image.open(sys.argv[1]).save(sys.argv[2], "WEBP", quality=int(sys.argv[3]), method=6)', pngPath, join(OUT, 'atlases', p.name), process.env.LIBRARY_QUALITY ?? '86']);
+    execFileSync('python3', ['-I', '-c', 'import sys; from PIL import Image; Image.open(sys.argv[1]).save(sys.argv[2], "WEBP", quality=int(sys.argv[3]), method=6)', pngPath, join(OUT, 'atlases', p.name), process.env.LIBRARY_QUALITY ?? '80']);
     rmSync(pngPath);
   }
   console.log(`${category.padEnd(14)} ${String(placed.size).padStart(3)} letters in ${sets.size} sets on ${pages.length} picture${pages.length > 1 ? 's' : ''}`);
