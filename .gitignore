@@ -8,3 +8,4 @@ server/room-data.json
 samples/_refs/
 scripts/tmp/
 .venv-sr/
+alphabet-repository/_upscaled/**/*.tmp
