@@ -7,3 +7,4 @@ server/room-data.json
 .DS_Store
 samples/_refs/
 scripts/tmp/
+.venv-sr/

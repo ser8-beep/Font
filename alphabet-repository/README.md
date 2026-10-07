@@ -44,6 +44,16 @@ are kept in `_set-aside/<tag>/<LETTER>/` with `set_aside: true`; the app doesn't
   (WEAVING & SOLVING interlock, so they are whole lines) and the collage's & are in
   `_set-aside/_not-letters/`; drafting-tools' Ñ is kept but the app only uses A–Z.
 
+## Sharpened copies (`_upscaled/`)
+Most cut-outs are 60-150 px tall, smaller than the font draws them (256 px per em). For every
+cut-out the app uses that is under 300 px tall, `_upscaled/<same path>.webp` holds a 4x Real-ESRGAN
+copy (general photo model, at most 480 px tall). `npm run library` uses it instead of the original.
+The originals stay as they were. To redo or extend (new cut-outs, say):
+
+    sudo apt-get install libomp5
+    python3 -m venv .venv-sr && .venv-sr/bin/pip install realesrgan-ncnn-py
+    .venv-sr/bin/python -I scripts/upscale-repository.py     # skips pictures already done
+
 ## Cutout method
 Hard mask against the source background, 1px feather, background colour removed from the edge pixels (no white halo on dark or coloured backgrounds).
 

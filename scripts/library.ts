@@ -9,7 +9,7 @@
 // src/library/manifest.json lists every set and letter: where it sits in the picture, its outline
 // in font units (traced from the cut-out, for the .ttf) and what it is made of.
 import { execFileSync } from 'node:child_process';
-import { mkdirSync, readFileSync, rmSync, writeFileSync } from 'node:fs';
+import { existsSync, mkdirSync, readFileSync, rmSync, writeFileSync } from 'node:fs';
 import { dirname, join } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { PNG } from 'pngjs';
@@ -24,11 +24,17 @@ import type { LibraryLetter, LibraryManifest, LibrarySet } from '../src/library-
 const ROOT = join(dirname(fileURLToPath(import.meta.url)), '..');
 const OUT = join(ROOT, 'src', 'library');
 const ATLAS_WIDTH = 2048;
+// Phones (iOS Safari above all) refuse canvases much over 16 million pixels: a category's letters
+// go on several pictures of at most 2048 x 4096.
+const ATLAS_MAX_H = 4096;
 const PAD = 2;
-// Big cut-outs are scaled down to this height; font pictures go up to 256 px per em.
-const MAX_H = 320;
+// Cut-outs are scaled down to this height; font pictures go up to 256 px per em (a capital about
+// 180 px), and the playground shows letters bigger than that.
+const MAX_H = Number(process.env.LIBRARY_MAX_H ?? 360);
 
 const REPO = join(ROOT, 'alphabet-repository');
+// Sharpened copies of small cut-outs (scripts/upscale-repository.py), used when present.
+const UPSCALED = join(REPO, '_upscaled');
 interface Entry { id: string; char: string; case: string; category: string; objects: string; construction: string; source: string; confidence: string; file: string; primary?: boolean; generated?: boolean }
 const entries = (JSON.parse(readFileSync(join(REPO, 'manifest.json'), 'utf8')) as Entry[])
   .filter((e) => /^[A-Za-z]$/.test(e.char) && e.category in CATEGORY_LABELS)
@@ -45,6 +51,15 @@ const titleOf = (source: string, category: string) => {
 function load(path: string): RGBAImage {
   const png = PNG.sync.read(readFileSync(path));
   return { width: png.width, height: png.height, data: png.data };
+}
+
+/** The cut-out, sharpened when scripts/upscale-repository.py has made a copy. */
+function loadBest(file: string): { image: RGBAImage; upscaled: boolean } {
+  const up = join(UPSCALED, file.replace(/\.png$/, '.webp'));
+  if (!existsSync(up)) return { image: load(join(REPO, file)), upscaled: false };
+  const png = execFileSync('python3', ['-I', '-c', 'import io, sys; from PIL import Image; b = io.BytesIO(); Image.open(sys.argv[1]).convert("RGBA").save(b, "PNG"); sys.stdout.buffer.write(b.getvalue())', up], { maxBuffer: 1 << 28 });
+  const p = PNG.sync.read(png);
+  return { image: { width: p.width, height: p.height, data: p.data }, upscaled: true };
 }
 
 /** The letter's shape: the opaque part of the cut-out, minus specks left from neighbours. */
@@ -102,9 +117,10 @@ function tidy(d: string | undefined): string | undefined {
 const BUILD = new Set(['single', 'composite', 'repeated', 'formed']);
 type Cut = { e: Entry; img: RGBAImage; mask: Mask };
 const byCategory = new Map<string, Map<string, Cut[]>>();
-let skipped = 0;
+let skipped = 0, sharpened = 0;
 for (const e of entries) {
-  const raw = load(join(REPO, e.file));
+  const { image: raw, upscaled } = loadBest(e.file);
+  if (upscaled) sharpened++;
   const m = letterMask(raw);
   const b = maskBounds(m);
   if (!b || b.w < 3 || b.h < 6) { skipped++; continue; }
@@ -118,26 +134,49 @@ rmSync(join(OUT, 'atlases'), { recursive: true, force: true });
 mkdirSync(join(OUT, 'atlases'), { recursive: true });
 const manifest: LibraryManifest = { sets: [] };
 for (const [category, sets] of [...byCategory].sort((a, b) => a[0].localeCompare(b[0]))) {
-  // Shelf-pack every letter of the category into one picture.
-  const cuts = [...sets.values()].flat();
-  let x = 0, y = 0, shelf = 0;
-  const placed = new Map<Cut, { x: number; y: number }>();
-  for (const c of cuts) {
-    if (x + c.img.width + PAD > ATLAS_WIDTH) { x = 0; y += shelf + PAD; shelf = 0; }
-    placed.set(c, { x, y });
-    x += c.img.width + PAD;
-    shelf = Math.max(shelf, c.img.height);
+  // Shelf-pack the category's letters, one set after another; a set that would run past
+  // ATLAS_MAX_H starts a new picture, so every set lives in one picture.
+  type Page = { name: string; height: number; cuts: Cut[] };
+  const pages: Page[] = [];
+  const placed = new Map<Cut, { x: number; y: number; page: Page }>();
+  const ordered = [...sets].sort((a, b) => b[1].length - a[1].length);
+  let page: Page | null = null, x = 0, y = 0, shelf = 0;
+  for (const [, list] of ordered) {
+    // Where this set would end on the current page.
+    let tx = x, ty = y, tshelf = shelf;
+    for (const c of list) {
+      if (tx + c.img.width + PAD > ATLAS_WIDTH) { tx = 0; ty += tshelf + PAD; tshelf = 0; }
+      tx += c.img.width + PAD;
+      tshelf = Math.max(tshelf, c.img.height);
+    }
+    if (!page || (ty + tshelf > ATLAS_MAX_H && page.cuts.length)) {
+      if (page) page.height = y + shelf;
+      page = { name: `${category}-${pages.length + 1}.webp`, height: 0, cuts: [] };
+      pages.push(page);
+      x = 0; y = 0; shelf = 0;
+    }
+    for (const c of list) {
+      if (x + c.img.width + PAD > ATLAS_WIDTH) { x = 0; y += shelf + PAD; shelf = 0; }
+      placed.set(c, { x, y, page });
+      page.cuts.push(c);
+      x += c.img.width + PAD;
+      shelf = Math.max(shelf, c.img.height);
+    }
   }
-  const atlas = new PNG({ width: ATLAS_WIDTH, height: y + shelf });
-  const atlasName = `${category}.webp`;
+  if (page) page.height = y + shelf;
+  const pictures = new Map(pages.map((p) => [p, new PNG({ width: ATLAS_WIDTH, height: Math.max(1, p.height) })]));
+
   let unnamed = 0;
-  for (const [source, list] of [...sets].sort((a, b) => b[1].length - a[1].length)) {
+  for (const [source, list] of ordered) {
     const letters: LibraryLetter[] = [];
+    let atlasName = '';
     for (const c of list) {
       const o = maskToGlyph(c.mask, verticalRange(c.e.char));
       if (!o) continue;
       // Only the traced part goes in (maskToGlyph drops specks), so the picture matches the outline.
       const s = o.source, at = placed.get(c)!;
+      const atlas = pictures.get(at.page)!;
+      atlasName = at.page.name;
       for (let yy = 0; yy < s.h; yy++) {
         const src = ((s.y + yy) * c.img.width + s.x) * 4;
         atlas.data.set(c.img.data.subarray(src, src + s.w * 4), ((at.y + yy) * ATLAS_WIDTH + at.x) * 4);
@@ -172,12 +211,14 @@ for (const [category, sets] of [...byCategory].sort((a, b) => a[0].localeCompare
     };
     manifest.sets.push(entry);
   }
-  const pngPath = join(OUT, 'atlases', `${category}.png`);
-  writeFileSync(pngPath, PNG.sync.write(atlas));
-  // WebP keeps photos with see-through edges about 5x smaller than PNG.
-  execFileSync('python3', ['-I', '-c', 'import sys; from PIL import Image; Image.open(sys.argv[1]).save(sys.argv[2], "WEBP", quality=86, method=6)', pngPath, pngPath.replace(/\.png$/, '.webp')]);
-  rmSync(pngPath);
-  console.log(`${category.padEnd(14)} ${String(cuts.length).padStart(3)} letters in ${sets.size} sets  ${ATLAS_WIDTH}x${y + shelf}`);
+  for (const [p, atlas] of pictures) {
+    const pngPath = join(OUT, 'atlases', p.name.replace(/\.webp$/, '.png'));
+    writeFileSync(pngPath, PNG.sync.write(atlas));
+    // WebP keeps photos with see-through edges about 5x smaller than PNG.
+    execFileSync('python3', ['-I', '-c', 'import sys; from PIL import Image; Image.open(sys.argv[1]).save(sys.argv[2], "WEBP", quality=int(sys.argv[3]), method=6)', pngPath, join(OUT, 'atlases', p.name), process.env.LIBRARY_QUALITY ?? '86']);
+    rmSync(pngPath);
+  }
+  console.log(`${category.padEnd(14)} ${String(placed.size).padStart(3)} letters in ${sets.size} sets on ${pages.length} picture${pages.length > 1 ? 's' : ''}`);
 }
 writeFileSync(join(OUT, 'manifest.json'), JSON.stringify(manifest));
-console.log(`${manifest.sets.length} sets, ${manifest.sets.reduce((s, x) => s + x.letters.length, 0)} letters (${skipped} skipped)`);
+console.log(`${manifest.sets.length} sets, ${manifest.sets.reduce((s, x) => s + x.letters.length, 0)} letters (${sharpened} sharpened, ${skipped} skipped)`);
