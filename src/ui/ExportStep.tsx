@@ -3,7 +3,8 @@ import { useEffect, useState } from 'react';
 import { buildFont, materialCanvas, safeFileName, type LetterGlyph } from '../font';
 import { inClaudeViewer, saveFile, type SaveOutcome } from '../host';
 import { fontPictures, warmPictures } from '../pictures';
-import { renderPoster } from '../poster';
+import { designCanvas, FRAMES, type Design } from '../design';
+import type { Size } from '../state';
 import { fetchRoom, roomBase, saveRoomBase, submitToRoom } from '../room';
 
 interface Props {
@@ -13,7 +14,9 @@ interface Props {
   /** Only the letters the kid made (these go to the room wall). */
   captured: Map<string, LetterGlyph>;
   /** Poster background colour. */
-  backdrop: string;
+  /** The poster designed in the playground. */
+  design: Design;
+  size: Size;
   fontName: string;
   maker: string;
   onFontName: (n: string) => void;
@@ -37,17 +40,15 @@ export function ExportStep(p: Props) {
   // Start on the font's photo letters straight away, so saving is quick.
   useEffect(() => warmPictures(p.map.values()), [p.map]);
 
+  const [withName, setWithName] = useState(true);
+  const frame = FRAMES[p.design.frame];
+  const caption = withName ? `${name}${p.maker ? ` · by ${p.maker}` : ''}` : undefined;
+  const posterOf = (width?: number) => designCanvas(p.design, { text: p.text, map: p.map, size: p.size, caption }, width);
   useEffect(() => {
-    let live = true;
-    const t = setTimeout(async () => {
-      const c = await renderPoster(p.text, p.map, name, p.maker, p.backdrop);
-      if (live) setPoster(c.toDataURL('image/png'));
-    }, 150);
-    return () => {
-      live = false;
-      clearTimeout(t);
-    };
-  }, [p.text, p.map, name, p.maker, p.backdrop]);
+    const t = setTimeout(() => setPoster(posterOf(900).toDataURL('image/jpeg', 0.9)), 150);
+    return () => clearTimeout(t);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [p.text, p.map, p.size, p.design, caption]);
 
   const saveFont = async () => {
     if (making) return;
@@ -84,9 +85,11 @@ export function ExportStep(p: Props) {
   };
   const savePoster = async () => {
     try {
-      const c = await renderPoster(p.text, p.map, name, p.maker, p.backdrop);
+      // Full size: a wallpaper for the screen it's for, or a print-ready A4 or A3.
+      const c = posterOf();
       const blob = await new Promise<Blob | null>((res) => c.toBlob(res, 'image/png'));
-      setPosterSave(blob ? await saveFile(blob, `${safeFileName(name)} poster.png`) : { kind: 'failed', why: 'the poster picture could not be made' });
+      c.width = c.height = 0;
+      setPosterSave(blob ? await saveFile(blob, `${safeFileName(name)} ${frame.label.toLowerCase()}.png`) : { kind: 'failed', why: 'the poster picture could not be made' });
     } catch (e) {
       setPosterSave(broke(e));
     }
@@ -125,10 +128,21 @@ export function ExportStep(p: Props) {
         </div>
 
         <div className="card">
-          {poster ? <img className="poster-preview" src={poster} alt="Your poster" /> : <div className="poster-preview" style={{ aspectRatio: '16/10' }} />}
-          <div className="row" style={{ marginTop: 14, justifyContent: 'flex-end' }}>
+          {poster ? (
+            <img className="poster-preview" src={poster} alt={`Your ${frame.label.toLowerCase()}`} />
+          ) : (
+            <div className="poster-preview" style={{ aspectRatio: `${frame.w} / ${frame.h}` }} />
+          )}
+          <p className="help" style={{ marginTop: 10 }}>
+            <strong>{frame.label}</strong> · {frame.w} × {frame.h} px, {frame.note}. Change the frame, colours and stickers in the Play step.
+          </p>
+          <label className="toggle">
+            <input type="checkbox" checked={withName} onChange={(e) => setWithName(e.target.checked)} />
+            Put the font's name on it
+          </label>
+          <div className="row" style={{ marginTop: 10, justifyContent: 'flex-end' }}>
             <button className="btn big orange" onClick={savePoster}>
-              ⬇ Save poster
+              ⬇ Save {frame.label.toLowerCase()}
             </button>
           </div>
           {posterSave && (

@@ -1,7 +1,8 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
-import { BACKDROPS, backdropColour, WRAP } from '../backdrop';
+import type { Design } from '../design';
 import { lookup, type LetterGlyph } from '../font';
-import type { Backdrop, Size } from '../state';
+import type { Size } from '../state';
+import { PosterEditor } from './PosterEditor';
 import { COLOURS } from './SplitStep';
 import { GlyphView, TextRender } from './TextRender';
 
@@ -12,13 +13,15 @@ interface Props {
   keys: string[];
   celebrated: boolean;
   size: Size;
-  backdrop: Backdrop;
+  design: Design;
+  /** The letters' category, for its background patterns ('' until known). */
+  category: string;
   table: string;
   /** Letters still growing (they show as grey boxes until they arrive). */
   growing: boolean;
   onText: (t: string) => void;
   onSize: (s: Size) => void;
-  onBackdrop: (b: Backdrop) => void;
+  onDesign: (patch: Partial<Design>) => void;
   onCelebrated: () => void;
   /** Photograph another letter (ch: the one to add, when known). */
   onAddMore: (ch?: string) => void;
@@ -63,7 +66,7 @@ export function TypeStep(p: Props) {
         <input
           ref={input}
           className="typebox"
-          style={{ flex: 1, minWidth: 0 }}
+          style={{ flex: '1 1 240px', minWidth: 0 }}
           value={p.text}
           maxLength={60}
           placeholder="Type your name!"
@@ -83,33 +86,16 @@ export function TypeStep(p: Props) {
         </button>
       </div>
 
-      <div className="render" style={{ background: backdropColour(p.backdrop, p.table) }}>
-        <TextRender text={p.text || caseWord('PLAY')} map={p.map} maxWidth={WRAP[p.size]} caret={!!p.text} className={`size-${p.size}`} />
-      </div>
-
-      <div className="play-controls">
-        <div className="row" role="group" aria-label="Letter size">
-          {(['S', 'M', 'L'] as Size[]).map((s) => (
-            <button key={s} className={`btn small ${p.size === s ? 'on' : ''}`} onClick={() => p.onSize(s)} aria-pressed={p.size === s}>
-              {s === 'S' ? 'Small' : s === 'M' ? 'Medium' : 'Big'}
-            </button>
-          ))}
-        </div>
-        <div className="row swatches" role="group" aria-label="Background">
-          {BACKDROPS.map((b) => (
-            <button
-              key={b}
-              className={`swatch ${p.backdrop === b ? 'on' : ''}`}
-              style={{ background: backdropColour(b, p.table) }}
-              onClick={() => p.onBackdrop(b)}
-              aria-label={b === 'table' ? 'Your table' : b}
-              title={b === 'table' ? 'Your table' : b}
-            >
-              {b === 'table' ? '📷' : ''}
-            </button>
-          ))}
-        </div>
-      </div>
+      <PosterEditor
+        design={p.design}
+        onDesign={p.onDesign}
+        text={p.text || caseWord('PLAY')}
+        map={p.map}
+        size={p.size}
+        onSize={p.onSize}
+        category={p.category}
+        table={p.table}
+      />
 
       <div className="keyboard" aria-label="Your letters keyboard">
         {p.keys.map((k) => {

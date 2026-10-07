@@ -239,7 +239,7 @@ export function CaptureStep({ photos, adding, busy, error, onPhoto }: Props) {
           </div>
           <p>
             <strong>{done} of {WORD.length}</strong> letters photographed.{' '}
-            {done < WORD.length ? 'Skip any you didn\'t make: they come from the A–Z.' : 'Press Next to match them.'}
+            {done < WORD.length ? 'Skip any you didn\'t make: they come from the A–Z.' : 'Press Next to see them.'}
           </p>
         </>
       )}

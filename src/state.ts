@@ -1,5 +1,6 @@
 import type { RGBAImage } from './core/image';
 import type { Analysis, LetterRegion } from './core/segment';
+import { DEFAULT_DESIGN, type Design } from './design';
 
 export interface Photo {
   id: string;
@@ -40,7 +41,6 @@ export const STEPS: Step[] = ['capture', 'split', 'clean', 'grow', 'type', 'expo
 export const GROW_STEPS: Step[] = ['grow', 'type', 'export'];
 
 export type Size = 'S' | 'M' | 'L';
-export type Backdrop = 'white' | 'table' | 'yellow' | 'pink' | 'blue' | 'green';
 
 export interface Snapshot {
   photos: Photo[];
@@ -61,7 +61,8 @@ export interface AppState extends Snapshot {
   maker: string;
   celebrated: boolean;
   size: Size;
-  backdrop: Backdrop;
+  /** The poster designed in the playground and saved in Save. */
+  design: Design;
   past: Snapshot[];
 }
 
@@ -79,7 +80,7 @@ export type Action =
   | { type: 'fontName'; name: string }
   | { type: 'maker'; name: string }
   | { type: 'size'; size: Size }
-  | { type: 'backdrop'; backdrop: Backdrop }
+  | { type: 'design'; patch: Partial<Design> }
   | { type: 'celebrated' }
   | { type: 'reset' };
 
@@ -96,7 +97,7 @@ export const initialState: AppState = {
   maker: '',
   celebrated: false,
   size: 'M',
-  backdrop: 'white',
+  design: DEFAULT_DESIGN,
   past: [],
 };
 
@@ -115,7 +116,8 @@ export function reducer(s: AppState, a: Action): AppState {
         photos: [...s.photos.filter((p) => !gone.has(p.id)), a.photo],
         letters: [...s.letters.filter((l) => !gone.has(l.photoId)), ...a.letters],
         currentPhotoId: a.photo.id,
-        step: a.stay ? s.step : 'split',
+        // A photo of one letter is already matched: straight on to Neaten.
+        step: a.stay ? s.step : [...a.photo.word].length === 1 ? 'clean' : 'split',
       };
     }
     case 'showPhoto':
@@ -142,8 +144,8 @@ export function reducer(s: AppState, a: Action): AppState {
       return { ...s, maker: a.name };
     case 'size':
       return { ...s, size: a.size };
-    case 'backdrop':
-      return { ...s, backdrop: a.backdrop };
+    case 'design':
+      return { ...s, design: { ...s.design, ...a.patch } };
     case 'celebrated':
       return { ...s, celebrated: true };
     case 'reset':

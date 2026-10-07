@@ -48,18 +48,14 @@ export async function processPhoto(blob: Blob, word: string): Promise<{ photo: P
   await nextFrame();
   const analysis = analyse(image, { expected: Math.max(1, word.length) });
   const photo: Photo = { id: uid(), image, url, analysis, word };
-  // Every shape found is only marked; the kid says which letter each one is. A photo of one letter
-  // was taken for that letter, so its biggest shape already is it (the kid can still change it).
-  const one = [...word].length === 1;
-  const biggest = analysis.blobs.reduce<number>((best, b, i, all) => (best < 0 || b.box.w * b.box.h > all[best].box.w * all[best].box.h ? i : best), -1);
-  const letters: Letter[] = analysis.blobs.map((b, i) => ({
-    id: uid(),
-    photoId: photo.id,
-    char: one && i === biggest ? word : null,
-    region: { box: b.box, region: b.region },
-    rev: 0,
-    bolder: 0,
-    fillHoles: b.porous,
-  }));
-  return { photo, letters };
+  const letter = (region: Letter['region'], char: string | null, porous = false): Letter => ({ id: uid(), photoId: photo.id, char, region, rev: 0, bolder: 0, fillHoles: porous });
+  if ([...word].length === 1) {
+    // A photo taken for one letter needs no matching: its biggest shape is that letter (the whole
+    // photo when nothing stands out), and smaller bits are left out.
+    const biggest = analysis.blobs.reduce<(typeof analysis.blobs)[number] | null>((best, b) => (!best || b.box.w * b.box.h > best.box.w * best.box.h ? b : best), null);
+    const { width, height } = analysis.work;
+    return { photo, letters: [biggest ? letter({ box: biggest.box, region: biggest.region }, word, biggest.porous) : letter({ box: { x: 0, y: 0, w: width, h: height } }, word)] };
+  }
+  // Every shape found is only marked; the kid says which letter each one is.
+  return { photo, letters: analysis.blobs.map((b) => letter({ box: b.box, region: b.region }, null, b.porous)) };
 }

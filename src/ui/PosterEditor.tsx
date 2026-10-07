@@ -1,0 +1,379 @@
+import { useEffect, useLayoutEffect, useRef, useState } from 'react';
+import { CATEGORY_LABELS } from '../core/alphabet/category';
+import {
+  drawPatternSample, FRAME_IDS, FRAMES, PALETTE, PATTERNS, renderDesign, STICKERS,
+  type Box, type Design, type Fill, type Sticker, type StickerShape,
+} from '../design';
+import type { LetterGlyph } from '../font';
+import { uid, type Size } from '../state';
+import { ColorPicker } from './ColorPicker';
+
+interface Props {
+  design: Design;
+  onDesign: (patch: Partial<Design>) => void;
+  text: string;
+  map: Map<string, LetterGlyph>;
+  size: Size;
+  onSize: (s: Size) => void;
+  /** The letters' category (its patterns are offered); '' when not known yet. */
+  category: string;
+  /** The kid's table colour, as a swatch. */
+  table: string;
+}
+
+const GRADIENTS: Fill[] = [
+  { kind: 'gradient', type: 'linear', from: '#ffd23f', to: '#ff5d8f', angle: 135 },
+  { kind: 'gradient', type: 'linear', from: '#4cc9f0', to: '#8338ec', angle: 160 },
+  { kind: 'gradient', type: 'linear', from: '#06d6a0', to: '#ffd23f', angle: 180 },
+  { kind: 'gradient', type: 'radial', from: '#fffaf0', to: '#ff8c42', angle: 0 },
+  { kind: 'gradient', type: 'linear', from: '#1b1b3a', to: '#3a86ff', angle: 200 },
+];
+
+/** 'rgb(1, 2, 3)' or '#abc' -> '#aabbcc'. */
+function asHex(c: string): string {
+  const m = c.match(/rgb\((\d+),\s*(\d+),\s*(\d+)/);
+  return m ? '#' + m.slice(1).map((v) => Number(v).toString(16).padStart(2, '0')).join('') : c;
+}
+
+const Label = ({ children }: { children: React.ReactNode }) => <p className="section-label">{children}</p>;
+
+/** The playground's poster: a live preview to drag words and stickers on, and the design controls. */
+export function PosterEditor(p: Props) {
+  const d = p.design;
+  const f = FRAMES[d.frame];
+  const short = Math.min(f.w, f.h);
+  const swatches = [...PALETTE, asHex(p.table)];
+
+  // ---- preview size ----
+  const wrap = useRef<HTMLDivElement>(null);
+  const stage = useRef<HTMLDivElement>(null);
+  const canvas = useRef<HTMLCanvasElement>(null);
+  const [avail, setAvail] = useState({ w: 800, h: 600 });
+  useLayoutEffect(() => {
+    const el = wrap.current!;
+    const measure = () => setAvail({ w: el.clientWidth, h: Math.max(260, window.innerHeight * 0.64) });
+    measure();
+    const ro = new ResizeObserver(measure);
+    ro.observe(el);
+    window.addEventListener('resize', measure);
+    return () => {
+      ro.disconnect();
+      window.removeEventListener('resize', measure);
+    };
+  }, []);
+  const viewW = Math.min(avail.w, (avail.h * f.w) / f.h);
+  const viewH = (viewW * f.h) / f.w;
+  const k = viewW / f.w; // view pixels per frame pixel
+
+  // ---- drawing ----
+  const [textBox, setTextBox] = useState<Box>({ x: 0, y: 0, w: 0, h: 0 });
+  useEffect(() => {
+    const c = canvas.current;
+    if (!c || viewW < 2) return;
+    const dpr = Math.min(2.5, window.devicePixelRatio || 1);
+    c.width = Math.round(viewW * dpr);
+    c.height = Math.round(viewH * dpr);
+    const ctx = c.getContext('2d')!;
+    const r = renderDesign(ctx, d, { text: p.text, map: p.map, size: p.size, scale: c.width / f.w });
+    setTextBox((b) => (b.x === r.text.x && b.y === r.text.y && b.w === r.text.w && b.h === r.text.h ? b : r.text));
+  }, [d, p.text, p.map, p.size, viewW, viewH, f.w]);
+
+  // ---- stickers ----
+  const [selected, setSelected] = useState<string | null>(null);
+  const sel = d.stickers.find((s) => s.id === selected) ?? null;
+  const setSticker = (id: string, patch: Partial<Sticker>) => p.onDesign({ stickers: d.stickers.map((s) => (s.id === id ? { ...s, ...patch } : s)) });
+  const removeSticker = (id: string) => {
+    p.onDesign({ stickers: d.stickers.filter((s) => s.id !== id) });
+    setSelected(null);
+  };
+  const addSticker = (shape: StickerShape, x: number, y: number) => {
+    const def = STICKERS.find((s) => s.shape === shape)!;
+    const st: Sticker = { id: uid(), shape, x, y, size: 0.16, rot: 0, colour: def.colour };
+    p.onDesign({ stickers: [...d.stickers, st] });
+    setSelected(st.id);
+  };
+  useEffect(() => {
+    const k = (e: KeyboardEvent) => {
+      if (!selected || (e.target as HTMLElement).closest('input, textarea')) return;
+      if (e.key === 'Delete' || e.key === 'Backspace') {
+        e.preventDefault();
+        removeSticker(selected);
+      }
+    };
+    window.addEventListener('keydown', k);
+    return () => window.removeEventListener('keydown', k);
+  });
+
+  /** Follows one pointer until it lets go. */
+  const follow = (e: React.PointerEvent, move: (ev: PointerEvent) => void, up?: (ev: PointerEvent) => void) => {
+    e.preventDefault();
+    e.stopPropagation();
+    const mv = (ev: PointerEvent) => move(ev);
+    const done = (ev: PointerEvent) => {
+      window.removeEventListener('pointermove', mv);
+      window.removeEventListener('pointerup', done);
+      window.removeEventListener('pointercancel', done);
+      up?.(ev);
+    };
+    window.addEventListener('pointermove', mv);
+    window.addEventListener('pointerup', done);
+    window.addEventListener('pointercancel', done);
+  };
+  const clamp = (v: number, lo = 0, hi = 1) => Math.min(hi, Math.max(lo, v));
+  /** Pointer position as shares of the frame. */
+  const inFrame = (ev: { clientX: number; clientY: number }) => {
+    const r = stage.current!.getBoundingClientRect();
+    return { x: (ev.clientX - r.left) / r.width, y: (ev.clientY - r.top) / r.height, inside: ev.clientX >= r.left && ev.clientX <= r.right && ev.clientY >= r.top && ev.clientY <= r.bottom };
+  };
+
+  const moveSticker = (e: React.PointerEvent, s: Sticker) => {
+    setSelected(s.id);
+    const start = inFrame(e);
+    follow(e, (ev) => {
+      const at = inFrame(ev);
+      setSticker(s.id, { x: clamp(s.x + at.x - start.x), y: clamp(s.y + at.y - start.y) });
+    });
+  };
+  const resizeSticker = (e: React.PointerEvent, s: Sticker) =>
+    follow(e, (ev) => {
+      const at = inFrame(ev);
+      // Distance from the centre to the pointer, in frame pixels, is half the diagonal.
+      const dist = Math.hypot((at.x - s.x) * f.w, (at.y - s.y) * f.h);
+      setSticker(s.id, { size: clamp((dist * Math.SQRT2) / short, 0.04, 0.9) });
+    });
+  const rotateSticker = (e: React.PointerEvent, s: Sticker) =>
+    follow(e, (ev) => {
+      const at = inFrame(ev);
+      const a = (Math.atan2((at.y - s.y) * f.h, (at.x - s.x) * f.w) * 180) / Math.PI + 90;
+      setSticker(s.id, { rot: Math.round(((a + 360) % 360) / 5) * 5 });
+    });
+  const moveText = (e: React.PointerEvent) => {
+    setSelected(null);
+    const start = inFrame(e);
+    const { textX, textY } = d;
+    follow(e, (ev) => {
+      const at = inFrame(ev);
+      p.onDesign({ textX: clamp(textX + at.x - start.x, 0.05, 0.95), textY: clamp(textY + at.y - start.y, 0.05, 0.95) });
+    });
+  };
+
+  // Dragging a sticker in from the tray (a tap adds it in the middle).
+  const [ghost, setGhost] = useState<{ shape: StickerShape; x: number; y: number } | null>(null);
+  const dragIn = (e: React.PointerEvent, shape: StickerShape) => {
+    const sx = e.clientX, sy = e.clientY;
+    let moved = false;
+    follow(
+      e,
+      (ev) => {
+        moved ||= Math.hypot(ev.clientX - sx, ev.clientY - sy) > 6;
+        if (moved) setGhost({ shape, x: ev.clientX, y: ev.clientY });
+      },
+      (ev) => {
+        setGhost(null);
+        const at = inFrame(ev);
+        if (!moved) addSticker(shape, 0.5 + ((d.stickers.length * 0.07) % 0.3) - 0.15, 0.28 + ((d.stickers.length * 0.11) % 0.4));
+        else if (at.inside) addSticker(shape, clamp(at.x), clamp(at.y));
+      },
+    );
+  };
+
+  const fill = d.fill;
+  const patterns = p.category && PATTERNS[p.category] ? PATTERNS[p.category] : Object.values(PATTERNS).map((l) => l[0]);
+  const cat = CATEGORY_LABELS[p.category];
+  const bg = fill.kind === 'solid' ? fill.colour : fill.from;
+
+  return (
+    <div className="poster-editor">
+      <div className="poster-wrap" ref={wrap}>
+        <div className="poster-stage" ref={stage} style={{ width: viewW, height: viewH }} onPointerDown={() => setSelected(null)}>
+          <canvas ref={canvas} style={{ width: viewW, height: viewH }} aria-label={`Your ${f.label.toLowerCase()}`} role="img" />
+          <div
+            className="text-hit"
+            style={{ left: textBox.x * k, top: textBox.y * k, width: textBox.w * k, height: textBox.h * k }}
+            onPointerDown={moveText}
+            title="Drag to move your words"
+            aria-label="Your words: drag to move them"
+          />
+          {d.stickers.map((s) => {
+            const px = s.size * short * k;
+            return (
+              <div
+                key={s.id}
+                className={`sticker-hit ${s.id === selected ? 'on' : ''}`}
+                style={{ left: s.x * viewW, top: s.y * viewH, width: px, height: px, transform: `translate(-50%, -50%) rotate(${s.rot}deg)` }}
+                onPointerDown={(e) => moveSticker(e, s)}
+                aria-label={`${STICKERS.find((x) => x.shape === s.shape)?.label} sticker: drag to move`}
+              >
+                {s.id === selected && (
+                  <>
+                    <button className="handle rotate" onPointerDown={(e) => rotateSticker(e, s)} aria-label="Turn the sticker" title="Drag to turn" />
+                    <button className="handle resize" onPointerDown={(e) => resizeSticker(e, s)} aria-label="Resize the sticker" title="Drag to resize" />
+                    <button className="handle remove" onPointerDown={(e) => e.stopPropagation()} onClick={() => removeSticker(s.id)} aria-label="Remove the sticker" title="Remove">
+                      ✕
+                    </button>
+                  </>
+                )}
+              </div>
+            );
+          })}
+        </div>
+        <p className="poster-hint">
+          {f.label} · {f.note}. Drag your words or stickers to move them.
+        </p>
+      </div>
+
+      <div className="design-panel">
+        <section>
+          <Label>Frame</Label>
+          <div className="frame-chips" role="group" aria-label="Frame size">
+            {FRAME_IDS.map((id) => {
+              const fr = FRAMES[id];
+              const s = 26 / Math.max(fr.w, fr.h);
+              return (
+                <button key={id} className={d.frame === id ? 'on' : ''} aria-pressed={d.frame === id} onClick={() => p.onDesign({ frame: id })} title={`${fr.label} (${fr.note})`}>
+                  <span className="frame-icon" style={{ width: fr.w * s, height: fr.h * s }} />
+                  {fr.label.replace(' wallpaper', '').replace(' poster', '')}
+                </button>
+              );
+            })}
+          </div>
+        </section>
+
+        <section>
+          <Label>Background</Label>
+          <div className="seg" role="group" aria-label="Background type">
+            <button className={fill.kind === 'solid' ? 'on' : ''} aria-pressed={fill.kind === 'solid'} onClick={() => fill.kind !== 'solid' && p.onDesign({ fill: { kind: 'solid', colour: fill.from } })}>
+              Colour
+            </button>
+            <button className={fill.kind === 'gradient' ? 'on' : ''} aria-pressed={fill.kind === 'gradient'} onClick={() => fill.kind !== 'gradient' && p.onDesign({ fill: { kind: 'gradient', type: 'linear', from: fill.colour, to: '#ff5d8f', angle: 135 } })}>
+              Gradient
+            </button>
+          </div>
+          {fill.kind === 'solid' ? (
+            <ColorPicker label="Colour" value={fill.colour} swatches={swatches} onChange={(c) => p.onDesign({ fill: { kind: 'solid', colour: c } })} />
+          ) : (
+            <>
+              <div className="grad-bar" style={{ background: `linear-gradient(90deg, ${fill.from}, ${fill.to})` }} />
+              <div className="row tight">
+                <ColorPicker label="From" value={fill.from} swatches={swatches} onChange={(c) => p.onDesign({ fill: { ...fill, from: c } })} />
+                <button className="btn small" onClick={() => p.onDesign({ fill: { ...fill, from: fill.to, to: fill.from } })} aria-label="Swap the two colours" title="Swap">
+                  ⇄
+                </button>
+                <ColorPicker label="To" value={fill.to} swatches={swatches} onChange={(c) => p.onDesign({ fill: { ...fill, to: c } })} />
+              </div>
+              <div className="row tight">
+                <div className="seg small" role="group" aria-label="Gradient shape">
+                  {(['linear', 'radial'] as const).map((t) => (
+                    <button key={t} className={fill.type === t ? 'on' : ''} aria-pressed={fill.type === t} onClick={() => p.onDesign({ fill: { ...fill, type: t } })}>
+                      {t === 'linear' ? 'Straight' : 'Round'}
+                    </button>
+                  ))}
+                </div>
+                {fill.type === 'linear' && (
+                  <label className="angle">
+                    <span className="dial" style={{ transform: `rotate(${fill.angle}deg)` }} aria-hidden />
+                    <input type="range" min={0} max={359} value={fill.angle} onChange={(e) => p.onDesign({ fill: { ...fill, angle: Number(e.target.value) } })} aria-label="Gradient angle" />
+                    <span>{fill.angle}°</span>
+                  </label>
+                )}
+              </div>
+            </>
+          )}
+          <div className="grad-presets" role="group" aria-label="Ready-made gradients">
+            {GRADIENTS.map((g, i) => (
+              <button key={i} style={{ background: g.kind === 'gradient' ? (g.type === 'radial' ? `radial-gradient(circle, ${g.from}, ${g.to})` : `linear-gradient(${g.angle}deg, ${g.from}, ${g.to})`) : undefined }} onClick={() => p.onDesign({ fill: g })} aria-label={`Gradient ${i + 1}`} />
+            ))}
+          </div>
+        </section>
+
+        <section>
+          <Label>Pattern{cat ? ` · ${cat.emoji} ${cat.label}` : ''}</Label>
+          <div className="pattern-tiles" role="group" aria-label="Pattern">
+            <button className={!d.pattern ? 'on' : ''} aria-pressed={!d.pattern} onClick={() => p.onDesign({ pattern: null })}>
+              <span className="none">None</span>
+            </button>
+            {patterns.map((pt) => (
+              <button key={pt.id} className={d.pattern === pt.id ? 'on' : ''} aria-pressed={d.pattern === pt.id} onClick={() => p.onDesign({ pattern: pt.id })} title={pt.label}>
+                <PatternSample id={pt.id} colour={d.patternColour} background={bg} opacity={d.patternOpacity} />
+                <small>{pt.label}</small>
+              </button>
+            ))}
+          </div>
+          {d.pattern && (
+            <div className="row tight">
+              <ColorPicker label="Pattern" value={d.patternColour} swatches={swatches} onChange={(c) => p.onDesign({ patternColour: c })} />
+              <label className="opacity">
+                <span>Strength</span>
+                <input type="range" min={5} max={100} value={Math.round(d.patternOpacity * 100)} onChange={(e) => p.onDesign({ patternOpacity: Number(e.target.value) / 100 })} aria-label="Pattern strength" />
+                <span>{Math.round(d.patternOpacity * 100)}%</span>
+              </label>
+            </div>
+          )}
+        </section>
+
+        <section>
+          <Label>Stickers</Label>
+          <div className="sticker-tray" role="group" aria-label="Stickers: drag one onto your poster, or tap to add">
+            {STICKERS.map((s) => (
+              <button key={s.shape} onPointerDown={(e) => dragIn(e, s.shape)} aria-label={`Add a ${s.label.toLowerCase()}`} title={`${s.label}: drag onto your poster`}>
+                <StickerIcon shape={s.shape} colour={s.colour} />
+              </button>
+            ))}
+          </div>
+          <p className="help">Drag a sticker onto your poster, or tap to add it.</p>
+          {sel && (
+            <div className="sticker-tools">
+              <ColorPicker label="Sticker" value={sel.colour} swatches={swatches} onChange={(c) => setSticker(sel.id, { colour: c })} />
+              <button className="btn small" onClick={() => setSticker(sel.id, { rot: (sel.rot + 345) % 360 })} aria-label="Turn left">↺</button>
+              <button className="btn small" onClick={() => setSticker(sel.id, { rot: (sel.rot + 15) % 360 })} aria-label="Turn right">↻</button>
+              <button className="btn small" onClick={() => setSticker(sel.id, { size: Math.max(0.04, sel.size / 1.2) })} aria-label="Smaller">−</button>
+              <button className="btn small" onClick={() => setSticker(sel.id, { size: Math.min(0.9, sel.size * 1.2) })} aria-label="Bigger">+</button>
+              <button className="btn small" onClick={() => p.onDesign({ stickers: [...d.stickers.filter((x) => x.id !== sel.id), sel] })} aria-label="Bring to front" title="Bring to front">
+                ⬆
+              </button>
+              <button className="btn small pink" onClick={() => removeSticker(sel.id)}>
+                Remove
+              </button>
+            </div>
+          )}
+        </section>
+
+        <section>
+          <Label>Letter size</Label>
+          <div className="seg" role="group" aria-label="Letter size">
+            {(['S', 'M', 'L'] as Size[]).map((s) => (
+              <button key={s} className={p.size === s ? 'on' : ''} onClick={() => p.onSize(s)} aria-pressed={p.size === s}>
+                {s === 'S' ? 'Small' : s === 'M' ? 'Medium' : 'Big'}
+              </button>
+            ))}
+          </div>
+        </section>
+      </div>
+
+      {ghost && (
+        <div className="sticker-ghost" style={{ left: ghost.x, top: ghost.y }} aria-hidden>
+          <StickerIcon shape={ghost.shape} colour={STICKERS.find((s) => s.shape === ghost.shape)!.colour} />
+        </div>
+      )}
+    </div>
+  );
+}
+
+function PatternSample({ id, colour, background, opacity }: { id: string; colour: string; background: string; opacity: number }) {
+  const ref = useRef<HTMLCanvasElement>(null);
+  useEffect(() => {
+    if (ref.current) drawPatternSample(ref.current, id, colour, background, opacity);
+  }, [id, colour, background, opacity]);
+  return <canvas ref={ref} width={112} height={112} />;
+}
+
+export function StickerIcon({ shape, colour }: { shape: StickerShape; colour: string }) {
+  const def = STICKERS.find((s) => s.shape === shape)!;
+  return (
+    <svg viewBox="-4 -4 108 108" aria-hidden>
+      {def.parts.map((part, i) => (
+        <path key={i} d={part.d} fill={part.fill ?? colour} stroke={part.stroke === false ? 'none' : '#1b1b3a'} strokeWidth={5} strokeLinejoin="round" />
+      ))}
+    </svg>
+  );
+}

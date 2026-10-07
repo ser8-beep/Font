@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useMemo, useReducer, useState } from 'react';
-import { backdropColour, tableColour } from './backdrop';
+import { tableColour } from './backdrop';
 import { glyphMap } from './font';
 import { useAlphabet } from './grow';
 import { warmPictures } from './pictures';
@@ -54,6 +54,10 @@ function Station() {
   const photo = s.photos.find((p) => p.id === s.currentPhotoId) ?? null;
   const photoLetters = s.letters.filter((l) => l.photoId === s.currentPhotoId);
   const idx = STEPS.indexOf(s.step);
+  // Letters photographed one at a time are already matched, so Match is skipped.
+  const skipMatch = s.photos.length > 0 && s.photos.every((p) => [...p.word].length === 1);
+  const prevStep = s.step === 'clean' && skipMatch ? 'capture' : STEPS[Math.max(0, idx - 1)];
+  const nextStep = s.step === 'capture' && skipMatch ? 'clean' : STEPS[idx + 1];
 
   const go = (step: Step) => {
     dispatch({ type: 'go', step });
@@ -126,7 +130,7 @@ function Station() {
         </div>
         <nav className="progress" aria-label="Steps">
           {STEPS.map((st, i) => (
-            <div key={st} className={`dot ${i <= idx ? 'on' : ''} ${i === idx ? 'now' : ''}`} style={{ background: COLOURS[st], color: 'var(--ink)' }} aria-current={i === idx ? 'step' : undefined}>
+            <div key={st} className={`dot ${i <= idx ? 'on' : ''} ${i === idx ? 'now' : ''} ${st === 'split' && skipMatch ? 'skipped' : ''}`} style={{ background: COLOURS[st], color: 'var(--ink)' }} aria-current={i === idx ? 'step' : undefined}>
               {i + 1}
               <span className="lbl">{LABELS[st]}</span>
             </div>
@@ -167,12 +171,13 @@ function Station() {
             keys={alphabet.chars}
             celebrated={s.celebrated}
             size={s.size}
-            backdrop={s.backdrop}
+            design={s.design}
+            category={alphabet.category}
             table={table}
             growing={alphabet.done < alphabet.total}
             onText={(t) => dispatch({ type: 'text', text: t })}
             onSize={(size) => dispatch({ type: 'size', size })}
-            onBackdrop={(backdrop) => dispatch({ type: 'backdrop', backdrop })}
+            onDesign={(patch) => dispatch({ type: 'design', patch })}
             onCelebrated={onCelebrated}
             onAddMore={addMore}
           />
@@ -182,7 +187,8 @@ function Station() {
             text={s.text}
             map={map}
             captured={captured}
-            backdrop={backdropColour(s.backdrop === 'white' ? 'yellow' : s.backdrop, table)}
+            design={s.design}
+            size={s.size}
             fontName={s.fontName}
             maker={maker}
             onFontName={(n) => dispatch({ type: 'fontName', name: n })}
@@ -205,7 +211,7 @@ function Station() {
               if (s.step === 'capture' && adding !== null) {
                 setAdding(null);
                 go(s.photos.length ? 'type' : 'capture');
-              } else go(STEPS[Math.max(0, idx - 1)]);
+              } else go(prevStep);
             }}
           >
             ◀ Back
@@ -219,9 +225,8 @@ function Station() {
               className="btn next"
               disabled={!canNext}
               onClick={() => {
-                // Letters photographed one at a time are matched from P onwards.
                 if (s.step === 'capture' && s.photos.length > 1) dispatch({ type: 'showPhoto', photoId: inWordOrder(s.photos)[0].id });
-                go(STEPS[idx + 1]);
+                go(nextStep);
               }}
             >
               Next ▶

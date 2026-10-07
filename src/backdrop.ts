@@ -1,19 +1,4 @@
-import type { Backdrop, Photo, Size } from './state';
-
-/** Background swatches for the playground and poster. 'table' is the kid's own table colour. */
-export const BACKDROPS: Backdrop[] = ['white', 'table', 'yellow', 'pink', 'blue', 'green'];
-
-const FIXED: Record<Exclude<Backdrop, 'table'>, string> = {
-  white: '#ffffff',
-  yellow: '#ffd23f',
-  pink: '#ff5d8f',
-  blue: '#3a86ff',
-  green: '#06d6a0',
-};
-
-export function backdropColour(b: Backdrop, table: string): string {
-  return b === 'table' ? table : FIXED[b];
-}
+import type { Photo, Size } from './state';
 
 const tableCache = new WeakMap<Photo, string>();
 
