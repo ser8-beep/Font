@@ -527,6 +527,146 @@
    "description": "Woven words WEAVING & SOLVING, whole lines only (letters interlock)",
    "default_category": "textiles",
    "case": "upper"
+  },
+  {
+   "id": "p4-smile-mint",
+   "file": "object-alphabet-cutouts/smile-mint",
+   "description": "SMILE in pastel flowers on mint",
+   "default_category": "nature",
+   "case": "upper"
+  },
+  {
+   "id": "p4-floral",
+   "file": "object-alphabet-cutouts/floral",
+   "description": "FLORAL in roses and amaranth",
+   "default_category": "nature",
+   "case": "upper"
+  },
+  {
+   "id": "p4-be-free-with-joy",
+   "file": "object-alphabet-cutouts/be-free-with-joy",
+   "description": "BE FREE WITH JOY in garden flowers",
+   "default_category": "nature",
+   "case": "upper"
+  },
+  {
+   "id": "p4-hello-spring",
+   "file": "object-alphabet-cutouts/hello-spring",
+   "description": "HELLO SPRING in ranunculus and tulips",
+   "default_category": "nature",
+   "case": "upper"
+  },
+  {
+   "id": "p4-dont-forget-to-smile",
+   "file": "object-alphabet-cutouts/dont-forget-to-smile",
+   "description": "DON'T FORGET TO SMILE on kraft paper",
+   "default_category": "nature",
+   "case": "upper"
+  },
+  {
+   "id": "p4-awesome-carnations",
+   "file": "object-alphabet-cutouts/awesome-carnations",
+   "description": "AWE-SOME in pink carnations",
+   "default_category": "nature",
+   "case": "upper"
+  },
+  {
+   "id": "p4-lovely-roses",
+   "file": "object-alphabet-cutouts/lovely-roses",
+   "description": "Lovely in spray roses",
+   "default_category": "nature",
+   "case": "mixed"
+  },
+  {
+   "id": "p4-june-wildflowers",
+   "file": "object-alphabet-cutouts/june-wildflowers",
+   "description": "June in wildflowers and leaves",
+   "default_category": "nature",
+   "case": "mixed"
+  },
+  {
+   "id": "p4-love-yourself-roses",
+   "file": "object-alphabet-cutouts/love-yourself-roses",
+   "description": "LOVE YOURSELF in roses and twigs",
+   "default_category": "nature",
+   "case": "upper"
+  },
+  {
+   "id": "p4-be-kind-marble",
+   "file": "object-alphabet-cutouts/be-kind-marble",
+   "description": "be KIND in greens on marble",
+   "default_category": "nature",
+   "case": "mixed"
+  },
+  {
+   "id": "p4-shine-on-yellow",
+   "file": "object-alphabet-cutouts/shine-on-yellow",
+   "description": "SHINE on in yellow flowers",
+   "default_category": "nature",
+   "case": "mixed"
+  },
+  {
+   "id": "p4-light-will-come",
+   "file": "object-alphabet-cutouts/light-will-come",
+   "description": "THE LIGHT WILL COME in petals and leaves",
+   "default_category": "nature",
+   "case": "mixed"
+  },
+  {
+   "id": "p4-one-of-a-kind",
+   "file": "object-alphabet-cutouts/one-of-a-kind",
+   "description": "ONE OF A KIND in petals and leaves",
+   "default_category": "nature",
+   "case": "upper"
+  },
+  {
+   "id": "p4-smile-often",
+   "file": "object-alphabet-cutouts/smile-often",
+   "description": "SMILE OFTEN in petals and sprigs",
+   "default_category": "nature",
+   "case": "upper"
+  },
+  {
+   "id": "p4-twig-alphabet",
+   "file": "object-alphabet-cutouts/twig-alphabet",
+   "description": "Twig and leaf alphabet A-Z",
+   "default_category": "nature",
+   "case": "upper"
+  },
+  {
+   "id": "p4-be-kind-yellow",
+   "file": "object-alphabet-cutouts/be-kind-yellow",
+   "description": "be Kind in yellow daisies",
+   "default_category": "nature",
+   "case": "mixed"
+  },
+  {
+   "id": "p4-nature-teacher",
+   "file": "object-alphabet-cutouts/nature-teacher",
+   "description": "Let nature be your teacher, a-z",
+   "default_category": "nature",
+   "case": "lower"
+  },
+  {
+   "id": "p4-wild-plants-roots",
+   "file": "object-alphabet-cutouts/wild-plants-roots",
+   "description": "Wild plants with roots A-Z",
+   "default_category": "nature",
+   "case": "upper"
+  },
+  {
+   "id": "p4-grow-vines",
+   "file": "object-alphabet-cutouts/grow-vines",
+   "description": "GROW in flowering vines",
+   "default_category": "nature",
+   "case": "upper"
+  },
+  {
+   "id": "p4-grasses-and-hops",
+   "file": "object-alphabet-cutouts/grasses-and-hops",
+   "description": "Grasses, maple seeds and hops",
+   "default_category": "nature",
+   "case": "mixed"
   }
  ],
  "glyphs": [

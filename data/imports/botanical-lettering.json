@@ -1,0 +1,145 @@
+{
+  "note": "20 photos of flower and leaf lettering (October 2026), cut out letter by letter for Botanicals. Letters that did not read clearly (some of BE FREE WITH JOY, most of the Cyrillic grasses photo), a faded white-on-white O, captions, digits and decorations were left out. Used with: npm run repository:import -- <folder of sets> data/imports/botanical-lettering.json",
+  "sets": {
+    "smile-mint": {
+      "source": "p4-smile-mint",
+      "tag": "nature",
+      "objects": "pastel flowers and sprigs",
+      "construction": "composite",
+      "description": "SMILE in pastel flowers on mint"
+    },
+    "floral": {
+      "source": "p4-floral",
+      "tag": "nature",
+      "objects": "roses, amaranth and stems",
+      "construction": "composite",
+      "description": "FLORAL in roses and amaranth"
+    },
+    "be-free-with-joy": {
+      "source": "p4-be-free-with-joy",
+      "tag": "nature",
+      "objects": "garden flowers and green sprigs",
+      "construction": "composite",
+      "description": "BE FREE WITH JOY in garden flowers"
+    },
+    "hello-spring": {
+      "source": "p4-hello-spring",
+      "tag": "nature",
+      "objects": "ranunculus, tulips, eucalyptus and stems",
+      "construction": "composite",
+      "description": "HELLO SPRING in ranunculus and tulips"
+    },
+    "dont-forget-to-smile": {
+      "source": "p4-dont-forget-to-smile",
+      "tag": "nature",
+      "objects": "wildflowers, petunias and stems",
+      "construction": "composite",
+      "description": "DON'T FORGET TO SMILE on kraft paper"
+    },
+    "awesome-carnations": {
+      "source": "p4-awesome-carnations",
+      "tag": "nature",
+      "objects": "pink carnations and stems",
+      "construction": "composite",
+      "description": "AWE-SOME in pink carnations"
+    },
+    "lovely-roses": {
+      "source": "p4-lovely-roses",
+      "tag": "nature",
+      "objects": "spray roses and rose leaves",
+      "construction": "composite",
+      "description": "Lovely in spray roses"
+    },
+    "june-wildflowers": {
+      "source": "p4-june-wildflowers",
+      "tag": "nature",
+      "objects": "wildflowers, vines and leaves",
+      "construction": "composite",
+      "description": "June in wildflowers and leaves"
+    },
+    "love-yourself-roses": {
+      "source": "p4-love-yourself-roses",
+      "tag": "nature",
+      "objects": "roses, twigs and leaves",
+      "construction": "composite",
+      "description": "LOVE YOURSELF in roses and twigs"
+    },
+    "be-kind-marble": {
+      "source": "p4-be-kind-marble",
+      "tag": "nature",
+      "objects": "greens, petals and eucalyptus",
+      "construction": "composite",
+      "description": "be KIND in greens on marble"
+    },
+    "shine-on-yellow": {
+      "source": "p4-shine-on-yellow",
+      "tag": "nature",
+      "objects": "yellow flowers, chamomile and billy buttons",
+      "construction": "composite",
+      "description": "SHINE on in yellow flowers"
+    },
+    "light-will-come": {
+      "source": "p4-light-will-come",
+      "tag": "nature",
+      "objects": "petals, flowers and leaves",
+      "construction": "composite",
+      "description": "THE LIGHT WILL COME in petals and leaves"
+    },
+    "one-of-a-kind": {
+      "source": "p4-one-of-a-kind",
+      "tag": "nature",
+      "objects": "petals, flowers and leaves",
+      "construction": "composite",
+      "description": "ONE OF A KIND in petals and leaves"
+    },
+    "smile-often": {
+      "source": "p4-smile-often",
+      "tag": "nature",
+      "objects": "petals, buds and sprigs",
+      "construction": "composite",
+      "description": "SMILE OFTEN in petals and sprigs"
+    },
+    "twig-alphabet": {
+      "source": "p4-twig-alphabet",
+      "tag": "nature",
+      "objects": "twigs and small leaves",
+      "construction": "composite",
+      "description": "Twig and leaf alphabet A-Z"
+    },
+    "be-kind-yellow": {
+      "source": "p4-be-kind-yellow",
+      "tag": "nature",
+      "objects": "yellow daisies and stems",
+      "construction": "composite",
+      "description": "be Kind in yellow daisies"
+    },
+    "nature-teacher": {
+      "source": "p4-nature-teacher",
+      "tag": "nature",
+      "objects": "dried flowers, seed pods and leaves",
+      "construction": "composite",
+      "description": "Let nature be your teacher, a-z"
+    },
+    "wild-plants-roots": {
+      "source": "p4-wild-plants-roots",
+      "tag": "nature",
+      "objects": "whole wild plants with roots",
+      "construction": "composite",
+      "description": "Wild plants with roots A-Z"
+    },
+    "grow-vines": {
+      "source": "p4-grow-vines",
+      "tag": "nature",
+      "objects": "flowering vines and leaves",
+      "construction": "composite",
+      "description": "GROW in flowering vines"
+    },
+    "grasses-and-hops": {
+      "source": "p4-grasses-and-hops",
+      "tag": "nature",
+      "objects": "grasses, maple seeds and hops",
+      "construction": "composite",
+      "description": "Grasses, maple seeds and hops"
+    }
+  }
+}
