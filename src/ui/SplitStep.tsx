@@ -1,14 +1,25 @@
 import { useRef, useState } from 'react';
 import type { Box } from '../core/image';
-import { uid, type Letter, type Photo } from '../state';
+import { inWordOrder, uid, WORD, type Letter, type Photo } from '../state';
 
 export const COLOURS = ['#ffd23f', '#ff5d8f', '#3a86ff', '#06d6a0', '#ff8c42', '#8338ec'];
 export const colourFor = (i: number) => COLOURS[i % COLOURS.length];
+/** Each letter keeps one colour everywhere: P L A Y in their word order, the rest by letter. */
+export function letterColour(ch: string): string {
+  const up = ch.toUpperCase();
+  const i = WORD.indexOf(up);
+  return colourFor(i >= 0 ? i : up.charCodeAt(0));
+}
+const same = (a: string, b: string) => a.toUpperCase() === b.toUpperCase();
 
 interface Props {
   photo: Photo;
   letters: Letter[];
   onChange: (letters: Letter[]) => void;
+  /** Every photo and letter, for switching between photos when letters came one at a time. */
+  photos: Photo[];
+  allLetters: Letter[];
+  onShow: (photoId: string) => void;
 }
 
 interface Drag {
@@ -21,17 +32,17 @@ interface Drag {
   moved: boolean;
 }
 
-/** Letters of the word that are not yet on any blob (a multiset, so ANNA works). */
+/** Letters of the word that are not yet on any blob (a multiset; a small p counts for P). */
 function trayChars(word: string, letters: Letter[]): string[] {
   const left = [...word];
   for (const l of letters) {
-    const i = l.char ? left.indexOf(l.char) : -1;
+    const i = l.char ? left.findIndex((c) => same(c, l.char!)) : -1;
     if (i >= 0) left.splice(i, 1);
   }
   return left;
 }
 
-export function SplitStep({ photo, letters, onChange }: Props) {
+export function SplitStep({ photo, letters, onChange, photos, allLetters, onShow }: Props) {
   const stage = useRef<HTMLDivElement>(null);
   const [drawing, setDrawing] = useState(false);
   const [draft, setDraft] = useState<Box | null>(null);
@@ -41,7 +52,8 @@ export function SplitStep({ photo, letters, onChange }: Props) {
   const justDrew = useRef(false);
   const { width: W, height: H } = photo.analysis.work;
   const tray = trayChars(photo.word, letters);
-  const indexOf = (l: Letter) => Math.max(0, [...photo.word].indexOf(l.char ?? ''));
+  // The picker offers the photo's letters as capitals and as small letters.
+  const choices = [...new Set([...photo.word].map((c) => c.toUpperCase()))];
 
   const toWork = (cx: number, cy: number) => {
     const r = stage.current!.getBoundingClientRect();
@@ -61,7 +73,7 @@ export function SplitStep({ photo, letters, onChange }: Props) {
       // Swap: the blob the chip came from takes the target's old letter.
       if (from && l.id === from) return { ...l, char: target.char };
       // Picking from the picker: a blob already holding this char gives it up.
-      if (!from && l.char === char && target.char !== char && letters.filter((o) => o.char === char).length >= [...photo.word].filter((c) => c === char).length) return { ...l, char: target.char };
+      if (!from && l.char && same(l.char, char) && target.char !== char && letters.filter((o) => o.char && same(o.char, char)).length >= [...photo.word].filter((c) => same(c, char)).length) return { ...l, char: target.char };
       return l;
     });
     onChange(next);
@@ -125,9 +137,30 @@ export function SplitStep({ photo, letters, onChange }: Props) {
       <h1>
         <span className="tag">Match your letters</span>
       </h1>
-      <p>
-        We marked every shape we found with a <strong>?</strong>. Drag each letter onto its shape, or tap a shape to choose its letter.
-      </p>
+      {[...photo.word].length > 1 ? (
+        <p>
+          We marked every shape we found with a <strong>?</strong>. Drag each letter onto its shape, or tap a shape to choose its letter.
+        </p>
+      ) : (
+        <p>
+          Is this your <strong>{photo.word}</strong>? Tap it to choose a different letter, or press <strong>✕</strong> on anything that isn't part of it.
+        </p>
+      )}
+
+      {photos.length > 1 && (
+        <div className="photo-switch" role="tablist" aria-label="Your photos">
+          {inWordOrder(photos).map((p) => {
+            const mine = allLetters.filter((l) => l.photoId === p.id);
+            const done = trayChars(p.word, mine).length === 0;
+            return (
+              <button key={p.id} role="tab" aria-selected={p.id === photo.id} className={p.id === photo.id ? 'on' : ''} onClick={() => onShow(p.id)}>
+                <img src={p.url} alt="" />
+                <span>{p.word}{done ? ' ✓' : ''}</span>
+              </button>
+            );
+          })}
+        </div>
+      )}
 
       <div
         ref={stage}
@@ -148,7 +181,7 @@ export function SplitStep({ photo, letters, onChange }: Props) {
               height={l.region.box.h}
               rx={6}
               fill={l.char ? 'rgba(255,255,255,0.12)' : 'rgba(0,0,0,0.25)'}
-              stroke={l.char ? colourFor(indexOf(l)) : 'white'}
+              stroke={l.char ? letterColour(l.char) : 'white'}
               strokeWidth={Math.max(3, W / 160)}
               strokeDasharray={l.char ? undefined : '10 8'}
               style={{ cursor: drawing ? 'crosshair' : 'pointer' }}
@@ -164,7 +197,7 @@ export function SplitStep({ photo, letters, onChange }: Props) {
               style={{
                 left: pct(l.region.box.x + l.region.box.w / 2, W),
                 top: `max(34px, ${pct(l.region.box.y, H)})`,
-                background: l.char ? colourFor(indexOf(l)) : 'white',
+                background: l.char ? letterColour(l.char) : 'white',
                 visibility: drag?.from === l.id && drag.moved ? 'hidden' : 'visible',
               }}
               onPointerDown={(e) => !drawing && startDrag(e, l.char ?? '?', l.id)}
@@ -194,7 +227,7 @@ export function SplitStep({ photo, letters, onChange }: Props) {
               <div
                 key={i}
                 className="chip"
-                style={{ background: colourFor([...photo.word].indexOf(c)), visibility: drag && !drag.from && drag.char === c && drag.moved ? 'hidden' : 'visible' }}
+                style={{ background: letterColour(c), visibility: drag && !drag.from && drag.char === c && drag.moved ? 'hidden' : 'visible' }}
                 onPointerDown={(e) => startDrag(e, c, null)}
                 onPointerMove={moveDrag}
                 onPointerUp={endDrag}
@@ -205,7 +238,7 @@ export function SplitStep({ photo, letters, onChange }: Props) {
             <span>Drag each one onto its shape. Missed a letter? Draw a box around it.</span>
           </>
         ) : (
-          <strong>All {photo.word.length} letters matched! 🎉</strong>
+          <strong>{photo.word.length > 1 ? `All ${photo.word.length} letters matched!` : 'Matched!'} 🎉</strong>
         )}
       </div>
 
@@ -219,7 +252,7 @@ export function SplitStep({ photo, letters, onChange }: Props) {
       </div>
 
       {drag && drag.moved && (
-        <div className="chip floating-chip" style={{ left: drag.x, top: drag.y, background: drag.char === '?' ? 'white' : colourFor([...photo.word].indexOf(drag.char)) }}>
+        <div className="chip floating-chip" style={{ left: drag.x, top: drag.y, background: drag.char === '?' ? 'white' : letterColour(drag.char) }}>
           {drag.char}
         </div>
       )}
@@ -229,8 +262,16 @@ export function SplitStep({ photo, letters, onChange }: Props) {
           <div className="picker" onClick={(e) => e.stopPropagation()}>
             <h2 style={{ margin: 0 }}>Which letter is this?</h2>
             <div className="letters">
-              {[...new Set(photo.word)].map((c) => (
-                <button key={c} style={{ background: colourFor([...photo.word].indexOf(c)) }} onClick={() => { assign(pickerLetter, c, null); setPicker(null); }}>
+              {choices.map((c) => (
+                <button key={c} style={{ background: letterColour(c) }} onClick={() => { assign(pickerLetter, c, null); setPicker(null); }}>
+                  {c}
+                </button>
+              ))}
+            </div>
+            <p style={{ margin: 0, fontWeight: 800 }}>Small letters:</p>
+            <div className="letters">
+              {choices.map((c) => c.toLowerCase()).map((c) => (
+                <button key={c} style={{ background: letterColour(c) }} aria-label={`small ${c}`} onClick={() => { assign(pickerLetter, c, null); setPicker(null); }}>
                   {c}
                 </button>
               ))}

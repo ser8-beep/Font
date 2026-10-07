@@ -8,7 +8,7 @@ export interface Photo {
   /** Object URL of a display-size JPEG. */
   url: string;
   analysis: Analysis;
-  /** What the kid said this photo spells, in the case they typed it: "PLAY", "play" or "Play". */
+  /** The letters in this photo: the whole word (WORD), or one letter when kids photograph them one at a time. */
   word: string;
 }
 
@@ -22,6 +22,15 @@ export interface Letter {
   rev: number;
   bolder: number;
   fillHoles: boolean;
+}
+
+/** What kids build out of objects. Always this word, so nobody has to type it. */
+export const WORD = 'PLAY';
+
+/** Photos in word order: the whole word first, then its letters P, L, A, Y, then any others. */
+export function inWordOrder(photos: Photo[]): Photo[] {
+  const rank = (p: Photo) => (p.word === WORD ? -1 : WORD.indexOf(p.word.toUpperCase()) >= 0 && [...p.word].length === 1 ? WORD.indexOf(p.word.toUpperCase()) : WORD.length);
+  return [...photos].sort((a, b) => rank(a) - rank(b));
 }
 
 export type Step = 'capture' | 'split' | 'clean' | 'grow' | 'type' | 'export';
@@ -58,7 +67,9 @@ export interface AppState extends Snapshot {
 
 export type Action =
   | { type: 'go'; step: Step }
-  | { type: 'addPhoto'; photo: Photo; letters: Letter[] }
+  /** replaces: earlier photos of the same letters, dropped with their letters. stay: keep the step (more letter photos to come). */
+  | { type: 'addPhoto'; photo: Photo; letters: Letter[]; replaces?: string[]; stay?: boolean }
+  | { type: 'showPhoto'; photoId: string }
   | { type: 'letters'; letters: Letter[]; record?: boolean }
   | { type: 'reroll'; char: string }
   | { type: 'category'; category: string | null }
@@ -96,15 +107,19 @@ export function reducer(s: AppState, a: Action): AppState {
   switch (a.type) {
     case 'go':
       return { ...s, step: a.step };
-    case 'addPhoto':
+    case 'addPhoto': {
+      const gone = new Set(a.replaces ?? []);
       return {
         ...s,
         past: remember(s),
-        photos: [...s.photos, a.photo],
-        letters: [...s.letters, ...a.letters],
+        photos: [...s.photos.filter((p) => !gone.has(p.id)), a.photo],
+        letters: [...s.letters.filter((l) => !gone.has(l.photoId)), ...a.letters],
         currentPhotoId: a.photo.id,
-        step: 'split',
+        step: a.stay ? s.step : 'split',
       };
+    }
+    case 'showPhoto':
+      return { ...s, currentPhotoId: a.photoId };
     case 'letters':
       return { ...s, past: a.record === false ? s.past : remember(s), letters: a.letters };
     case 'category':
@@ -139,8 +154,3 @@ export function reducer(s: AppState, a: Action): AppState {
 let n = 0;
 const boot = Date.now().toString(36);
 export const uid = () => `${boot}-${(n++).toString(36)}`;
-
-/** Letters and digits only, in the case the kid typed: what a kid can type in "What does it spell?". */
-export function cleanWord(w: string): string {
-  return w.replace(/[^A-Za-z0-9]/g, '').slice(0, 14);
-}

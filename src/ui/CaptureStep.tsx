@@ -1,44 +1,66 @@
 import { useEffect, useRef, useState } from 'react';
 import demoUrl from '../assets/demo-lego.jpg';
 import { dataUrlToBlob, inClaudeViewer } from '../host';
-import { cleanWord } from '../state';
+import { WORD, type Photo } from '../state';
+import { letterColour } from './SplitStep';
 
 interface Props {
-  /** True when re-running capture to add extra letters. */
-  addingMore: boolean;
+  /** Photos taken so far, to show which letters of the word already have one. */
+  photos: Photo[];
+  /** null: snapping the word. '': adding a letter, not chosen yet. 'K': adding that letter. */
+  adding: string | null;
   busy: boolean;
   error: string | null;
+  /** word: what the photo holds, the whole WORD or the one letter it was taken for. */
   onPhoto: (blob: Blob, word: string) => void;
 }
 
+/** One photo of the whole word, or one photo per letter. */
+type Mode = 'word' | 'letters';
+
 // The claude.ai viewer refuses camera access, so only offer it on a normal web page.
 const canUseCamera = () => !inClaudeViewer && !!navigator.mediaDevices?.getUserMedia && window.isSecureContext;
+const ALPHABET = [...'ABCDEFGHIJKLMNOPQRSTUVWXYZ'];
 
-export function CaptureStep({ addingMore, busy, error, onPhoto }: Props) {
-  const [word, setWord] = useState(addingMore ? '' : 'PLAY');
-  const [camera, setCamera] = useState(false);
+export function CaptureStep({ photos, adding, busy, error, onPhoto }: Props) {
+  const [mode, setMode] = useState<Mode>(photos.some((p) => [...p.word].length === 1) ? 'letters' : 'word');
+  const [addLetter, setAddLetter] = useState(adding ?? '');
+  // The camera is open for this word or letter.
+  const [camera, setCamera] = useState<string | null>(null);
   const [camError, setCamError] = useState<string | null>(null);
   const [dragOver, setDragOver] = useState(false);
   const [hint, setHint] = useState<string | null>(null);
+  const [pending, setPending] = useState(WORD);
   const fileRef = useRef<HTMLInputElement>(null);
-  const ready = cleanWord(word).length > 0;
+  const pickFor = useRef(WORD);
 
-  /** Any way a photo arrives (picker, drag and drop, paste) ends up here. */
-  const take = (f: Blob | null | undefined) => {
+  const photoOf = (c: string) => [...photos].reverse().find((p) => p.word === c);
+  const done = [...WORD].filter((c) => photoOf(c)).length;
+  // Where a photo that arrives without a button (dropped, pasted) goes: the word, the letter being
+  // added, or the first letter of the word still without a photo.
+  const target = adding !== null ? addLetter || null : mode === 'word' ? WORD : [...WORD].find((c) => !photoOf(c)) ?? null;
+
+  const send = (f: Blob | null | undefined, word: string | null) => {
     if (!f) return;
     if (f.type && !f.type.startsWith('image/')) {
       setHint("That isn't a photo. Try a .jpg or .png picture.");
       return;
     }
-    if (!ready) {
-      setHint('First type what your photo spells.');
+    if (!word) {
+      setHint(adding !== null ? 'First tap the letter you are photographing.' : 'Every letter has a photo. Tap Change under a letter to swap its photo.');
       return;
     }
     setHint(null);
-    onPhoto(f, cleanWord(word));
+    setPending(word);
+    onPhoto(f, word);
   };
+  const take = (f: Blob | null | undefined) => send(f, target);
   const takeRef = useRef(take);
   takeRef.current = take;
+  const choose = (word: string) => {
+    pickFor.current = word;
+    fileRef.current?.click();
+  };
 
   // Drop a photo anywhere on the page, or paste one (Ctrl+V).
   useEffect(() => {
@@ -80,41 +102,87 @@ export function CaptureStep({ addingMore, busy, error, onPhoto }: Props) {
     return (
       <div className="busy">
         <div className="bounce">
-          {[...(cleanWord(word) || 'PLAY').slice(0, 4)].map((c, i) => (
-            <span key={i} style={{ background: ['var(--yellow)', 'var(--pink)', 'var(--blue)', 'var(--green)'][i % 4] }}>{c}</span>
+          {[...pending].map((c, i) => (
+            <span key={i} style={{ background: letterColour(c) }}>{c}</span>
           ))}
         </div>
-        <h1>Finding your letters…</h1>
+        <h1>{[...pending].length > 1 ? 'Finding your letters…' : `Finding your ${pending}…`}</h1>
       </div>
     );
   }
 
+  const photoButtons = (word: string, label: string) => (
+    <div className="capture-grid">
+      {canUseCamera() && (
+        <button className="btn big pink" onClick={() => setCamera(word)}>
+          <CameraIcon /> Take a photo{label}
+        </button>
+      )}
+      <button className="btn big yellow" onClick={() => choose(word)}>
+        <PhotoIcon /> Choose a photo{label}
+      </button>
+      {word === WORD && adding === null && (
+        <button
+          className="btn big"
+          onClick={async () => {
+            const blob = demoUrl.startsWith('data:') ? dataUrlToBlob(demoUrl) : await (await fetch(demoUrl)).blob();
+            send(blob, WORD);
+          }}
+        >
+          Try the Lego demo
+        </button>
+      )}
+      <button className="dropzone" onClick={() => choose(word)}>
+        <DropIcon />
+        Or drag your photo here
+      </button>
+    </div>
+  );
+
   return (
     <>
       <h1>
-        <span className="tag">{addingMore ? 'Add more letters' : 'Snap your letters'}</span>
+        <span className="tag">{adding !== null ? 'Add a letter' : 'Snap your letters'}</span>
       </h1>
 
-      <div className="row" style={{ marginBottom: 10 }}>
-        <label htmlFor="word" style={{ fontWeight: 900, fontSize: 24 }}>
-          What does your photo spell?
-        </label>
-      </div>
-      <input
-        id="word"
-        className="word-input"
-        value={word}
-        placeholder={addingMore ? 'e.g. SAM' : 'PLAY'}
-        onChange={(e) => setWord(cleanWord(e.target.value))}
-        autoComplete="off"
-        spellCheck={false}
-      />
+      {adding === null ? (
+        <>
+          <p className="lead">
+            Build{' '}
+            <span className="word-chips" aria-label={WORD}>
+              {[...WORD].map((c) => (
+                <b key={c} style={{ background: letterColour(c) }}>{c}</b>
+              ))}
+            </span>{' '}
+            out of things you find, then take a photo.
+          </p>
+          <div className="mode-switch" role="group" aria-label="How will you photograph it?">
+            <button className={mode === 'word' ? 'on' : ''} aria-pressed={mode === 'word'} onClick={() => setMode('word')}>
+              All four letters in one photo
+            </button>
+            <button className={mode === 'letters' ? 'on' : ''} aria-pressed={mode === 'letters'} onClick={() => setMode('letters')}>
+              One letter at a time
+            </button>
+          </div>
+        </>
+      ) : (
+        <>
+          <p className="lead">Which letter are you photographing?</p>
+          <div className="letter-choices">
+            {ALPHABET.map((c) => (
+              <button key={c} className={addLetter === c ? 'on' : ''} aria-pressed={addLetter === c} style={addLetter === c ? { background: letterColour(c) } : undefined} onClick={() => setAddLetter(c)}>
+                {c}
+              </button>
+            ))}
+          </div>
+        </>
+      )}
 
       <div className="tips">
         <Tip colour="var(--yellow)" text="Plain table or paper behind">
           <rect x="6" y="6" width="44" height="44" rx="8" fill="white" stroke="#1b1b3a" strokeWidth="4" />
         </Tip>
-        <Tip colour="var(--pink)" text="Leave gaps between letters">
+        <Tip colour="var(--pink)" text={mode === 'letters' || adding !== null ? 'Fill the photo with your letter' : 'Leave gaps between letters'}>
           <>
             <rect x="4" y="16" width="14" height="24" rx="3" fill="#ff5d8f" stroke="#1b1b3a" strokeWidth="3" />
             <rect x="38" y="16" width="14" height="24" rx="3" fill="#3a86ff" stroke="#1b1b3a" strokeWidth="3" />
@@ -134,36 +202,41 @@ export function CaptureStep({ addingMore, busy, error, onPhoto }: Props) {
 
       {camera ? (
         <Camera
-          onShot={(b) => { setCamera(false); onPhoto(b, cleanWord(word)); }}
-          onError={(msg) => { setCamera(false); setCamError(msg); }}
+          onShot={(b) => { const w = camera; setCamera(null); send(b, w); }}
+          onError={(msg) => { setCamera(null); setCamError(msg); }}
         />
+      ) : adding !== null ? (
+        addLetter && photoButtons(addLetter, ` of ${addLetter}`)
+      ) : mode === 'word' ? (
+        photoButtons(WORD, '')
       ) : (
-        <div className="capture-grid">
-          {canUseCamera() && (
-            <button className="btn big pink" disabled={!ready} onClick={() => setCamera(true)}>
-              <CameraIcon /> Take a photo
-            </button>
-          )}
-          <button className="btn big yellow" disabled={!ready} onClick={() => fileRef.current?.click()}>
-            <PhotoIcon /> Choose a photo
-          </button>
-          {!addingMore && (
-            <button
-              className="btn big"
-              onClick={async () => {
-                const blob = demoUrl.startsWith('data:') ? dataUrlToBlob(demoUrl) : await (await fetch(demoUrl)).blob();
-                setWord('PLAY');
-                onPhoto(blob, 'PLAY');
-              }}
-            >
-              Try the Lego demo
-            </button>
-          )}
-          <button className="dropzone" onClick={() => fileRef.current?.click()}>
-            <DropIcon />
-            Or drag your photo here
-          </button>
-        </div>
+        <>
+          <div className="slots">
+            {[...WORD].map((c) => {
+              const p = photoOf(c);
+              return (
+                <div key={c} className="slot card">
+                  <span className="slot-letter" style={{ background: letterColour(c) }}>{c}</span>
+                  <div className="slot-pic">{p ? <img src={p.url} alt={`Your ${c}`} /> : <span>No photo yet</span>}</div>
+                  <div className="slot-buttons">
+                    {canUseCamera() && (
+                      <button className="btn small pink" aria-label={`Take a photo of ${c}`} onClick={() => setCamera(c)}>
+                        Take
+                      </button>
+                    )}
+                    <button className="btn small yellow" aria-label={`${p ? 'Change the' : 'Choose a'} photo of ${c}`} onClick={() => choose(c)}>
+                      {p ? 'Change' : 'Choose'}
+                    </button>
+                  </div>
+                </div>
+              );
+            })}
+          </div>
+          <p>
+            <strong>{done} of {WORD.length}</strong> letters photographed.{' '}
+            {done < WORD.length ? 'Skip any you didn\'t make: they come from the A–Z.' : 'Press Next to match them.'}
+          </p>
+        </>
       )}
       {camError && <p>{camError}</p>}
       {/* No `capture` attribute: phones then offer both "take photo" and "pick from gallery". */}
@@ -175,14 +248,14 @@ export function CaptureStep({ addingMore, busy, error, onPhoto }: Props) {
         onChange={(e) => {
           const f = e.target.files?.[0];
           e.target.value = '';
-          take(f);
+          send(f, pickFor.current);
         }}
       />
       {dragOver && (
         <div className="drop-overlay" aria-hidden>
           <div>
             <DropIcon />
-            Drop your photo!
+            {target && [...target].length === 1 ? `Drop your ${target}!` : 'Drop your photo!'}
           </div>
         </div>
       )}

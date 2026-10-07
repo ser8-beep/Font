@@ -4,7 +4,7 @@ import { glyphMap } from './font';
 import { useAlphabet } from './grow';
 import { warmPictures } from './pictures';
 import { processPhoto } from './photo';
-import { GROW_STEPS, initialState, reducer, STEPS, type Letter, type Step } from './state';
+import { GROW_STEPS, initialState, inWordOrder, reducer, STEPS, type Letter, type Step } from './state';
 import { CaptureStep } from './ui/CaptureStep';
 import { CleanStep } from './ui/CleanStep';
 import { ExportStep } from './ui/ExportStep';
@@ -38,7 +38,8 @@ function Station() {
   const [s, dispatch] = useReducer(reducer, initialState);
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  const [addingMore, setAddingMore] = useState(false);
+  // null: snapping the word. '': adding a letter, not chosen yet. 'K': adding that letter.
+  const [adding, setAdding] = useState<string | null>(null);
 
   // The letters the kid made, then the whole font: grown letters with the kid's own on top.
   const captured = useMemo(() => glyphMap(s.letters, s.photos), [s.letters, s.photos]);
@@ -67,8 +68,12 @@ function Station() {
     setError(null);
     try {
       const { photo: p, letters } = await processPhoto(blob, word);
-      dispatch({ type: 'addPhoto', photo: p, letters });
-      setAddingMore(false);
+      // Letters photographed one at a time stay on Snap until the kid has all they want. A new photo
+      // of the same letters (or the whole word again) takes the place of the old one.
+      const stay = adding === null && [...word].length === 1;
+      const replaces = s.photos.filter((ph) => ph.word === word).map((ph) => ph.id);
+      dispatch({ type: 'addPhoto', photo: p, letters, replaces, stay });
+      if (!stay) setAdding(null);
       window.scrollTo(0, 0);
     } catch (e) {
       console.error(e);
@@ -83,8 +88,8 @@ function Station() {
     }
   };
 
-  const addMore = () => {
-    setAddingMore(true);
+  const addMore = (ch?: string) => {
+    setAdding(ch ?? '');
     go('capture');
   };
 
@@ -102,8 +107,8 @@ function Station() {
   }, []);
 
   const canNext =
-    s.step === 'capture' ? !!photo && !addingMore
-    : s.step === 'split' ? photoLetters.some((l) => l.char)
+    s.step === 'capture' ? s.photos.length > 0 && adding === null
+    : s.step === 'split' ? s.letters.some((l) => l.char)
     : s.step === 'clean' ? captured.size > 0
     : s.step === 'grow' || s.step === 'type';
 
@@ -130,8 +135,17 @@ function Station() {
       </header>
 
       <main className="step">
-        {s.step === 'capture' && <CaptureStep addingMore={addingMore} busy={busy} error={error} onPhoto={onPhoto} />}
-        {s.step === 'split' && photo && <SplitStep photo={photo} letters={photoLetters} onChange={(ls) => setLetters(photo.id, ls)} />}
+        {s.step === 'capture' && <CaptureStep key={adding ?? 'word'} photos={s.photos} adding={adding} busy={busy} error={error} onPhoto={onPhoto} />}
+        {s.step === 'split' && photo && (
+          <SplitStep
+            photo={photo}
+            letters={photoLetters}
+            onChange={(ls) => setLetters(photo.id, ls)}
+            photos={s.photos}
+            allLetters={s.letters}
+            onShow={(photoId) => dispatch({ type: 'showPhoto', photoId })}
+          />
+        )}
         {s.step === 'clean' && (
           <CleanStep photos={s.photos} currentPhotoId={s.currentPhotoId} letters={s.letters} map={captured} onChange={(ls, record) => dispatch({ type: 'letters', letters: ls, record })} />
         )}
@@ -175,7 +189,7 @@ function Station() {
             onMaker={(n) => dispatch({ type: 'maker', name: n })}
             onAddMore={addMore}
             onStartOver={() => {
-              setAddingMore(false);
+              setAdding(null);
               dispatch({ type: 'reset' });
             }}
           />
@@ -186,10 +200,10 @@ function Station() {
         <footer className="navbar">
           <button
             className="btn"
-            disabled={idx === 0 && !addingMore}
+            disabled={idx === 0 && adding === null}
             onClick={() => {
-              if (s.step === 'capture' && addingMore) {
-                setAddingMore(false);
+              if (s.step === 'capture' && adding !== null) {
+                setAdding(null);
                 go(s.photos.length ? 'type' : 'capture');
               } else go(STEPS[Math.max(0, idx - 1)]);
             }}
@@ -201,7 +215,15 @@ function Station() {
           </button>
           <span className="spacer" />
           {s.step !== 'export' && (
-            <button className="btn next" disabled={!canNext} onClick={() => go(STEPS[idx + 1])}>
+            <button
+              className="btn next"
+              disabled={!canNext}
+              onClick={() => {
+                // Letters photographed one at a time are matched from P onwards.
+                if (s.step === 'capture' && s.photos.length > 1) dispatch({ type: 'showPhoto', photoId: inWordOrder(s.photos)[0].id });
+                go(STEPS[idx + 1]);
+              }}
+            >
               Next ▶
             </button>
           )}

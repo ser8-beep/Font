@@ -48,11 +48,14 @@ export async function processPhoto(blob: Blob, word: string): Promise<{ photo: P
   await nextFrame();
   const analysis = analyse(image, { expected: Math.max(1, word.length) });
   const photo: Photo = { id: uid(), image, url, analysis, word };
-  // Every shape found is only marked; the kid says which letter each one is.
-  const letters: Letter[] = analysis.blobs.map((b) => ({
+  // Every shape found is only marked; the kid says which letter each one is. A photo of one letter
+  // was taken for that letter, so its biggest shape already is it (the kid can still change it).
+  const one = [...word].length === 1;
+  const biggest = analysis.blobs.reduce<number>((best, b, i, all) => (best < 0 || b.box.w * b.box.h > all[best].box.w * all[best].box.h ? i : best), -1);
+  const letters: Letter[] = analysis.blobs.map((b, i) => ({
     id: uid(),
     photoId: photo.id,
-    char: null,
+    char: one && i === biggest ? word : null,
     region: { box: b.box, region: b.region },
     rev: 0,
     bolder: 0,

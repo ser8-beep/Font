@@ -13,7 +13,8 @@ interface Props {
   /** Pick a library alphabet by id (null = the best one). */
   onAlphabet: (id: string | null) => void;
   onReroll: (ch: string) => void;
-  onAddMore: () => void;
+  /** Photograph another letter (ch: the one to add, when known). */
+  onAddMore: (ch?: string) => void;
 }
 
 const nameOf = (id: string) => CATEGORY_LABELS[id] ?? { label: id, emoji: '✨' };
@@ -117,7 +118,7 @@ export function GrowStep({ alphabet, captured, chosen, onCategory, onAlphabet, o
               </p>
             )}
             {!captured.has(sel) && (
-              <button className="btn small pink" onClick={onAddMore}>
+              <button className="btn small pink" onClick={() => onAddMore(sel)}>
                 + Photograph my own {sel}
               </button>
             )}

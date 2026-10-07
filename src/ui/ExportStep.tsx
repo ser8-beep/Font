@@ -18,7 +18,8 @@ interface Props {
   maker: string;
   onFontName: (n: string) => void;
   onMaker: (n: string) => void;
-  onAddMore: () => void;
+  /** Photograph another letter (ch: the one to add, when known). */
+  onAddMore: (ch?: string) => void;
   onStartOver: () => void;
 }
 
@@ -134,7 +135,7 @@ export function ExportStep(p: Props) {
       {!inClaudeViewer && <RoomPanel map={p.captured} team={p.maker} />}
 
       <div className="row" style={{ marginTop: 24 }}>
-        <button className="btn pink" onClick={p.onAddMore}>
+        <button className="btn pink" onClick={() => p.onAddMore()}>
           + Add more letters
         </button>
         {confirmReset ? (

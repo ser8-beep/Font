@@ -20,7 +20,8 @@ interface Props {
   onSize: (s: Size) => void;
   onBackdrop: (b: Backdrop) => void;
   onCelebrated: () => void;
-  onAddMore: () => void;
+  /** Photograph another letter (ch: the one to add, when known). */
+  onAddMore: (ch?: string) => void;
 }
 
 const WORDS = ['PIZZA', 'ROBOT', 'JELLY', 'ZOOM', 'HELLO', 'BANANA', 'QUIZ', 'DINOSAUR', 'WOW', 'YUMMY', 'PLAY TIME', 'SUPER STAR', 'MAGIC', 'JUMP', 'SPLASH', 'FOX AND OWL', 'ROCKET'];
@@ -134,7 +135,7 @@ export function TypeStep(p: Props) {
             <strong>{missing.join(' ')}</strong>
           </span>
           {!p.growing && (
-            <button className="btn pink" onClick={p.onAddMore}>
+            <button className="btn pink" onClick={() => p.onAddMore()}>
               + Add more letters
             </button>
           )}

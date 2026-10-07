@@ -2,7 +2,7 @@ import { useEffect, useRef } from 'react';
 import type { Box, RGBAImage } from '../core/image';
 import { letterGlyph, type LetterGlyph } from '../font';
 import type { Letter, Photo } from '../state';
-import { colourFor } from './SplitStep';
+import { letterColour } from './SplitStep';
 import { GlyphView, TextRender } from './TextRender';
 
 interface Props {
@@ -33,7 +33,7 @@ export function CleanStep({ photos, currentPhotoId, letters, map, onChange }: Pr
           return (
             <div key={l.id} className="card letter-card">
               <h2>
-                <span className="badge" style={{ background: colourFor(Math.max(0, [...photo.word].indexOf(l.char!))) }}>{l.char}</span>
+                <span className="badge" style={{ background: letterColour(l.char!) }}>{l.char}</span>
               </h2>
               <div className="before-after">
                 <figure>
