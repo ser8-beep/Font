@@ -6,6 +6,7 @@ import { saveFile } from '../host';
 import { connectRoom, fetchRoom, roomBase, type RoomState } from '../room';
 
 const ALPHABET = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ';
+const otherCase = (c: string) => (c === c.toUpperCase() ? c.toLowerCase() : c.toUpperCase());
 
 /** Projector view: the room's shared alphabet filling up live. */
 export function RoomView() {
@@ -26,8 +27,10 @@ export function RoomView() {
   }, [base]);
 
   const alphabet = state?.alphabet ?? {};
-  const extra = Object.keys(alphabet).filter((c) => !ALPHABET.includes(c)).sort();
-  const filled = [...ALPHABET].filter((c) => alphabet[c]).length;
+  // A small letter fills its letter's square until a capital arrives.
+  const at = (c: string) => alphabet[c] ?? alphabet[c.toLowerCase()];
+  const extra = Object.keys(alphabet).filter((c) => !ALPHABET.includes(c.toUpperCase())).sort();
+  const filled = [...ALPHABET].filter((c) => at(c)).length;
 
   const exportZip = () => {
     const glyphs = Object.values(alphabet);
@@ -35,7 +38,8 @@ export function RoomView() {
       familyName: state?.name || 'Room Alphabet',
       designer: [...new Set(glyphs.map((g) => g.team))].join(', '),
       glyphs: glyphs.map((g) => ({
-        codepoints: [g.char.charCodeAt(0), ...(g.char.toLowerCase() !== g.char ? [g.char.toLowerCase().charCodeAt(0)] : [])],
+        // The other case too, unless a team sent that one as well.
+        codepoints: [g.char, ...(otherCase(g.char) !== g.char && !alphabet[otherCase(g.char)] ? [otherCase(g.char)] : [])].map((c) => c.charCodeAt(0)),
         contours: svgToContours(g.svg),
         advance: g.advance,
       })),
@@ -67,7 +71,7 @@ export function RoomView() {
       {error && <p>Can't reach the room server. Start it with <code>npm run room</code> and open this page from it.</p>}
       <div className="room-grid">
         {[...ALPHABET, ...extra].map((c) => {
-          const g = alphabet[c];
+          const g = at(c);
           return (
             <div key={c} className={`room-cell ${g ? 'filled' : ''}`}>
               {g ? (

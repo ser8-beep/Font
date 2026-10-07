@@ -16,7 +16,8 @@
     "library": "tsx scripts/library.ts",
     "repository:add": "tsx scripts/add-generated.ts",
     "repository:regroup": "tsx scripts/regroup-repository.ts",
-    "repository:import": "tsx scripts/import-cutouts.ts"
+    "repository:import": "tsx scripts/import-cutouts.ts",
+    "check:parallel": "tsx scripts/parallel-check.ts"
   },
   "dependencies": {
     "fflate": "^0.8.3",
@@ -32,6 +33,7 @@
     "@vitejs/plugin-react": "^6.1.2",
     "jpeg-js": "^0.4.4",
     "opentype.js": "^2.0.0",
+    "playwright-core": "^1.63.0",
     "pngjs": "^7.0.0",
     "tsx": "^4.23.15",
     "typescript": "^7.0.2",

@@ -3,6 +3,7 @@
 //   npm run build && npm run room            # serves the app + room wall on port 8787
 //   PORT=9000 npm run room                   # another port
 //   npm run room -- --reset                  # start with an empty alphabet
+//   ROOM_DATA=/tmp/wall.json npm run room    # keep the wall in another file (tests use this)
 //
 // Kids' laptops open http://<facilitator-ip>:8787 ; the projector opens http://<ip>:8787/#room
 // Glyphs are stored as SVG path data in server/room-data.json so a restart keeps the wall.
@@ -15,7 +16,7 @@ import { WebSocketServer } from 'ws';
 
 const HERE = dirname(fileURLToPath(import.meta.url));
 const DIST = join(HERE, '..', 'dist');
-const DATA = join(HERE, 'room-data.json');
+const DATA = process.env.ROOM_DATA || join(HERE, 'room-data.json');
 const PORT = Number(process.env.PORT) || 8787;
 
 const MIME = {
@@ -45,7 +46,8 @@ const save = () => {
   saveTimer = setTimeout(() => writeFileSync(DATA, JSON.stringify(state)), 300);
 };
 
-const CHAR = /^[A-Z0-9]$/;
+// Capitals, small letters (teams that built "play") and digits.
+const CHAR = /^[A-Za-z0-9]$/;
 const PATH = /^[MLQZ0-9 .\-]*$/;
 
 function validGlyph(g) {
