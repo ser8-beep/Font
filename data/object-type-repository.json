@@ -224,7 +224,7 @@
    "id": "img14",
    "file": "1000164029.jpg",
    "description": "Rusted scrap metal & wire, mixed case",
-   "default_category": "found",
+   "default_category": "hardware",
    "case": "mixed"
   },
   {
@@ -497,7 +497,7 @@
    "id": "p3-found-scrap",
    "file": "object-alphabet-cutouts/found-scrap",
    "description": "Found scrap: brackets, bolts, pipe, mixed case",
-   "default_category": "found",
+   "default_category": "hardware",
    "case": "mixed"
   },
   {
@@ -674,6 +674,202 @@
    "description": "Pantry letters: fruit, veg, pasta, beans, coffee and baking",
    "default_category": "prepared_food",
    "case": "upper"
+  },
+  {
+   "id": "p7-garden-creatures",
+   "file": "object-alphabet-cutouts/garden-creatures",
+   "description": "Garden creatures: cicada A, butterfly D, luna moth M, bumblebee O, ladybirds-on-a-stem P",
+   "default_category": "nature",
+   "case": "upper"
+  },
+  {
+   "id": "p7-ladybirds",
+   "file": "object-alphabet-cutouts/ladybirds",
+   "description": "Ladybirds, every one an O",
+   "default_category": "nature",
+   "case": "upper"
+  },
+  {
+   "id": "p7-feathers",
+   "file": "object-alphabet-cutouts/feathers",
+   "description": "Feathers",
+   "default_category": "nature",
+   "case": "upper"
+  },
+  {
+   "id": "p7-caterpillars",
+   "file": "object-alphabet-cutouts/caterpillars",
+   "description": "Caterpillars",
+   "default_category": "nature",
+   "case": "upper"
+  },
+  {
+   "id": "p7-feather-alphabet",
+   "file": "object-alphabet-cutouts/feather-alphabet",
+   "description": "Brown feather alphabet A-Z",
+   "default_category": "nature",
+   "case": "upper"
+  },
+  {
+   "id": "p7-happy-spring",
+   "file": "object-alphabet-cutouts/happy-spring",
+   "description": "HAPPY SPRING in garden flowers",
+   "default_category": "nature",
+   "case": "upper"
+  },
+  {
+   "id": "p7-hello-spring-pressed",
+   "file": "object-alphabet-cutouts/hello-spring-pressed",
+   "description": "HELLO SPRING in pressed flowers and clover",
+   "default_category": "nature",
+   "case": "upper"
+  },
+  {
+   "id": "p7-spring-ahead",
+   "file": "object-alphabet-cutouts/spring-ahead",
+   "description": "SPRING AHEAD in flowers",
+   "default_category": "nature",
+   "case": "mixed"
+  },
+  {
+   "id": "p7-spring-roses",
+   "file": "object-alphabet-cutouts/spring-roses",
+   "description": "SPRING in wildflowers and dusty miller",
+   "default_category": "nature",
+   "case": "upper"
+  },
+  {
+   "id": "p7-spring-daisies",
+   "file": "object-alphabet-cutouts/spring-daisies",
+   "description": "SPRING in daisies and buds",
+   "default_category": "nature",
+   "case": "upper"
+  },
+  {
+   "id": "p7-are-you-ok",
+   "file": "object-alphabet-cutouts/are-you-ok",
+   "description": "ARE YOU OK? in wildflowers",
+   "default_category": "nature",
+   "case": "upper"
+  },
+  {
+   "id": "p7-love-leaves",
+   "file": "object-alphabet-cutouts/love-leaves",
+   "description": "LOVE three times in leaves, twigs and roses",
+   "default_category": "nature",
+   "case": "upper"
+  },
+  {
+   "id": "p7-love-buttercups",
+   "file": "object-alphabet-cutouts/love-buttercups",
+   "description": "LOVE in buttercups",
+   "default_category": "nature",
+   "case": "upper"
+  },
+  {
+   "id": "p7-happy-roses",
+   "file": "object-alphabet-cutouts/happy-roses",
+   "description": "Happy in roses and leaves",
+   "default_category": "nature",
+   "case": "mixed"
+  },
+  {
+   "id": "p7-desk-things-m-z",
+   "file": "object-alphabet-cutouts/desk-things-m-z",
+   "description": "Desk things M-Z",
+   "default_category": "stationery",
+   "case": "upper"
+  },
+  {
+   "id": "p7-desk-odds",
+   "file": "object-alphabet-cutouts/desk-odds",
+   "description": "Desk odds and ends a-z",
+   "default_category": "stationery",
+   "case": "mixed"
+  },
+  {
+   "id": "p7-school-supplies",
+   "file": "object-alphabet-cutouts/school-supplies",
+   "description": "School supplies A-Z",
+   "default_category": "stationery",
+   "case": "upper"
+  },
+  {
+   "id": "p7-drawing-office",
+   "file": "object-alphabet-cutouts/drawing-office",
+   "description": "Drawing office A-Z",
+   "default_category": "stationery",
+   "case": "upper"
+  },
+  {
+   "id": "p7-desk-white",
+   "file": "object-alphabet-cutouts/desk-white",
+   "description": "Desk things on white A-Z",
+   "default_category": "stationery",
+   "case": "mixed"
+  },
+  {
+   "id": "p7-good-vibes-only",
+   "file": "object-alphabet-cutouts/good-vibes-only",
+   "description": "GOOD VIBES ONLY in stationery",
+   "default_category": "stationery",
+   "case": "upper"
+  },
+  {
+   "id": "p7-craft-cupboard",
+   "file": "object-alphabet-cutouts/craft-cupboard",
+   "description": "Craft cupboard A-Z",
+   "default_category": "stationery",
+   "case": "upper"
+  },
+  {
+   "id": "p7-art-desk",
+   "file": "object-alphabet-cutouts/art-desk",
+   "description": "ART in desk things",
+   "default_category": "stationery",
+   "case": "upper"
+  },
+  {
+   "id": "p7-antique-tools",
+   "file": "object-alphabet-cutouts/antique-tools",
+   "description": "Antique tools A-Z",
+   "default_category": "hardware",
+   "case": "upper"
+  },
+  {
+   "id": "p7-harder-better-faster-stronger",
+   "file": "object-alphabet-cutouts/harder-better-faster-stronger",
+   "description": "HARDER BETTER FASTER STRONGER in tools",
+   "default_category": "hardware",
+   "case": "mixed"
+  },
+  {
+   "id": "p7-bike-parts-2",
+   "file": "object-alphabet-cutouts/bike-parts-2",
+   "description": "Bicycle parts A-Z",
+   "default_category": "hardware",
+   "case": "upper"
+  },
+  {
+   "id": "p7-found-metal",
+   "file": "object-alphabet-cutouts/found-metal",
+   "description": "Found metal A-Z",
+   "default_category": "hardware",
+   "case": "mixed"
+  },
+  {
+   "id": "p7-workshop-tools",
+   "file": "object-alphabet-cutouts/workshop-tools",
+   "description": "Workshop tools A-Z",
+   "default_category": "hardware",
+   "case": "upper"
+  },
+  {
+   "id": "p7-rusty-scraps",
+   "file": "object-alphabet-cutouts/rusty-scraps",
+   "description": "Rusty scraps, mixed case",
+   "default_category": "hardware",
+   "case": "mixed"
   }
  ],
  "glyphs": [
@@ -4235,7 +4431,7 @@
    "char": "a",
    "letter": "A",
    "case": "lower",
-   "category": "found",
+   "category": "hardware",
    "objects": "bent metal strip",
    "construction": "formed",
    "source": "img14",
@@ -4246,7 +4442,7 @@
    "char": "b",
    "letter": "B",
    "case": "lower",
-   "category": "found",
+   "category": "hardware",
    "objects": "rusted disc + wire",
    "construction": "composite",
    "source": "img14",
@@ -4257,7 +4453,7 @@
    "char": "c",
    "letter": "C",
    "case": "lower",
-   "category": "found",
+   "category": "hardware",
    "objects": "wire",
    "construction": "formed",
    "source": "img14",
@@ -4268,7 +4464,7 @@
    "char": "d",
    "letter": "D",
    "case": "lower",
-   "category": "found",
+   "category": "hardware",
    "objects": "wire",
    "construction": "formed",
    "source": "img14",
@@ -4279,7 +4475,7 @@
    "char": "e",
    "letter": "E",
    "case": "lower",
-   "category": "found",
+   "category": "hardware",
    "objects": "car emblem",
    "construction": "single",
    "source": "img14",
@@ -4290,7 +4486,7 @@
    "char": "f",
    "letter": "F",
    "case": "lower",
-   "category": "found",
+   "category": "hardware",
    "objects": "pen + circuit board",
    "construction": "composite",
    "source": "img14",
@@ -4301,7 +4497,7 @@
    "char": "g",
    "letter": "G",
    "case": "lower",
-   "category": "found",
+   "category": "hardware",
    "objects": "washer + wire",
    "construction": "composite",
    "source": "img14",
@@ -4312,7 +4508,7 @@
    "char": "H",
    "letter": "H",
    "case": "upper",
-   "category": "found",
+   "category": "hardware",
    "objects": "metal straps + bar",
    "construction": "composite",
    "source": "img14",
@@ -4323,7 +4519,7 @@
    "char": "i",
    "letter": "I",
    "case": "lower",
-   "category": "found",
+   "category": "hardware",
    "objects": "button + cone",
    "construction": "composite",
    "source": "img14",
@@ -4334,7 +4530,7 @@
    "char": "J",
    "letter": "J",
    "case": "upper",
-   "category": "found",
+   "category": "hardware",
    "objects": "torn rusted strip",
    "construction": "formed",
    "source": "img14",
@@ -4345,7 +4541,7 @@
    "char": "k",
    "letter": "K",
    "case": "lower",
-   "category": "found",
+   "category": "hardware",
    "objects": "screw + strip",
    "construction": "composite",
    "source": "img14",
@@ -4356,7 +4552,7 @@
    "char": "L",
    "letter": "L",
    "case": "upper",
-   "category": "found",
+   "category": "hardware",
    "objects": "rusted strap",
    "construction": "formed",
    "source": "img14",
@@ -4367,7 +4563,7 @@
    "char": "m",
    "letter": "M",
    "case": "lower",
-   "category": "found",
+   "category": "hardware",
    "objects": "bulb + button + plate",
    "construction": "composite",
    "source": "img14",
@@ -4378,7 +4574,7 @@
    "char": "n",
    "letter": "N",
    "case": "lower",
-   "category": "found",
+   "category": "hardware",
    "objects": "small bracket",
    "construction": "single",
    "source": "img14",
@@ -4389,7 +4585,7 @@
    "char": "o",
    "letter": "O",
    "case": "lower",
-   "category": "found",
+   "category": "hardware",
    "objects": "ring",
    "construction": "single",
    "source": "img14",
@@ -4400,7 +4596,7 @@
    "char": "P",
    "letter": "P",
    "case": "upper",
-   "category": "found",
+   "category": "hardware",
    "objects": "rusted hinge",
    "construction": "single",
    "source": "img14",
@@ -4411,7 +4607,7 @@
    "char": "q",
    "letter": "Q",
    "case": "lower",
-   "category": "found",
+   "category": "hardware",
    "objects": "wire",
    "construction": "formed",
    "source": "img14",
@@ -4422,7 +4618,7 @@
    "char": "R",
    "letter": "R",
    "case": "upper",
-   "category": "found",
+   "category": "hardware",
    "objects": "rusted tool + rod",
    "construction": "composite",
    "source": "img14",
@@ -4433,7 +4629,7 @@
    "char": "S",
    "letter": "S",
    "case": "upper",
-   "category": "found",
+   "category": "hardware",
    "objects": "wire",
    "construction": "formed",
    "source": "img14",
@@ -4444,7 +4640,7 @@
    "char": "T",
    "letter": "T",
    "case": "upper",
-   "category": "found",
+   "category": "hardware",
    "objects": "bar + badge",
    "construction": "composite",
    "source": "img14",
@@ -4455,7 +4651,7 @@
    "char": "U",
    "letter": "U",
    "case": "upper",
-   "category": "found",
+   "category": "hardware",
    "objects": "broken ring",
    "construction": "single",
    "source": "img14",
@@ -4466,7 +4662,7 @@
    "char": "V",
    "letter": "V",
    "case": "upper",
-   "category": "found",
+   "category": "hardware",
    "objects": "metal shards",
    "construction": "repeated",
    "source": "img14",
@@ -4477,7 +4673,7 @@
    "char": "w",
    "letter": "W",
    "case": "lower",
-   "category": "found",
+   "category": "hardware",
    "objects": "wire",
    "construction": "formed",
    "source": "img14",
@@ -4488,7 +4684,7 @@
    "char": "x",
    "letter": "X",
    "case": "lower",
-   "category": "found",
+   "category": "hardware",
    "objects": "wire",
    "construction": "formed",
    "source": "img14",
@@ -4499,7 +4695,7 @@
    "char": "y",
    "letter": "Y",
    "case": "lower",
-   "category": "found",
+   "category": "hardware",
    "objects": "wire",
    "construction": "formed",
    "source": "img14",
@@ -4510,7 +4706,7 @@
    "char": "z",
    "letter": "Z",
    "case": "lower",
-   "category": "found",
+   "category": "hardware",
    "objects": "metal shards",
    "construction": "composite",
    "source": "img14",

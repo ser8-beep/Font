@@ -9,8 +9,8 @@ Five, chosen to overlap as little as possible (see `src/core/alphabet/groups.ts`
 
 | Category | Takes in |
 |---|---|
-| `stationery` (Stationery) | stationery, art, books |
-| `tools` (Tools) | tools, hardware, vehicle |
+| `stationery` (Desk) | stationery, art, books |
+| `tools` (Scraps & tools) | tools, hardware, vehicle |
 | `produce` (Fruits & vegetables) | produce |
 | `food` (Pantry) | prepared_food |
 | `plants` (Garden: flowers, leaves, feathers and garden creatures) | nature |

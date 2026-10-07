@@ -12,8 +12,10 @@ export interface Group {
 }
 
 export const GROUPS: Record<string, Group> = {
-  stationery: { label: 'Stationery', emoji: '✏️', description: 'Office, school and art supplies', takes: ['stationery', 'art', 'books'] },
-  tools: { label: 'Tools', emoji: '🔧', description: 'Hand tools, hardware and mechanical parts', takes: ['tools', 'hardware', 'vehicle'] },
+  // Desk: office, school and art supplies and other desk things. The id stays 'stationery'.
+  stationery: { label: 'Desk', emoji: '✏️', description: 'Office, school and art supplies and other desk things', takes: ['stationery', 'art', 'books'] },
+  // Scraps & tools: tools, hardware, bike parts and scrap metal. The id stays 'tools'.
+  tools: { label: 'Scraps & tools', emoji: '🔧', description: 'Tools, hardware, bike parts and scrap metal', takes: ['tools', 'hardware', 'vehicle'] },
   produce: { label: 'Fruits & vegetables', emoji: '🥕', description: 'Raw fruit and vegetables', takes: ['produce'] },
   // Pantry: what's in the kitchen cupboards (snacks, baking, pasta, beans, coffee...). The id stays 'food'.
   food: { label: 'Pantry', emoji: '🥫', description: 'Pantry food: snacks, baking, pasta, beans, coffee and more', takes: ['prepared_food'] },

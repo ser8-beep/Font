@@ -1,0 +1,208 @@
+{
+  "note": "Six zips (October 2026): garden_1, garden_2, gardeb3, garden_4, desk and scraps__tools. Transparent PNGs; letters separated along their own outlines, trimmed and capped at 800 px tall (no sharpening). Exact and resized duplicates are left out (garden_2 and gardeb3 overlap; images 61, 62, 65 repeat 12, 52, 11; image 68 repeats 59; image 55 is the Bulldog binder-clip alphabet already here as img44), as are a decorative pair of tees (TT), sheets corners, a caterpillar cut off at the edge and two scraps covered by a watermark. Used with: npm run repository:import -- <folder of sets> data/imports/garden-desk-scraps.json",
+  "sets": {
+    "garden-creatures": {
+      "source": "p7-garden-creatures",
+      "tag": "nature",
+      "construction": "single",
+      "description": "Garden creatures: cicada A, butterfly D, luna moth M, bumblebee O, ladybirds-on-a-stem P",
+      "objects": "garden creature",
+      "letters": {
+        "A_upper": "a cicada",
+        "D_upper": "a butterfly",
+        "M_upper": "a luna moth",
+        "O_upper": "a bumblebee",
+        "P_upper": "ladybirds on a curled stem"
+      }
+    },
+    "ladybirds": {
+      "source": "p7-ladybirds",
+      "tag": "nature",
+      "construction": "single",
+      "description": "Ladybirds, every one an O",
+      "objects": "a ladybird"
+    },
+    "feathers": {
+      "source": "p7-feathers",
+      "tag": "nature",
+      "construction": "single",
+      "description": "Feathers",
+      "objects": "a feather"
+    },
+    "caterpillars": {
+      "source": "p7-caterpillars",
+      "tag": "nature",
+      "construction": "single",
+      "description": "Caterpillars",
+      "objects": "a caterpillar"
+    },
+    "feather-alphabet": {
+      "source": "p7-feather-alphabet",
+      "tag": "nature",
+      "construction": "repeated",
+      "description": "Brown feather alphabet A-Z",
+      "objects": "brown feathers"
+    },
+    "happy-spring": {
+      "source": "p7-happy-spring",
+      "tag": "nature",
+      "construction": "composite",
+      "description": "HAPPY SPRING in garden flowers",
+      "objects": "garden flowers"
+    },
+    "hello-spring-pressed": {
+      "source": "p7-hello-spring-pressed",
+      "tag": "nature",
+      "construction": "composite",
+      "description": "HELLO SPRING in pressed flowers and clover",
+      "objects": "pressed flowers and clover"
+    },
+    "spring-ahead": {
+      "source": "p7-spring-ahead",
+      "tag": "nature",
+      "construction": "composite",
+      "description": "SPRING AHEAD in flowers",
+      "objects": "flowers and foliage"
+    },
+    "spring-roses": {
+      "source": "p7-spring-roses",
+      "tag": "nature",
+      "construction": "composite",
+      "description": "SPRING in wildflowers and dusty miller",
+      "objects": "wildflowers and leaves"
+    },
+    "spring-daisies": {
+      "source": "p7-spring-daisies",
+      "tag": "nature",
+      "construction": "composite",
+      "description": "SPRING in daisies and buds",
+      "objects": "daisies, buds and stems"
+    },
+    "are-you-ok": {
+      "source": "p7-are-you-ok",
+      "tag": "nature",
+      "construction": "composite",
+      "description": "ARE YOU OK? in wildflowers",
+      "objects": "wildflowers and stems"
+    },
+    "love-leaves": {
+      "source": "p7-love-leaves",
+      "tag": "nature",
+      "construction": "composite",
+      "description": "LOVE three times in leaves, twigs and roses",
+      "objects": "leaves, twigs, roses and succulents"
+    },
+    "love-buttercups": {
+      "source": "p7-love-buttercups",
+      "tag": "nature",
+      "construction": "composite",
+      "description": "LOVE in buttercups",
+      "objects": "buttercups and stems"
+    },
+    "happy-roses": {
+      "source": "p7-happy-roses",
+      "tag": "nature",
+      "construction": "composite",
+      "description": "Happy in roses and leaves",
+      "objects": "roses, stems and leaves"
+    },
+    "desk-things-m-z": {
+      "source": "p7-desk-things-m-z",
+      "tag": "stationery",
+      "construction": "single",
+      "description": "Desk things M-Z",
+      "objects": "desk things"
+    },
+    "desk-odds": {
+      "source": "p7-desk-odds",
+      "tag": "stationery",
+      "construction": "single",
+      "description": "Desk odds and ends a-z",
+      "objects": "desk odds and ends"
+    },
+    "school-supplies": {
+      "source": "p7-school-supplies",
+      "tag": "stationery",
+      "construction": "composite",
+      "description": "School supplies A-Z",
+      "objects": "school supplies"
+    },
+    "drawing-office": {
+      "source": "p7-drawing-office",
+      "tag": "stationery",
+      "construction": "single",
+      "description": "Drawing office A-Z",
+      "objects": "drawing and office tools"
+    },
+    "desk-white": {
+      "source": "p7-desk-white",
+      "tag": "stationery",
+      "construction": "single",
+      "description": "Desk things on white A-Z",
+      "objects": "desk things"
+    },
+    "good-vibes-only": {
+      "source": "p7-good-vibes-only",
+      "tag": "stationery",
+      "construction": "single",
+      "description": "GOOD VIBES ONLY in stationery",
+      "objects": "stationery"
+    },
+    "craft-cupboard": {
+      "source": "p7-craft-cupboard",
+      "tag": "stationery",
+      "construction": "composite",
+      "description": "Craft cupboard A-Z",
+      "objects": "craft supplies"
+    },
+    "art-desk": {
+      "source": "p7-art-desk",
+      "tag": "stationery",
+      "construction": "composite",
+      "description": "ART in desk things",
+      "objects": "desk things"
+    },
+    "antique-tools": {
+      "source": "p7-antique-tools",
+      "tag": "hardware",
+      "construction": "single",
+      "description": "Antique tools A-Z",
+      "objects": "antique tools"
+    },
+    "harder-better-faster-stronger": {
+      "source": "p7-harder-better-faster-stronger",
+      "tag": "hardware",
+      "construction": "single",
+      "description": "HARDER BETTER FASTER STRONGER in tools",
+      "objects": "workshop tools"
+    },
+    "bike-parts-2": {
+      "source": "p7-bike-parts-2",
+      "tag": "hardware",
+      "construction": "single",
+      "description": "Bicycle parts A-Z",
+      "objects": "bicycle parts"
+    },
+    "found-metal": {
+      "source": "p7-found-metal",
+      "tag": "hardware",
+      "construction": "single",
+      "description": "Found metal A-Z",
+      "objects": "found metal"
+    },
+    "workshop-tools": {
+      "source": "p7-workshop-tools",
+      "tag": "hardware",
+      "construction": "composite",
+      "description": "Workshop tools A-Z",
+      "objects": "workshop tools"
+    },
+    "rusty-scraps": {
+      "source": "p7-rusty-scraps",
+      "tag": "hardware",
+      "construction": "single",
+      "description": "Rusty scraps, mixed case",
+      "objects": "rusty scrap metal"
+    }
+  }
+}
