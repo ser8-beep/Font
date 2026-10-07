@@ -13,7 +13,7 @@ Five, chosen to overlap as little as possible (see `src/core/alphabet/groups.ts`
 | `tools` (Tools) | tools, hardware, vehicle |
 | `produce` (Fruits & vegetables) | produce |
 | `food` (Pantry) | prepared_food |
-| `plants` (Botanicals: flowers & leaves) | nature |
+| `plants` (Garden: flowers, leaves, feathers and garden creatures) | nature |
 
 Each cut-out keeps its finer category as `tag` in `manifest.json`. Cut-outs whose tag fits none of
 the five (household, fashion, furniture, leisure, packaging, textiles, found, electronics, body)

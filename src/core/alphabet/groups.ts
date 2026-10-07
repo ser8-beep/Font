@@ -17,8 +17,8 @@ export const GROUPS: Record<string, Group> = {
   produce: { label: 'Fruits & vegetables', emoji: '🥕', description: 'Raw fruit and vegetables', takes: ['produce'] },
   // Pantry: what's in the kitchen cupboards (snacks, baking, pasta, beans, coffee...). The id stays 'food'.
   food: { label: 'Pantry', emoji: '🥫', description: 'Pantry food: snacks, baking, pasta, beans, coffee and more', takes: ['prepared_food'] },
-  // Botanicals: letters of flowers and leaves (with the odd twig or fern). The id stays 'plants'.
-  plants: { label: 'Botanicals', emoji: '🌿', description: 'Flowers and leaves', takes: ['nature'] },
+  // Garden: letters of flowers, leaves, twigs and feathers, and garden creatures. The id stays 'plants'.
+  plants: { label: 'Garden', emoji: '🌱', description: 'Flowers, leaves, feathers and garden creatures', takes: ['nature'] },
 };
 
 /** The kid-facing category a finer catalogue category belongs to, or null when it is left out. */
