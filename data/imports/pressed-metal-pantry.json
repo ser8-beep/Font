@@ -1,0 +1,12 @@
+{
+  "note": "October 2026: a pressed-flower alphabet sent as an image, metal_scraps__tools_2.zip and pantry_2.zip. Transparent pictures; letters separated along their own outlines, trimmed and capped at 800 px tall. The bicycle-parts and British-biscuits sheets are cleaner copies of img42 and img51, so they replace those cut-outs letter by letter. Left out: captions, a website address, a cartoon, the pressed-flower sheet's loose petals and watermark, and two punctuation marks (? !). Used with: npm run repository:import -- <folder of sets> data/imports/pressed-metal-pantry.json",
+  "sets": {
+    "pressed-flower-alphabet": { "source": "p8-pressed-flowers", "tag": "nature", "objects": "pressed flowers, petals and leaves", "construction": "composite", "description": "Pressed flower alphabet A-Z" },
+    "found-objects-banke": { "source": "p8-found-objects-banke", "tag": "hardware", "objects": "found tools and hardware", "construction": "single", "description": "Niklas Banke's alphabet of found objects" },
+    "diy-tools": { "source": "p8-diy-tools", "tag": "hardware", "objects": "DIY tools and fittings", "construction": "single", "description": "DIY tools A-Z" },
+    "shed-tools": { "source": "p8-shed-tools", "tag": "hardware", "objects": "shed tools", "construction": "single", "description": "Shed tools A-Z" },
+    "bike-parts": { "source": "img42" },
+    "british-biscuits": { "source": "img51", "tag": "prepared_food", "objects": "biscuits", "construction": "composite" },
+    "honey-alphabet": { "source": "p8-honey", "tag": "prepared_food", "objects": "poured honey", "construction": "formed", "description": "Honey alphabet A-Z" }
+  }
+}

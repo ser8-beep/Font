@@ -870,6 +870,41 @@
    "description": "Rusty scraps, mixed case",
    "default_category": "hardware",
    "case": "mixed"
+  },
+  {
+   "id": "p8-pressed-flowers",
+   "file": "object-alphabet-cutouts/pressed-flower-alphabet",
+   "description": "Pressed flower alphabet A-Z",
+   "default_category": "nature",
+   "case": "mixed"
+  },
+  {
+   "id": "p8-found-objects-banke",
+   "file": "object-alphabet-cutouts/found-objects-banke",
+   "description": "Niklas Banke's alphabet of found objects",
+   "default_category": "hardware",
+   "case": "upper"
+  },
+  {
+   "id": "p8-diy-tools",
+   "file": "object-alphabet-cutouts/diy-tools",
+   "description": "DIY tools A-Z",
+   "default_category": "hardware",
+   "case": "upper"
+  },
+  {
+   "id": "p8-shed-tools",
+   "file": "object-alphabet-cutouts/shed-tools",
+   "description": "Shed tools A-Z",
+   "default_category": "hardware",
+   "case": "mixed"
+  },
+  {
+   "id": "p8-honey",
+   "file": "object-alphabet-cutouts/honey-alphabet",
+   "description": "Honey alphabet A-Z",
+   "default_category": "prepared_food",
+   "case": "upper"
   }
  ],
  "glyphs": [
