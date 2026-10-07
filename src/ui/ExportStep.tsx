@@ -56,6 +56,8 @@ export function ExportStep(p: Props) {
       const pictures = await fontPictures([...p.map.values()], (done, total) => setMaking({ done, total }));
       const ttf = buildFont(p.map, name, p.maker, pictures);
       setFontSave(await saveFile(new Blob([ttf as BlobPart], { type: 'font/ttf' }), `${safeFileName(name)}.ttf`));
+    } catch (e) {
+      setFontSave(broke(e));
     } finally {
       setMaking(null);
     }
@@ -74,14 +76,20 @@ export function ExportStep(p: Props) {
           `Drag them into Canva, Google Docs, Google Slides or PowerPoint and line them up to spell anything.\r\n`,
       );
       setLettersSave(await saveFile(new Blob([zipSync(files) as BlobPart], { type: 'application/zip' }), `${safeFileName(name)} letters.zip`));
+    } catch (e) {
+      setLettersSave(broke(e));
     } finally {
       setPacking(false);
     }
   };
   const savePoster = async () => {
-    const c = await renderPoster(p.text, p.map, name, p.maker, p.backdrop);
-    const blob = await new Promise<Blob | null>((res) => c.toBlob(res, 'image/png'));
-    if (blob) setPosterSave(await saveFile(blob, `${safeFileName(name)} poster.png`));
+    try {
+      const c = await renderPoster(p.text, p.map, name, p.maker, p.backdrop);
+      const blob = await new Promise<Blob | null>((res) => c.toBlob(res, 'image/png'));
+      setPosterSave(blob ? await saveFile(blob, `${safeFileName(name)} poster.png`) : { kind: 'failed', why: 'the poster picture could not be made' });
+    } catch (e) {
+      setPosterSave(broke(e));
+    }
   };
 
   return (
@@ -171,10 +179,31 @@ function letterFileName(ch: string): string {
   return MARKS[ch] ?? `U+${ch.codePointAt(0)!.toString(16).toUpperCase().padStart(4, '0')}`;
 }
 
+/** A save that broke while the file was being made, with the reason for the helper. */
+function broke(e: unknown): SaveOutcome {
+  console.error(e);
+  return { kind: 'failed', why: e instanceof Error ? e.message : String(e) };
+}
+
 function SaveNote({ outcome }: { outcome: SaveOutcome }) {
-  if (outcome === 'saved') return <>✅ Saved to Downloads. </>;
-  if (outcome === 'declined') return <>Not saved. Press the button again to save it. </>;
-  return <>Saving didn't work here. Ask your helper. </>;
+  switch (outcome.kind) {
+    case 'saved':
+      return <>✅ Saved to Downloads. </>;
+    case 'declined':
+      return <>Not saved. Press the button again to save it. </>;
+    case 'busy':
+      return <>Another save is still waiting for an answer. Finish that one, then press the button again. </>;
+    case 'link':
+      return (
+        <>
+          <a className="btn small yellow save-link" href={outcome.url} download={outcome.filename} target="_blank" rel="noopener">
+            ⬇ Tap here to download {outcome.filename}
+          </a>{' '}
+        </>
+      );
+    case 'failed':
+      return <>Saving didn't work ({outcome.why}). Ask your helper. </>;
+  }
 }
 
 function RoomPanel({ map, team }: { map: Map<string, LetterGlyph>; team: string }) {
