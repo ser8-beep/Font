@@ -1,0 +1,18 @@
+{
+  "note": "How the sets in object-alphabet-cutouts.zip (October 2026) went into alphabet-repository/. Used with: npm run repository:import -- <unzipped folder> data/imports/object-alphabet-cutouts.json",
+  "sets": {
+    "food": { "source": "img20", "note": "same photo as img20, sharper cut-outs replace the old ones" },
+    "packaging": { "source": "img30", "note": "same photo as img30, sharper cut-outs replace the old ones" },
+    "vegetables": { "source": "img11", "note": "same photo as img11, cleaner edges replace the old ones" },
+    "craft-supplies": { "source": "img02", "note": "catalogued as img02, no cut-outs until now" },
+    "drafting-tools": { "source": "img33", "note": "catalogued as img33, no cut-outs until now; Q is a hole in cardboard, skipped" },
+    "banana-peel": { "source": "p3-banana-peel", "tag": "produce", "objects": "banana peel", "construction": "formed", "description": "Banana peels, mixed case" },
+    "camera-parts": { "source": "p3-camera-parts", "tag": "hardware", "objects": "camera part", "construction": "single", "description": "Dismantled camera parts" },
+    "galvanised-hardware": { "source": "p3-galvanised", "tag": "hardware", "objects": "galvanised pipe fittings and brackets", "construction": "composite", "description": "Galvanised hardware and pipe fittings" },
+    "found-scrap": { "source": "p3-found-scrap", "tag": "found", "objects": "scrap metal part", "construction": "single", "description": "Found scrap: brackets, bolts, pipe, mixed case" },
+    "hazard-tape": { "source": "p3-hazard-tape", "tag": "packaging", "objects": "yellow hazard tape", "construction": "formed", "description": "Hazard tape words BENOY, JANKY" },
+    "knitted": { "source": "p3-knitted", "tag": "textiles", "objects": "pink knitting", "construction": "formed", "description": "Knitted word RESIST" },
+    "vintage-collage": { "source": "p3-vintage-collage", "tag": "found", "objects": "vintage object (collage)", "construction": "single", "description": "Grainy collage of vintage objects" },
+    "woven": { "source": "p3-woven", "tag": "textiles", "description": "Woven words WEAVING & SOLVING, whole lines only (letters interlock)" }
+  }
+}

@@ -1,6 +1,6 @@
 # Object alphabets — combined (phase 1 + phase 2)
 
-933 transparent cutouts, organised by category and letter.
+1196 transparent cutouts, organised by category and letter.
 
 ## Categories
 
@@ -19,6 +19,15 @@ Each cut-out keeps its finer category as `tag` in `manifest.json`. Cut-outs whos
 the five (household, fashion, furniture, leisure, packaging, textiles, found, electronics, body)
 are kept in `_set-aside/<tag>/<LETTER>/` with `set_aside: true`; the app doesn't use them.
 
+## Adding cut-outs
+- Ready-made cut-outs (one folder per set, `<CHAR>_<case>.png`): describe the sets in a file like
+  `data/imports/object-alphabet-cutouts.json`, then `npm run repository:import -- <folder> <that file>`
+  and `npm run repository:regroup`. A set that is a photo already here replaces its cut-outs
+  letter by letter; a set the catalogue lists takes its objects and categories from there; a new
+  set is added to the catalogue's sources. Whole words and symbols go to `_set-aside/_not-letters/`.
+- Generated photos for `generation_brief.csv`: `npm run repository:add -- <folder>`.
+- Real cut-outs always come before generated ones when the four primary pictures are picked.
+
 ## Structure
 `<category>/<LETTER>/<source>_<char>_<case>.png`
 - Up to 4 primary variations per letter, picked to come from different source sets. Any extras sit in `<LETTER>/_more/`.
@@ -29,6 +38,11 @@ are kept in `_set-aside/<tag>/<LETTER>/` with `set_aside: true`; the app doesn't
 - Every set that wasn't a clean cutout: tile/grid photos (matchsticks, books, drafting close-ups, food tiles, photo grids, Lettres confinées, Abba Richman), textured or coloured backgrounds (yellow paper, concrete, weathered wood, poster), grainy scans and collages, black-background jewellery, the painted illustration, and the hand-cropped word layouts on textured surfaces.
 - Individual glyphs inside kept sets where the cutout broke apart — mostly thin wire or white/clear objects on white.
 - Digits and punctuation.
+- From object-alphabet-cutouts.zip: nothing. The food, packaging and vegetables sets are the photos
+  already here as img20, img30 and img11, so their sharper cut-outs replaced the old ones;
+  craft-supplies and drafting-tools are the catalogue's img02 and img33. The woven words
+  (WEAVING & SOLVING interlock, so they are whole lines) and the collage's & are in
+  `_set-aside/_not-letters/`; drafting-tools' Ñ is kept but the app only uses A–Z.
 
 ## Cutout method
 Hard mask against the source background, 1px feather, background colour removed from the edge pixels (no white halo on dark or coloured backgrounds).

@@ -123,7 +123,7 @@ Kids only see **five categories**, picked to overlap as little as possible (`src
 | 🍪 Food | prepared_food |
 | 🌸 Plants & flowers | nature |
 
-Home stuff, jewellery, furniture, toys, packaging, textiles, festive, found things and electronics fit none of the five cleanly, so they are left out: their cut-outs wait in `alphabet-repository/_set-aside/`. `npm run repository` turns the catalogue into `src/core/alphabet/repository-data.ts` (counts and object names per category and letter); `npm run repository:regroup` sorts the cut-out repository the same way and rewrites its coverage and generation brief.
+Home stuff, jewellery, furniture, toys, packaging, textiles, festive, found things and electronics fit none of the five cleanly, so they are left out: their cut-outs wait in `alphabet-repository/_set-aside/`. `npm run repository` turns the catalogue into `src/core/alphabet/repository-data.ts` (counts and object names per category and letter); `npm run repository:regroup` sorts the cut-out repository the same way and rewrites its coverage and generation brief. `npm run repository:import` adds folders of ready-made cut-outs (see the repository's README).
 
 `src/core/alphabet/category.ts` uses it two ways:
 

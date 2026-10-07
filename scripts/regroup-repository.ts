@@ -35,8 +35,8 @@ for (const e of manifest) {
   byLetter.set(k, [...(byLetter.get(k) ?? []), e]);
 }
 for (const list of byLetter.values()) {
-  // Earlier primaries first, real cut-outs before generated ones.
-  const ordered = [...list].sort((a, b) => Number(b.primary) - Number(a.primary) || Number(!!a.generated) - Number(!!b.generated));
+  // Real cut-outs before generated ones, then earlier primaries.
+  const ordered = [...list].sort((a, b) => Number(!!a.generated) - Number(!!b.generated) || Number(b.primary) - Number(a.primary));
   const pick: Entry[] = [];
   const sources = new Set<string>();
   for (const e of ordered) if (pick.length < PRIMARY && !sources.has(e.source)) { pick.push(e); sources.add(e.source); }

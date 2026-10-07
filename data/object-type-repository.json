@@ -471,6 +471,62 @@
    "description": "British biscuits \u2014 wafers, fingers, bourbons, jammie dodgers, iced rings (no U)",
    "default_category": "prepared_food",
    "case": "mixed"
+  },
+  {
+   "id": "p3-banana-peel",
+   "file": "object-alphabet-cutouts/banana-peel",
+   "description": "Banana peels, mixed case",
+   "default_category": "produce",
+   "case": "mixed"
+  },
+  {
+   "id": "p3-camera-parts",
+   "file": "object-alphabet-cutouts/camera-parts",
+   "description": "Dismantled camera parts",
+   "default_category": "hardware",
+   "case": "mixed"
+  },
+  {
+   "id": "p3-galvanised",
+   "file": "object-alphabet-cutouts/galvanised-hardware",
+   "description": "Galvanised hardware and pipe fittings",
+   "default_category": "hardware",
+   "case": "upper"
+  },
+  {
+   "id": "p3-found-scrap",
+   "file": "object-alphabet-cutouts/found-scrap",
+   "description": "Found scrap: brackets, bolts, pipe, mixed case",
+   "default_category": "found",
+   "case": "mixed"
+  },
+  {
+   "id": "p3-hazard-tape",
+   "file": "object-alphabet-cutouts/hazard-tape",
+   "description": "Hazard tape words BENOY, JANKY",
+   "default_category": "packaging",
+   "case": "upper"
+  },
+  {
+   "id": "p3-knitted",
+   "file": "object-alphabet-cutouts/knitted",
+   "description": "Knitted word RESIST",
+   "default_category": "textiles",
+   "case": "upper"
+  },
+  {
+   "id": "p3-vintage-collage",
+   "file": "object-alphabet-cutouts/vintage-collage",
+   "description": "Grainy collage of vintage objects",
+   "default_category": "found",
+   "case": "upper"
+  },
+  {
+   "id": "p3-woven",
+   "file": "object-alphabet-cutouts/woven",
+   "description": "Woven words WEAVING & SOLVING, whole lines only (letters interlock)",
+   "default_category": "textiles",
+   "case": "upper"
   }
  ],
  "glyphs": [
