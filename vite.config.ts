@@ -5,12 +5,15 @@ import { viteSingleFile } from 'vite-plugin-singlefile';
 
 // `vite build`               -> dist/         installable PWA, works offline after first load
 // `vite build --mode single` -> dist-single/  one self-contained HTML file for a USB stick / zip
+// `vite build --mode artifact` -> dist-artifact/  the claude.ai page, letter pictures as separate files
 export default defineConfig(({ mode }) => {
-  if (mode === 'single') {
+  if (mode === 'single' || mode === 'artifact') {
+    // 'artifact': the claude.ai page. Same single file, but the letter pictures stay out of it
+    // (src/library.ts loads them from atlases/ beside the page; see scripts/make-artifact-page.mjs).
     return {
       base: './',
       plugins: [react(), viteSingleFile()],
-      build: { outDir: 'dist-single', assetsInlineLimit: 100_000_000 },
+      build: { outDir: mode === 'single' ? 'dist-single' : 'dist-artifact', assetsInlineLimit: 100_000_000 },
     };
   }
   return {

@@ -9,3 +9,4 @@ samples/_refs/
 scripts/tmp/
 .venv-sr/
 alphabet-repository/_upscaled/**/*.tmp
+dist-artifact

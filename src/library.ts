@@ -7,7 +7,35 @@ import manifest from './library/manifest.json';
 // The letter library: real object alphabets (one per source set, by category) that fill in every
 // letter a kid didn't make. Built by scripts/library.ts from a folder of cut-outs.
 
-const ATLAS_URLS = import.meta.glob('./library/atlases/*.webp', { query: '?url', import: 'default', eager: true }) as Record<string, string>;
+// Where each category's letter pictures come from. The claude.ai page (build mode 'artifact') ships
+// them as files beside the page (atlases/<name>.webp) so the page stays small; other builds bundle them
+// (the single-file build inlines them, the PWA hashes them), loaded only when a category is used.
+const ATLAS_URLS = import.meta.env.MODE === 'artifact' ? null : (import.meta.glob('./library/atlases/*.webp', { query: '?url', import: 'default' }) as Record<string, () => Promise<string>>);
+const atlasUrl = async (name: string) => (ATLAS_URLS ? ATLAS_URLS[`./library/atlases/${name}`]() : new URL(`atlases/${name}`, document.baseURI).href);
+
+/** A picture's pixels: decoded off the main thread where the browser can, else through an <img>. */
+async function decodeAtlas(url: string): Promise<RGBAImage> {
+  let src: CanvasImageSource & { width: number; height: number };
+  try {
+    const r = await fetch(url);
+    if (!r.ok) throw new Error(`${r.status}`);
+    src = await createImageBitmap(await r.blob());
+  } catch {
+    const img = new Image();
+    img.src = url;
+    await img.decode();
+    src = Object.assign(img, { width: img.naturalWidth, height: img.naturalHeight });
+  }
+  const c = document.createElement('canvas');
+  c.width = src.width;
+  c.height = src.height;
+  const ctx = c.getContext('2d', { willReadFrequently: true })!;
+  ctx.drawImage(src, 0, 0);
+  if ('close' in src && typeof src.close === 'function') src.close();
+  const d = ctx.getImageData(0, 0, c.width, c.height);
+  c.width = c.height = 0;
+  return { width: d.width, height: d.height, data: d.data };
+}
 
 export const SETS: LibrarySet[] = (manifest as LibraryManifest).sets;
 
@@ -71,20 +99,11 @@ const atlases = new Map<string, Promise<RGBAImage>>();
 export function loadAtlas(set: LibrarySet): Promise<RGBAImage> {
   let p = atlases.get(set.atlas);
   if (!p) {
-    p = new Promise<RGBAImage>((resolve, reject) => {
-      const img = new Image();
-      img.onload = () => {
-        const c = document.createElement('canvas');
-        c.width = img.naturalWidth;
-        c.height = img.naturalHeight;
-        const ctx = c.getContext('2d', { willReadFrequently: true })!;
-        ctx.drawImage(img, 0, 0);
-        const d = ctx.getImageData(0, 0, c.width, c.height);
-        resolve({ width: d.width, height: d.height, data: d.data });
-      };
-      img.onerror = () => reject(new Error(`could not load the ${set.category} letters`));
-      img.src = ATLAS_URLS[`./library/atlases/${set.atlas}`];
-    });
+    p = atlasUrl(set.atlas)
+      .then(decodeAtlas)
+      .catch(() => {
+        throw new Error(`could not load the ${set.category} letters`);
+      });
     atlases.set(set.atlas, p);
     p.catch(() => atlases.delete(set.atlas));
   }

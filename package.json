@@ -11,7 +11,7 @@
     "samples:make": "tsx scripts/make-samples.ts",
     "samples:test": "tsx scripts/segment-samples.ts",
     "room": "node server/room-server.js",
-    "build:artifact": "npm run build && node scripts/make-artifact-page.mjs",
+    "build:artifact": "tsc --noEmit && vite build --mode artifact && node scripts/make-artifact-page.mjs",
     "repository": "tsx scripts/repository.ts",
     "library": "tsx scripts/library.ts",
     "repository:add": "tsx scripts/add-generated.ts",
