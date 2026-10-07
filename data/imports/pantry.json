@@ -1,0 +1,51 @@
+{
+  "note": "pantry.zip (October 2026): 38 high-resolution transparent PNGs of letters made from pantry food, kept exactly as supplied (no cropping or sharpening). Picture 51 (three bread slices) is left out: it does not read as a letter. Used with: npm run repository:import -- <folder of sets> data/imports/pantry.json",
+  "sets": {
+    "pantry": {
+      "source": "p5-pantry",
+      "tag": "prepared_food",
+      "construction": "single",
+      "description": "Pantry letters: fruit, veg, pasta, beans, coffee and baking",
+      "objects": "pantry food",
+      "letters": {
+        "A_upper": "carrots",
+        "B_upper": "red pepper slice",
+        "B_upper_2": "pretzel",
+        "C_upper": "sesame bagel",
+        "D_upper": "half an orange",
+        "D_upper_2": "shallot",
+        "E_upper": "strawberries",
+        "E_upper_2": "breadsticks",
+        "F_upper": "coffee beans",
+        "F_upper_2": "chocolates",
+        "G_upper": "green pepper",
+        "H_upper": "snap peas",
+        "I_upper": "pineapple",
+        "J_upper": "farfalle pasta",
+        "K_upper": "rainbow chard",
+        "L_upper": "green pepper",
+        "M_upper": "red pepper",
+        "N_upper": "split peas",
+        "M_upper_2": "yellow pepper",
+        "O_upper": "biscuit",
+        "O_upper_2": "kiwi",
+        "O_upper_3": "pomegranate",
+        "O_upper_4": "coffee beans",
+        "O_upper_5": "apple",
+        "O_upper_6": "red onion",
+        "Q_upper": "radish",
+        "R_upper": "carrot",
+        "R_upper_2": "noodles",
+        "S_upper": "almonds",
+        "S_upper_2": "lime",
+        "T_upper": "mushroom",
+        "U_upper": "camembert",
+        "X_upper": "farfalle pasta",
+        "Y_upper": "spring onion",
+        "Z_upper": "red beans",
+        "V_upper": "bread",
+        "A_upper_2": "spring onions"
+      }
+    }
+  }
+}

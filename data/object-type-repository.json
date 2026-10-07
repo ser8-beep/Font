@@ -667,6 +667,13 @@
    "description": "Grasses, maple seeds and hops",
    "default_category": "nature",
    "case": "mixed"
+  },
+  {
+   "id": "p5-pantry",
+   "file": "object-alphabet-cutouts/pantry",
+   "description": "Pantry letters: fruit, veg, pasta, beans, coffee and baking",
+   "default_category": "prepared_food",
+   "case": "upper"
   }
  ],
  "glyphs": [

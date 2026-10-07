@@ -15,7 +15,8 @@ export const GROUPS: Record<string, Group> = {
   stationery: { label: 'Stationery', emoji: '✏️', description: 'Office, school and art supplies', takes: ['stationery', 'art', 'books'] },
   tools: { label: 'Tools', emoji: '🔧', description: 'Hand tools, hardware and mechanical parts', takes: ['tools', 'hardware', 'vehicle'] },
   produce: { label: 'Fruits & vegetables', emoji: '🥕', description: 'Raw fruit and vegetables', takes: ['produce'] },
-  food: { label: 'Food', emoji: '🍪', description: 'Snacks, sweets, baked and prepared food', takes: ['prepared_food'] },
+  // Pantry: what's in the kitchen cupboards (snacks, baking, pasta, beans, coffee...). The id stays 'food'.
+  food: { label: 'Pantry', emoji: '🥫', description: 'Pantry food: snacks, baking, pasta, beans, coffee and more', takes: ['prepared_food'] },
   // Botanicals: letters of flowers and leaves (with the odd twig or fern). The id stays 'plants'.
   plants: { label: 'Botanicals', emoji: '🌿', description: 'Flowers and leaves', takes: ['nature'] },
 };

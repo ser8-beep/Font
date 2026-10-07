@@ -27,7 +27,11 @@ if (!folder || !setsFile) {
   process.exit(1);
 }
 
-interface SetInfo { source: string; tag?: string; objects?: string; construction?: string; description?: string }
+interface SetInfo {
+  source: string; tag?: string; objects?: string; construction?: string; description?: string;
+  /** What each picture is made of, by file name without .png ("R_upper": "noodles"), when the set mixes objects. */
+  letters?: Record<string, string>;
+}
 interface Entry {
   id: string; char: string; letter: string; case: string; category: string; objects: string; construction: string;
   source: string; confidence: string; file: string; primary: boolean; generated?: boolean; tag?: string; set_aside?: boolean;
@@ -93,7 +97,7 @@ for (const [set, info] of Object.entries(sets)) {
       letter,
       case: p.case,
       category: tag,
-      objects: g?.objects ?? info.objects ?? set,
+      objects: g?.objects ?? info.letters?.[name.replace(/\.png$/, '')] ?? info.objects ?? set,
       construction: g?.construction ?? info.construction ?? 'single',
       source: info.source,
       confidence: g?.confidence ?? 'high',

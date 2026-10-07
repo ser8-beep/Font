@@ -12,7 +12,7 @@ Five, chosen to overlap as little as possible (see `src/core/alphabet/groups.ts`
 | `stationery` (Stationery) | stationery, art, books |
 | `tools` (Tools) | tools, hardware, vehicle |
 | `produce` (Fruits & vegetables) | produce |
-| `food` (Food) | prepared_food |
+| `food` (Pantry) | prepared_food |
 | `plants` (Botanicals: flowers & leaves) | nature |
 
 Each cut-out keeps its finer category as `tag` in `manifest.json`. Cut-outs whose tag fits none of
