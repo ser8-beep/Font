@@ -15,8 +15,8 @@ interface Props {
   map: Map<string, LetterGlyph>;
   size: Size;
   onSize: (s: Size) => void;
-  /** The letters' category (its patterns are offered); '' when not known yet. */
-  category: string;
+  /** The typeface's themes, main first: their patterns are offered (empty when not known yet). */
+  themes: string[];
   /** The kid's table colour, as a swatch. */
   table: string;
 }
@@ -178,8 +178,10 @@ export function PosterEditor(p: Props) {
   };
 
   const fill = d.fill;
-  const patterns = p.category && PATTERNS[p.category] ? PATTERNS[p.category] : Object.values(PATTERNS).map((l) => l[0]);
-  const cat = CATEGORY_LABELS[p.category];
+  // Every theme in the typeface brings its patterns; with none known yet, one of each.
+  const known = p.themes.filter((t) => PATTERNS[t]);
+  const patterns = known.length ? known.flatMap((t) => PATTERNS[t]) : Object.values(PATTERNS).map((l) => l[0]);
+  const cat = known.length ? known.map((t) => `${CATEGORY_LABELS[t].emoji} ${CATEGORY_LABELS[t].label}`).join(' + ') : null;
   const bg = fill.kind === 'solid' ? fill.colour : fill.from;
 
   return (
@@ -287,7 +289,7 @@ export function PosterEditor(p: Props) {
         </section>
 
         <section>
-          <Label>Pattern{cat ? ` · ${cat.emoji} ${cat.label}` : ''}</Label>
+          <Label>Pattern{cat ? ` · ${cat}` : ''}</Label>
           <div className="pattern-tiles" role="group" aria-label="Pattern">
             <button className={!d.pattern ? 'on' : ''} aria-pressed={!d.pattern} onClick={() => p.onDesign({ pattern: null })}>
               <span className="none">None</span>

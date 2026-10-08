@@ -11,6 +11,8 @@ export interface Photo {
   analysis: Analysis;
   /** The letters in this photo: the whole word (WORD), or one letter when kids photograph them one at a time. */
   word: string;
+  /** The theme the kid tagged this photo with (a category id), when they picked one. */
+  theme?: string;
 }
 
 export interface Letter {
@@ -49,8 +51,11 @@ export interface Snapshot {
   currentPhotoId: string | null;
   /** "Try another" rolls per grown character (0 when never rolled). */
   seeds: Record<string, number>;
-  /** Object-type category the kid picked for building new letters (null = the app's guess). */
-  category: string | null;
+  /**
+   * The themes (category ids) the rest of the alphabet comes from and each one's share of the whole
+   * typeface, in percent (null = from the kid's theme tags, else the app's guess).
+   */
+  mix: Record<string, number> | null;
   /** Letter-library alphabet the kid picked (null = the best one for the category). */
   alphabet: string | null;
 }
@@ -73,7 +78,8 @@ export type Action =
   | { type: 'showPhoto'; photoId: string }
   | { type: 'letters'; letters: Letter[]; record?: boolean }
   | { type: 'reroll'; char: string }
-  | { type: 'category'; category: string | null }
+  | { type: 'mix'; mix: Record<string, number> | null }
+  | { type: 'tagPhoto'; photoId: string; theme: string | null }
   | { type: 'alphabet'; alphabet: string | null }
   | { type: 'undo' }
   | { type: 'text'; text: string }
@@ -90,7 +96,7 @@ export const initialState: AppState = {
   step: 'capture',
   currentPhotoId: null,
   seeds: {},
-  category: null,
+  mix: null,
   alphabet: null,
   text: '',
   fontName: '',
@@ -101,7 +107,7 @@ export const initialState: AppState = {
   past: [],
 };
 
-const snap = (s: AppState): Snapshot => ({ photos: s.photos, letters: s.letters, step: s.step, currentPhotoId: s.currentPhotoId, seeds: s.seeds, category: s.category, alphabet: s.alphabet });
+const snap = (s: AppState): Snapshot => ({ photos: s.photos, letters: s.letters, step: s.step, currentPhotoId: s.currentPhotoId, seeds: s.seeds, mix: s.mix, alphabet: s.alphabet });
 const remember = (s: AppState) => [...s.past, snap(s)].slice(-60);
 
 export function reducer(s: AppState, a: Action): AppState {
@@ -124,9 +130,19 @@ export function reducer(s: AppState, a: Action): AppState {
       return { ...s, currentPhotoId: a.photoId };
     case 'letters':
       return { ...s, past: a.record === false ? s.past : remember(s), letters: a.letters };
-    case 'category':
-      // A new category starts from its best alphabet and first-choice letters.
-      return { ...s, past: remember(s), category: a.category, alphabet: null, seeds: {} };
+    case 'mix': {
+      // A new main theme starts from its best alphabet; new shares keep the letters already rolled.
+      const main = (m: Record<string, number> | null) => (m ? Object.entries(m).sort((x, y) => y[1] - x[1])[0]?.[0] : null);
+      const same = main(a.mix) === main(s.mix);
+      return { ...s, past: remember(s), mix: a.mix, alphabet: same ? s.alphabet : null, seeds: same ? s.seeds : {} };
+    }
+    case 'tagPhoto':
+      return {
+        ...s,
+        past: remember(s),
+        photos: s.photos.map((p) => (p.id === a.photoId ? { ...p, theme: a.theme ?? undefined } : p)),
+        // Tags shape the mix only while the kid hasn't set one.
+      };
     case 'alphabet':
       return { ...s, past: remember(s), alphabet: a.alphabet, seeds: {} };
     case 'reroll':

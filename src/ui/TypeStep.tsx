@@ -14,8 +14,8 @@ interface Props {
   celebrated: boolean;
   size: Size;
   design: Design;
-  /** The letters' category, for its background patterns ('' until known). */
-  category: string;
+  /** The typeface's themes, main first, for their background patterns (empty until known). */
+  themes: string[];
   table: string;
   /** Letters still growing (they show as grey boxes until they arrive). */
   growing: boolean;
@@ -93,7 +93,7 @@ export function TypeStep(p: Props) {
         map={p.map}
         size={p.size}
         onSize={p.onSize}
-        category={p.category}
+        themes={p.themes}
         table={p.table}
       />
 

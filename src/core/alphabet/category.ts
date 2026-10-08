@@ -17,8 +17,8 @@ export const BUILDS: Build[] = ['single', 'composite', 'repeated', 'formed'];
 export const CATEGORY_IDS = Object.keys(REPOSITORY);
 
 /** Kid-friendly names, in the order the picker shows them. */
-export const CATEGORY_LABELS: Record<string, { label: string; emoji: string }> = Object.fromEntries(
-  Object.entries(GROUPS).map(([id, g]) => [id, { label: g.label, emoji: g.emoji }]),
+export const CATEGORY_LABELS: Record<string, { label: string; emoji: string; description: string }> = Object.fromEntries(
+  Object.entries(GROUPS).map(([id, g]) => [id, { label: g.label, emoji: g.emoji, description: g.description }]),
 );
 
 /** How one captured letter is built, read from its material. */

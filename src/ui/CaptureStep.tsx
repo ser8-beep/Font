@@ -2,6 +2,7 @@ import { useEffect, useRef, useState } from 'react';
 import demoUrl from '../assets/demo-lego.jpg';
 import { dataUrlToBlob, inClaudeViewer } from '../host';
 import { WORD, type Photo } from '../state';
+import { CATEGORY_IDS, CATEGORY_LABELS } from '../core/alphabet/category';
 import { letterColour } from './SplitStep';
 
 interface Props {
@@ -11,8 +12,27 @@ interface Props {
   adding: string | null;
   busy: boolean;
   error: string | null;
-  /** word: what the photo holds, the whole WORD or the one letter it was taken for. */
-  onPhoto: (blob: Blob, word: string) => void;
+  /** word: what the photo holds, the whole WORD or the one letter it was taken for; theme: its tag. */
+  onPhoto: (blob: Blob, word: string, theme?: string) => void;
+  /** Tag a photo already taken with a theme (null: not sure). */
+  onTag: (photoId: string, theme: string | null) => void;
+}
+
+/** A theme for one letter: what it is made of. "Not sure" leaves it to the app. */
+function ThemePick({ value, onChange, label }: { value: string | null; onChange: (theme: string | null) => void; label: string }) {
+  return (
+    <label className="theme-pick">
+      <span className="sr-only">{label}</span>
+      <select value={value ?? ''} onChange={(e) => onChange(e.target.value || null)} aria-label={label}>
+        <option value="">🤔 Theme: not sure</option>
+        {CATEGORY_IDS.map((id) => (
+          <option key={id} value={id}>
+            {CATEGORY_LABELS[id].emoji} {CATEGORY_LABELS[id].label}
+          </option>
+        ))}
+      </select>
+    </label>
+  );
 }
 
 /** One photo of the whole word, or one photo per letter. */
@@ -22,7 +42,9 @@ type Mode = 'word' | 'letters';
 const canUseCamera = () => !inClaudeViewer && !!navigator.mediaDevices?.getUserMedia && window.isSecureContext;
 const ALPHABET = [...'ABCDEFGHIJKLMNOPQRSTUVWXYZ'];
 
-export function CaptureStep({ photos, adding, busy, error, onPhoto }: Props) {
+export function CaptureStep({ photos, adding, busy, error, onPhoto, onTag }: Props) {
+  // Themes picked for letters not photographed yet (a photo keeps its own tag once taken).
+  const [slotTheme, setSlotTheme] = useState<Record<string, string | null>>({});
   const [mode, setMode] = useState<Mode>(photos.some((p) => [...p.word].length === 1) ? 'letters' : 'word');
   const [addLetter, setAddLetter] = useState(adding ?? '');
   // The camera is open for this word or letter.
@@ -52,7 +74,7 @@ export function CaptureStep({ photos, adding, busy, error, onPhoto }: Props) {
     }
     setHint(null);
     setPending(word);
-    onPhoto(f, word);
+    onPhoto(f, word, [...word].length === 1 ? (slotTheme[word] ?? undefined) : undefined);
   };
   const take = (f: Blob | null | undefined) => send(f, target);
   const takeRef = useRef(take);
@@ -176,6 +198,12 @@ export function CaptureStep({ photos, adding, busy, error, onPhoto }: Props) {
               </button>
             ))}
           </div>
+          {addLetter && (
+            <div className="row" style={{ marginTop: 12 }}>
+              <span style={{ fontWeight: 800 }}>What is your {addLetter} made of?</span>
+              <ThemePick value={slotTheme[addLetter] ?? null} onChange={(t) => setSlotTheme({ ...slotTheme, [addLetter]: t })} label={`Theme for your ${addLetter}`} />
+            </div>
+          )}
         </>
       )}
 
@@ -223,6 +251,11 @@ export function CaptureStep({ photos, adding, busy, error, onPhoto }: Props) {
                 <div key={c} className="slot card">
                   <span className="slot-letter" style={{ background: letterColour(c) }}>{c}</span>
                   <div className="slot-pic">{p ? <img src={p.url} alt={`Your ${c}`} /> : <span>No photo yet</span>}</div>
+                  <ThemePick
+                    value={p ? (p.theme ?? null) : (slotTheme[c] ?? null)}
+                    onChange={(t) => (p ? onTag(p.id, t) : setSlotTheme({ ...slotTheme, [c]: t }))}
+                    label={`Theme for ${c}`}
+                  />
                   <div className="slot-buttons">
                     {canUseCamera() && (
                       <button className="btn small pink" aria-label={`Take a photo of ${c}`} onClick={() => setCamera(c)}>

@@ -9,11 +9,11 @@ Five, chosen to overlap as little as possible (see `src/core/alphabet/groups.ts`
 
 | Category | Takes in |
 |---|---|
-| `stationery` (Desk) | stationery, art, books |
-| `tools` (Scraps & tools) | tools, hardware, vehicle |
-| `produce` (Fruits & vegetables) | produce |
-| `food` (Pantry) | prepared_food |
-| `plants` (Garden: flowers, leaves, feathers and garden creatures) | nature |
+| `stationery` (Doodle Desk) | stationery, art, books |
+| `tools` (Tinker's Toolbox) | tools, hardware, vehicle |
+| `produce` (Market Basket) | produce |
+| `food` (Pantry Raid) | prepared_food |
+| `plants` (Secret Garden) | nature |
 
 Each cut-out keeps its finer category as `tag` in `manifest.json`. Cut-outs whose tag fits none of
 the five (household, fashion, furniture, leisure, packaging, textiles, found, electronics, body)

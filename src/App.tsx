@@ -43,7 +43,7 @@ function Station() {
 
   // The letters the kid made, then the whole font: grown letters with the kid's own on top.
   const captured = useMemo(() => glyphMap(s.letters, s.photos), [s.letters, s.photos]);
-  const alphabet = useAlphabet(captured, s.letters, s.photos, s.seeds, GROW_STEPS.includes(s.step), s.category, s.alphabet);
+  const alphabet = useAlphabet(captured, s.letters, s.photos, s.seeds, GROW_STEPS.includes(s.step), s.mix, s.alphabet);
   const map = useMemo(() => new Map([...alphabet.grown, ...captured]), [alphabet.grown, captured]);
   // Once the alphabet is finished, quietly start on the font's photo letters for the Save step.
   const finished = alphabet.done >= alphabet.total;
@@ -67,11 +67,14 @@ function Station() {
     dispatch({ type: 'letters', letters: [...s.letters.filter((l) => l.photoId !== photoId), ...next], record });
   const onCelebrated = useCallback(() => dispatch({ type: 'celebrated' }), []);
 
-  const onPhoto = async (blob: Blob, word: string) => {
+  const onPhoto = async (blob: Blob, word: string, theme?: string) => {
     setBusy(true);
     setError(null);
     try {
-      const { photo: p, letters } = await processPhoto(blob, word);
+      const { photo: p0, letters } = await processPhoto(blob, word);
+      // A letter photographed on its own keeps the theme it was tagged with (or its old photo's tag).
+      const old = s.photos.find((ph) => ph.word === word);
+      const p = { ...p0, theme: theme ?? old?.theme };
       // Letters photographed one at a time stay on Snap until the kid has all they want. A new photo
       // of the same letters (or the whole word again) takes the place of the old one.
       const stay = adding === null && [...word].length === 1;
@@ -139,7 +142,15 @@ function Station() {
       </header>
 
       <main className="step">
-        {s.step === 'capture' && <CaptureStep key={adding ?? 'word'} photos={s.photos} adding={adding} busy={busy} error={error} onPhoto={onPhoto} />}
+        {s.step === 'capture' && <CaptureStep
+            key={adding ?? 'word'}
+            photos={s.photos}
+            adding={adding}
+            busy={busy}
+            error={error}
+            onPhoto={onPhoto}
+            onTag={(photoId, theme) => dispatch({ type: 'tagPhoto', photoId, theme })}
+          />}
         {s.step === 'split' && photo && (
           <SplitStep
             photo={photo}
@@ -157,8 +168,7 @@ function Station() {
           <GrowStep
             alphabet={alphabet}
             captured={captured}
-            chosen={s.category}
-            onCategory={(category) => dispatch({ type: 'category', category })}
+            onMix={(mix) => dispatch({ type: 'mix', mix })}
             onAlphabet={(alphabet) => dispatch({ type: 'alphabet', alphabet })}
             onReroll={(ch) => dispatch({ type: 'reroll', char: ch })}
             onAddMore={addMore}
@@ -172,7 +182,7 @@ function Station() {
             celebrated={s.celebrated}
             size={s.size}
             design={s.design}
-            category={alphabet.category}
+            themes={alphabet.themes.map((t) => t.id)}
             table={table}
             growing={alphabet.done < alphabet.total}
             onText={(t) => dispatch({ type: 'text', text: t })}

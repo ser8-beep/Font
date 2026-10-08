@@ -7,11 +7,16 @@ import { libraryGlyph, loadAtlas, optionsFor, rankSets } from './library';
 import type { LibrarySet } from './library-types';
 import { looksOfArray, matchLetters } from './match';
 import type { Letter, Photo } from './state';
+import { assignThemes, normalise, type ThemeShare } from './themes';
 
-// Fills in every letter the kid didn't make from a real object alphabet in the letter library:
-// the photo is matched to a category of the object-type repository, the best alphabet in that
-// category is picked, and each missing letter comes from it (or, if it lacks one, from the next
-// alphabet that has it). "Try another" walks through the other alphabets' versions of a letter.
+export { normalise, type ThemeShare };
+
+// Fills in every letter the kid didn't make from real object alphabets in the letter library.
+// The letters can come from several themes (categories) at once: the kid's own theme tags, or the
+// theme the photo looks like, or a mix the kid sets with sliders. The missing letters are shared
+// out so each theme gets its share of the whole typeface, spread evenly through the alphabet, and
+// each letter comes from its theme's best alphabet (or the next one that has it). "Try another"
+// walks through that theme's other versions of a letter.
 
 type Match = { sig: string; ranked: string[]; looks: number[] } | { sig: string; error: string };
 
@@ -87,8 +92,16 @@ export function styleSamples(captured: Map<string, LetterGlyph>, letters: Letter
 }
 
 export interface Alphabet {
-  /** The object-type category the letters come from ('' until the photo has been looked at). */
+  /** The main theme: the one with the biggest share ('' until the photo has been looked at). */
   category: string;
+  /** Every theme in the typeface with its share (percent), biggest first; shares total 100. */
+  themes: ThemeShare[];
+  /** Where the themes came from: the kid's sliders, the kid's theme tags, or the app's guess. */
+  themesFrom: 'mix' | 'tags' | 'guess';
+  /** How many of the kid's own letters carry each theme tag. */
+  tagged: Map<string, number>;
+  /** The theme each filled-in letter comes from. */
+  themeOf: Map<string, string>;
   /** Categories the photo looks like, best first (empty until known). */
   guess: string[];
   /** Alphabets to fill from, the one in use first. */
@@ -108,8 +121,8 @@ export interface Alphabet {
 
 /**
  * The kid's whole alphabet while `enabled`: their own letters plus real object letters from the
- * library, from `chosen` (a repository category) or the category the photo looks like, and from
- * `alphabet` (a set id) or the best set in it.
+ * library, in the themes of `mix` (theme → percent), or the kid's theme tags, or the theme the
+ * photo looks like; the main theme's alphabet is `alphabet` (a set id) or its best one.
  */
 export function useAlphabet(
   captured: Map<string, LetterGlyph>,
@@ -117,7 +130,7 @@ export function useAlphabet(
   photos: Photo[],
   seeds: Record<string, number>,
   enabled: boolean,
-  chosen: string | null,
+  mix: Record<string, number> | null,
   alphabet: string | null,
 ): Alphabet {
   const sig = useMemo(() => [...captured.values()].map((x) => x.id).join(';'), [captured]);
@@ -139,23 +152,58 @@ export function useAlphabet(
 
   const current = matched?.sig === sig ? matched : null;
   const guess = current && 'ranked' in current ? current.ranked : [];
-  const category = chosen ?? guess[0] ?? '';
-  const { sets, nextSet } = useMemo(() => {
-    if (!category) return { sets: [], nextSet: null };
-    const ranked = rankSets(category, todo, current && 'looks' in current ? current.looks : null);
-    const at = Math.max(0, ranked.findIndex((s) => s.id === alphabet));
-    const pick = ranked[at];
-    return { sets: pick ? [pick, ...ranked.filter((s) => s !== pick)] : ranked, nextSet: ranked.length > 1 ? ranked[(at + 1) % ranked.length].id : null };
-  }, [category, todo, current, alphabet]);
+
+  // The kid's own letters by theme tag (the tag of the photo each came from).
+  const tagged = useMemo(() => {
+    const t = new Map<string, number>();
+    for (const g of captured.values()) {
+      if (g.picture.kind !== 'photo') continue;
+      const id = g.picture.photo.id;
+      const theme = photos.find((p) => p.id === id)?.theme;
+      if (theme) t.set(theme, (t.get(theme) ?? 0) + 1);
+    }
+    return t;
+  }, [captured, photos]);
+
+  const { themes, themesFrom } = useMemo((): { themes: ThemeShare[]; themesFrom: Alphabet['themesFrom'] } => {
+    const set = mix && normalise(mix);
+    if (set && set.length) return { themes: set, themesFrom: 'mix' };
+    if (tagged.size) return { themes: normalise(Object.fromEntries(tagged)), themesFrom: 'tags' };
+    return { themes: guess[0] ? [{ id: guess[0], share: 100 }] : [], themesFrom: 'guess' };
+  }, [mix, tagged, guess]);
+  const category = themes[0]?.id ?? '';
+
+  // Each theme's alphabets, best first; the main theme's starts with the one the kid picked.
+  const looks = current && 'looks' in current ? current.looks : null;
+  const { setsOf, sets, nextSet } = useMemo(() => {
+    const setsOf = new Map<string, LibrarySet[]>();
+    let nextSet: string | null = null;
+    for (const { id } of themes) {
+      let ranked = rankSets(id, todo, looks);
+      if (id === category) {
+        const at = Math.max(0, ranked.findIndex((s) => s.id === alphabet));
+        const pick = ranked[at];
+        if (pick) ranked = [pick, ...ranked.filter((s) => s !== pick)];
+        nextSet = ranked.length > 1 ? rankSets(id, todo, looks)[(at + 1) % ranked.length].id : null;
+      }
+      setsOf.set(id, ranked);
+    }
+    return { setsOf, sets: setsOf.get(category) ?? [], nextSet };
+  }, [themes, category, todo, looks, alphabet]);
+
+  const themeOf = useMemo(
+    () => assignThemes(todo, chars.length, themes, tagged, (theme, ch) => (setsOf.get(theme) ?? []).some((s) => s.category === theme && s.letters.some((l) => l.char === ch))),
+    [todo, chars, themes, tagged, setsOf],
+  );
 
   const picks = useMemo(() => {
     const out = new Map<string, { choice: ReturnType<typeof optionsFor>[number]; count: number }>();
     for (const ch of todo) {
-      const opts = optionsFor(ch, sets);
+      const opts = optionsFor(ch, setsOf.get(themeOf.get(ch) ?? category) ?? []);
       if (opts.length) out.set(ch, { choice: opts[(seeds[ch] ?? 0) % opts.length], count: opts.length });
     }
     return out;
-  }, [todo, sets, seeds]);
+  }, [todo, setsOf, themeOf, category, seeds]);
 
   // Load the alphabets the picks come from.
   useEffect(() => {
@@ -185,5 +233,5 @@ export function useAlphabet(
   const failed = !!current && 'error' in current;
   // Until the photo has been looked at, every missing letter is still to come.
   const total = category ? picks.size : todo.length;
-  return { category, guess, sets, nextSet, grown, options, chars, done: failed ? total : grown.size, total, failed };
+  return { category, themes, themesFrom, tagged, themeOf, guess, sets, nextSet, grown, options, chars, done: failed ? total : grown.size, total, failed };
 }

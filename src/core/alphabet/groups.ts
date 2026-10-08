@@ -12,15 +12,12 @@ export interface Group {
 }
 
 export const GROUPS: Record<string, Group> = {
-  // Desk: office, school and art supplies and other desk things. The id stays 'stationery'.
-  stationery: { label: 'Desk', emoji: '✏️', description: 'Office, school and art supplies and other desk things', takes: ['stationery', 'art', 'books'] },
-  // Scraps & tools: tools, hardware, bike parts and scrap metal. The id stays 'tools'.
-  tools: { label: 'Scraps & tools', emoji: '🔧', description: 'Tools, hardware, bike parts and scrap metal', takes: ['tools', 'hardware', 'vehicle'] },
-  produce: { label: 'Fruits & vegetables', emoji: '🥕', description: 'Raw fruit and vegetables', takes: ['produce'] },
-  // Pantry: what's in the kitchen cupboards (snacks, baking, pasta, beans, coffee...). The id stays 'food'.
-  food: { label: 'Pantry', emoji: '🥫', description: 'Pantry food: snacks, baking, pasta, beans, coffee and more', takes: ['prepared_food'] },
-  // Garden: letters of flowers, leaves, twigs and feathers, and garden creatures. The id stays 'plants'.
-  plants: { label: 'Garden', emoji: '🌱', description: 'Flowers, leaves, feathers and garden creatures', takes: ['nature'] },
+  // The ids stay as they were (folders, saved work and the repository use them); only names change.
+  stationery: { label: 'Doodle Desk', emoji: '✏️', description: 'Pens, paper, art supplies and desk odds and ends', takes: ['stationery', 'art', 'books'] },
+  tools: { label: "Tinker's Toolbox", emoji: '🔧', description: 'Tools, nuts and bolts, bike bits and rusty scraps', takes: ['tools', 'hardware', 'vehicle'] },
+  produce: { label: 'Market Basket', emoji: '🧺', description: 'Fruit, veg and herbs, fresh from the stall', takes: ['produce'] },
+  food: { label: 'Pantry Raid', emoji: '🍪', description: 'Snacks, sweets, pasta, beans, honey and baking', takes: ['prepared_food'] },
+  plants: { label: 'Secret Garden', emoji: '🌿', description: 'Flowers, leaves, feathers and creepy-crawlies', takes: ['nature'] },
 };
 
 /** The kid-facing category a finer catalogue category belongs to, or null when it is left out. */
