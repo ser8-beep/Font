@@ -33,6 +33,8 @@ export interface LibrarySet {
   looks: number[];
   /** Made by an image model to fill a gap, not cut from a real alphabet. */
   generated?: boolean;
+  /** Median height (px) of its original cut-outs before any sharpening: how much detail they really have. */
+  native?: number;
   letters: LibraryLetter[];
 }
 

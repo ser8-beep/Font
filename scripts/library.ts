@@ -31,6 +31,9 @@ const PAD = 2;
 // Cut-outs are scaled down to this height; font pictures go up to 256 px per em (a capital about
 // 180 px), and the playground shows letters bigger than that.
 const MAX_H = Number(process.env.LIBRARY_MAX_H ?? 360);
+// High-resolution originals (this tall or more, not enlarged) keep up to HIRES_MAX_H, so posters stay sharp.
+const HIRES_FROM = 360;
+const HIRES_MAX_H = Number(process.env.LIBRARY_HIRES_MAX_H ?? 640);
 
 const REPO = join(ROOT, 'alphabet-repository');
 // Sharpened copies of small cut-outs (scripts/upscale-repository.py), used when present.
@@ -53,13 +56,23 @@ function load(path: string): RGBAImage {
   return { width: png.width, height: png.height, data: png.data };
 }
 
-/** The cut-out, sharpened when scripts/upscale-repository.py has made a copy. */
-function loadBest(file: string): { image: RGBAImage; upscaled: boolean } {
-  const up = join(UPSCALED, file.replace(/\.png$/, '.webp'));
-  if (!existsSync(up)) return { image: load(join(REPO, file)), upscaled: false };
-  const png = execFileSync('python3', ['-I', '-c', 'import io, sys; from PIL import Image; b = io.BytesIO(); Image.open(sys.argv[1]).convert("RGBA").save(b, "PNG"); sys.stdout.buffer.write(b.getvalue())', up], { maxBuffer: 1 << 28 });
+// Halo-free copies (scripts/clean-repository.py), and the letters still haloed after cleaning.
+const CLEAN = join(REPO, '_clean');
+const EXCLUDED = new Set<string>(existsSync(join(CLEAN, 'excluded.json')) ? JSON.parse(readFileSync(join(CLEAN, 'excluded.json'), 'utf8')) : []);
+
+function loadWebp(path: string): RGBAImage {
+  const png = execFileSync('python3', ['-I', '-c', 'import io, sys; from PIL import Image; b = io.BytesIO(); Image.open(sys.argv[1]).convert("RGBA").save(b, "PNG"); sys.stdout.buffer.write(b.getvalue())', path], { maxBuffer: 1 << 28 });
   const p = PNG.sync.read(png);
-  return { image: { width: p.width, height: p.height, data: p.data }, upscaled: true };
+  return { width: p.width, height: p.height, data: p.data };
+}
+
+/** The best picture of a cut-out: halo-free, else sharpened, else the original. */
+function loadBest(file: string): { image: RGBAImage; upscaled: boolean } {
+  const webp = file.replace(/\.png$/, '.webp');
+  const up = join(UPSCALED, webp), clean = join(CLEAN, webp);
+  if (existsSync(clean)) return { image: loadWebp(clean), upscaled: existsSync(up) };
+  if (existsSync(up)) return { image: loadWebp(up), upscaled: true };
+  return { image: load(join(REPO, file)), upscaled: false };
 }
 
 /** The letter's shape: the opaque part of the cut-out, minus specks left from neighbours. */
@@ -115,18 +128,21 @@ function tidy(d: string | undefined): string | undefined {
 }
 
 const BUILD = new Set(['single', 'composite', 'repeated', 'formed']);
-type Cut = { e: Entry; img: RGBAImage; mask: Mask };
+/** native: the original cut-out's height in pixels, before any sharpening (how much detail it really has). */
+type Cut = { e: Entry; img: RGBAImage; mask: Mask; native: number };
 const byCategory = new Map<string, Map<string, Cut[]>>();
 let skipped = 0, sharpened = 0;
 for (const e of entries) {
+  if (EXCLUDED.has(e.file)) { skipped++; continue; }
   const { image: raw, upscaled } = loadBest(e.file);
   if (upscaled) sharpened++;
+  const native = upscaled ? PNG.sync.read(readFileSync(join(REPO, e.file))).height : raw.height;
   const m = letterMask(raw);
   const b = maskBounds(m);
   if (!b || b.w < 3 || b.h < 6) { skipped++; continue; }
-  const { img, mask } = crop(raw, m, b, Math.min(1, MAX_H / b.h));
+  const { img, mask } = crop(raw, m, b, Math.min(1, (native >= HIRES_FROM ? HIRES_MAX_H : MAX_H) / b.h));
   const sets = byCategory.get(e.category) ?? new Map<string, Cut[]>();
-  sets.set(e.source, [...(sets.get(e.source) ?? []), { e, img, mask }]);
+  sets.set(e.source, [...(sets.get(e.source) ?? []), { e, img, mask, native }]);
   byCategory.set(e.category, sets);
 }
 
@@ -207,6 +223,7 @@ for (const [category, sets] of [...byCategory].sort((a, b) => a[0].localeCompare
       atlas: atlasName,
       looks: [L.metal, L.dark, L.green, L.brown, L.bright, Math.min(1, L.hues / 6)].map((v) => +v.toFixed(3)),
       ...(generated ? { generated: true } : {}),
+      native: [...list.map((c) => c.native)].sort((a, b) => a - b)[list.length >> 1],
       letters,
     };
     manifest.sets.push(entry);

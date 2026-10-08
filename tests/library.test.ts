@@ -2,7 +2,7 @@ import { describe, expect, it } from 'vitest';
 import { CATEGORY_IDS } from '../src/core/alphabet/category';
 import { alphabetChars, verticalRange } from '../src/core/alphabet/letters';
 import { svgToContours } from '../src/core/trace';
-import { SETS, optionsFor, rankSets } from '../src/library';
+import { SETS, optionsFor, qualityTier, rankSets } from '../src/library';
 
 const UPPER = alphabetChars({ upper: true, lower: false });
 const LOWER = alphabetChars({ upper: false, lower: true });
@@ -34,13 +34,17 @@ describe('letter library', () => {
     }
   });
 
-  it('puts the category\'s own alphabets first, the most complete first', () => {
+  it('puts the category\'s own alphabets first: the sharpest first, then the most complete', () => {
     for (const id of CATEGORY_IDS) {
       const sets = rankSets(id, UPPER, null);
       const own = sets.filter((s) => s.category === id);
       expect(sets.slice(0, own.length)).toEqual(own);
       const count = (s: (typeof sets)[number]) => UPPER.filter((c) => s.letters.some((l) => l.char === c)).length;
-      for (let i = 1; i < own.length; i++) expect(count(own[i - 1])).toBeGreaterThanOrEqual(count(own[i]) - 4);
+      for (let i = 1; i < own.length; i++) {
+        const [a, b] = [qualityTier(own[i - 1]), qualityTier(own[i])];
+        expect(a).toBeGreaterThanOrEqual(b);
+        if (a === b) expect(count(own[i - 1])).toBeGreaterThanOrEqual(count(own[i]) - 4);
+      }
     }
   });
 

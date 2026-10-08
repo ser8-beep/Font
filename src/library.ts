@@ -55,9 +55,20 @@ const has = (s: LibrarySet, ch: string) => s.letters.some((l) => l.char === ch);
 const otherCase = (ch: string) => (ch === ch.toUpperCase() ? ch.toLowerCase() : ch.toUpperCase());
 
 /**
- * The alphabets to fill this font from, best first: the category's own sets, ranked by how many
- * of the needed letters they have (in the right case) and then by how close their colours are to
- * the kid's letters; then the nearest categories' sets, for letters the category lacks.
+ * How sharp a set's pictures really are: 3 for high-resolution originals (300 px and up), 2 for
+ * medium (180 px and up), 1 for small pictures that had to be enlarged, 0 for generated ones.
+ */
+export function qualityTier(s: LibrarySet): number {
+  if (s.generated) return 0;
+  const n = s.native ?? 0;
+  return n >= 300 ? 3 : n >= 180 ? 2 : 1;
+}
+
+/**
+ * The alphabets to fill this font from, best first: the category's own sets, sharpest first (high-
+ * resolution originals before small enlarged pictures), then by how many of the needed letters they
+ * have (in the right case) and how close their colours are to the kid's letters; then the nearest
+ * categories' sets, for letters the category lacks.
  */
 export function rankSets(category: string, chars: string[], looks: number[] | null): LibrarySet[] {
   const near = NEAREST[category] ?? [];
@@ -66,7 +77,7 @@ export function rankSets(category: string, chars: string[], looks: number[] | nu
     const either = chars.filter((c) => !has(s, c) && has(s, otherCase(c))).length;
     const look = looks ? Math.sqrt(s.looks.reduce((d, v, i) => d + (v - looks[i]) ** 2, 0)) : 0;
     const where = s.category === category ? 1000 : -100 * near.indexOf(s.category);
-    return where + exact + 0.1 * either - 4 * look - (s.generated ? 0.5 : 0);
+    return where + 100 * qualityTier(s) + exact + 0.1 * either - 4 * look;
   };
   return SETS.filter((s) => s.category === category || near.includes(s.category))
     .map((s) => ({ s, v: score(s) }))
