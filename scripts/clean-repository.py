@@ -13,7 +13,8 @@
 # The result goes to _clean/<same path>.webp, which npm run library prefers. A letter is listed in
 # _clean/excluded.json and left out of the app (other alphabets fill in) when, after cleaning, it
 # still has a light rim, or cleaning took away more than a third of it (it was mostly background, or
-# its own light parts looked like paper), or paper-coloured areas are still in it (shadowed paper too).
+# its own light parts looked like paper), or paper-coloured areas are still in it (shadowed paper too;
+# checked for colourful letters and coloured paper only, since grey metal looks like shadowed paper).
 # Clean pictures (most supplied transparent PNGs) are left alone. Originals are never changed.
 import json, os, sys
 import numpy as np, cv2
@@ -108,7 +109,10 @@ def clean(img):
         rim = (a > 0) & (core == 0) & (cv2.dilate(core, np.ones((5, 5), np.uint8)) > 0)
         px[..., :3][rim] = px[near[..., 0], near[..., 1], :3][rim]
     paper_left = 0.0
-    if bg is not None:
+    # Only for colourful letters (flowers, food) or coloured paper: grey metal on white paper looks
+    # like shadowed paper and must not count.
+    colourful = np.median(chroma[px[..., 3] > 128]) > 15 if (px[..., 3] > 128).any() else False
+    if bg is not None and (colourful or np.hypot(bg[1], bg[2]) > 4):
         # Paper still in the letter, in light or in shadow: the background's hue, low chroma, flat.
         a = px[..., 3]
         de_ab = np.hypot(L[..., 1] - bg[1], L[..., 2] - bg[2])
