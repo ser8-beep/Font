@@ -10,3 +10,4 @@ scripts/tmp/
 .venv-sr/
 alphabet-repository/_upscaled/**/*.tmp
 dist-artifact
+*.tsbuildinfo
