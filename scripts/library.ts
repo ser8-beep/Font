@@ -59,6 +59,8 @@ function load(path: string): RGBAImage {
 // Halo-free copies (scripts/clean-repository.py), and the letters still haloed after cleaning.
 const CLEAN = join(REPO, '_clean');
 const EXCLUDED = new Set<string>(existsSync(join(CLEAN, 'excluded.json')) ? JSON.parse(readFileSync(join(CLEAN, 'excluded.json'), 'utf8')) : []);
+// Whole sources left out after checking them by eye (paper still showing, or broken into pieces).
+const REJECTED = new Set<string>(existsSync(join(REPO, 'rejected.json')) ? Object.keys(JSON.parse(readFileSync(join(REPO, 'rejected.json'), 'utf8')).sources) : []);
 
 function loadWebp(path: string): RGBAImage {
   const png = execFileSync('python3', ['-I', '-c', 'import io, sys; from PIL import Image; b = io.BytesIO(); Image.open(sys.argv[1]).convert("RGBA").save(b, "PNG"); sys.stdout.buffer.write(b.getvalue())', path], { maxBuffer: 1 << 28 });
@@ -133,7 +135,7 @@ type Cut = { e: Entry; img: RGBAImage; mask: Mask; native: number };
 const byCategory = new Map<string, Map<string, Cut[]>>();
 let skipped = 0, sharpened = 0;
 for (const e of entries) {
-  if (EXCLUDED.has(e.file)) { skipped++; continue; }
+  if (EXCLUDED.has(e.file) || REJECTED.has(e.source)) { skipped++; continue; }
   const { image: raw, upscaled } = loadBest(e.file);
   if (upscaled) sharpened++;
   const native = upscaled ? PNG.sync.read(readFileSync(join(REPO, e.file))).height : raw.height;

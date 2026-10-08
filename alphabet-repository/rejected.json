@@ -1,0 +1,13 @@
+{
+ "_about": "Sources left out of the app after checking them by eye on a dark background: their cut-outs still show paper (in light or shadow) around the objects, or broke into pieces when the paper was taken away. Other alphabets fill in their letters. Remove a source here to bring it back.",
+ "sources": {
+  "p4-nature-teacher": "tiny crops (46 px) that broke into fragments",
+  "p4-twig-alphabet": "tiny crops (36 px) that broke into fragments",
+  "p4-dont-forget-to-smile": "beige paper patches around the petunias",
+  "p4-love-yourself-roses": "pink paper shadow around the roses",
+  "p4-one-of-a-kind": "beige paper patches between the flowers",
+  "p4-smile-mint": "broke into fragments",
+  "p4-awesome-carnations": "white paper blotches through the carnations",
+  "p4-lovely-roses": "cream paper fringe around the yellow rose"
+ }
+}

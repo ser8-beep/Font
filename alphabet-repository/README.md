@@ -57,6 +57,10 @@ The originals stay as they were. To redo or extend (new cut-outs, say):
 ## Cutout method
 Hard mask against the source background, 1px feather, background colour removed from the edge pixels (no white halo on dark or coloured backgrounds).
 
+## Halo cleaning
+
+`scripts/clean-repository.py` checks every cut-out for a light rim (edge pixels much lighter and greyer than the object just inside). It cleans the ones that have one into `_clean/<same path>.webp`. It takes away flat paper that touches the outside, then clears and recolours the rim. Letters it can't fix go in `_clean/excluded.json`. A letter can't be fixed when it still has a rim, cleaning took more than a third of it, or paper is still showing. `rejected.json` lists whole sources left out after checking them by eye, with the reason. The library builder skips both lists, and other alphabets fill in. Originals are never changed.
+
 ## Files
 - `manifest.json` — every PNG with letter, case, category, objects, construction, source, `primary` flag.
 - `coverage.csv` — variations per category and letter.
