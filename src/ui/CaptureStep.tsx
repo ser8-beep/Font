@@ -135,7 +135,7 @@ export function CaptureStep({ photos, adding, busy, error, onPhoto, onTag }: Pro
   const photoButtons = (word: string, label: string) => (
     <div className="capture-grid">
       {canUseCamera() && (
-        <button className="btn big pink" onClick={() => setCamera(word)}>
+        <button className="btn big red" onClick={() => setCamera(word)}>
           <CameraIcon /> Take a photo{label}
         </button>
       )}
@@ -183,7 +183,7 @@ export function CaptureStep({ photos, adding, busy, error, onPhoto, onTag }: Pro
               />
               <div className="slot-buttons">
                 {canUseCamera() && (
-                  <button className="btn small pink" aria-label={`Take a photo of ${c}`} onClick={() => setCamera(c)}>
+                  <button className="btn small red" aria-label={`Take a photo of ${c}`} onClick={() => setCamera(c)}>
                     Take
                   </button>
                 )}
@@ -275,16 +275,16 @@ export function CaptureStep({ photos, adding, busy, error, onPhoto, onTag }: Pro
             </Tip>
             <Tip text={mode === 'letters' || adding !== null ? 'Fill the photo with your letter' : 'Leave gaps between letters'}>
               <>
-                <rect x="4" y="16" width="14" height="24" rx="3" fill="#ff5d8f" stroke="#1b1b3a" strokeWidth="3" />
-                <rect x="38" y="16" width="14" height="24" rx="3" fill="#3a86ff" stroke="#1b1b3a" strokeWidth="3" />
+                <rect x="4" y="16" width="14" height="24" rx="3" fill="#eb362d" stroke="#1b1b3a" strokeWidth="3" />
+                <rect x="38" y="16" width="14" height="24" rx="3" fill="#80b6e4" stroke="#1b1b3a" strokeWidth="3" />
                 <path d="M22 28h12M22 28l4-4M22 28l4 4M34 28l-4-4M34 28l-4 4" stroke="#1b1b3a" strokeWidth="3" fill="none" />
               </>
             </Tip>
             <Tip text="Hold the camera straight above">
               <>
-                <rect x="14" y="4" width="28" height="18" rx="4" fill="#3a86ff" stroke="#1b1b3a" strokeWidth="3" />
+                <rect x="14" y="4" width="28" height="18" rx="4" fill="#80b6e4" stroke="#1b1b3a" strokeWidth="3" />
                 <path d="M28 24v14M22 32l6 6 6-6" stroke="#1b1b3a" strokeWidth="4" fill="none" />
-                <rect x="6" y="42" width="44" height="10" rx="3" fill="#ffd23f" stroke="#1b1b3a" strokeWidth="3" />
+                <rect x="6" y="42" width="44" height="10" rx="3" fill="#f0b819" stroke="#1b1b3a" strokeWidth="3" />
               </>
             </Tip>
           </ul>
@@ -371,7 +371,7 @@ function Camera({ onShot, onError }: { onShot: (b: Blob) => void; onError: (msg:
 const CameraIcon = () => (
   <svg width="40" height="40" viewBox="0 0 40 40" aria-hidden>
     <rect x="3" y="10" width="34" height="24" rx="5" fill="white" stroke="#1b1b3a" strokeWidth="3" />
-    <circle cx="20" cy="22" r="7" fill="#3a86ff" stroke="#1b1b3a" strokeWidth="3" />
+    <circle cx="20" cy="22" r="7" fill="#80b6e4" stroke="#1b1b3a" strokeWidth="3" />
     <rect x="13" y="5" width="14" height="6" rx="2" fill="#1b1b3a" />
   </svg>
 );
@@ -384,7 +384,7 @@ const DropIcon = () => (
 const PhotoIcon = () => (
   <svg width="40" height="40" viewBox="0 0 40 40" aria-hidden>
     <rect x="3" y="5" width="34" height="30" rx="5" fill="white" stroke="#1b1b3a" strokeWidth="3" />
-    <path d="M6 30l10-11 8 8 5-5 8 8" fill="#06d6a0" stroke="#1b1b3a" strokeWidth="3" />
-    <circle cx="28" cy="13" r="4" fill="#ffd23f" stroke="#1b1b3a" strokeWidth="2" />
+    <path d="M6 30l10-11 8 8 5-5 8 8" fill="#23b56e" stroke="#1b1b3a" strokeWidth="3" />
+    <circle cx="28" cy="13" r="4" fill="#f0b819" stroke="#1b1b3a" strokeWidth="2" />
   </svg>
 );

@@ -147,7 +147,7 @@ export function ExportStep(p: Props) {
             Put the font's name on it
           </label>
           <div className="row" style={{ marginTop: 10, justifyContent: 'flex-end' }}>
-            <button className="btn big orange" onClick={savePoster}>
+            <button className="btn big blue" onClick={savePoster}>
               ⬇ Save {frame.label.toLowerCase()}
             </button>
           </div>
@@ -168,13 +168,13 @@ export function ExportStep(p: Props) {
       {!inClaudeViewer && <RoomPanel map={p.captured} team={p.maker} />}
 
       <div className="row" style={{ marginTop: 24 }}>
-        <button className="btn pink" onClick={() => p.onAddMore()}>
+        <button className="btn red" onClick={() => p.onAddMore()}>
           + Add more letters
         </button>
         {confirmReset ? (
           <span className="row card" style={{ padding: '8px 14px' }}>
             <strong>Clear all your letters?</strong>
-            <button className="btn small pink" onClick={p.onStartOver}>
+            <button className="btn small red" onClick={p.onStartOver}>
               Yes, start again
             </button>
             <button className="btn small" onClick={() => setConfirmReset(false)}>
@@ -274,7 +274,7 @@ function RoomPanel({ map, team }: { map: Map<string, LetterGlyph>; team: string 
   }
 
   return (
-    <div className="card" style={{ marginTop: 18, background: '#d7e6ff' }}>
+    <div className="card" style={{ marginTop: 18, background: 'var(--blue-soft)' }}>
       <div className="row" style={{ justifyContent: 'space-between' }}>
         <strong style={{ fontSize: 24 }}>Send your letters to the room wall</strong>
         <button

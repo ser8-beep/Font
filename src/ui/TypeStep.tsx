@@ -128,7 +128,7 @@ export function TypeStep(p: Props) {
             <strong>{missing.join(' ')}</strong>
           </span>
           {!p.growing && (
-            <button className="btn pink" onClick={() => p.onAddMore()}>
+            <button className="btn red" onClick={() => p.onAddMore()}>
               + Add more letters
             </button>
           )}

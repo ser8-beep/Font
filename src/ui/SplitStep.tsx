@@ -2,7 +2,7 @@ import { useRef, useState } from 'react';
 import type { Box } from '../core/image';
 import { inWordOrder, uid, WORD, type Letter, type Photo } from '../state';
 
-export const COLOURS = ['#ffd23f', '#ff5d8f', '#3a86ff', '#06d6a0', '#ff8c42', '#8338ec'];
+export const COLOURS = ['#f0b819', '#eb362d', '#80b6e4', '#23b56e'];
 export const colourFor = (i: number) => COLOURS[i % COLOURS.length];
 /** Each letter keeps one colour everywhere: P L A Y in their word order, the rest by letter. */
 export function letterColour(ch: string): string {
@@ -277,7 +277,7 @@ export function SplitStep({ photo, letters, onChange, photos, allLetters, onShow
               ))}
             </div>
             <div className="row">
-              <button className="btn pink" onClick={() => { remove(pickerLetter.id); setPicker(null); }}>
+              <button className="btn red" onClick={() => { remove(pickerLetter.id); setPicker(null); }}>
                 Not a letter
               </button>
               <button className="btn" onClick={() => setPicker(null)}>
@@ -292,7 +292,7 @@ export function SplitStep({ photo, letters, onChange, photos, allLetters, onShow
 }
 
 function DraftRect({ b, stroke }: { b: Box; stroke: number }) {
-  return <rect x={b.x} y={b.y} width={b.w} height={b.h} fill="rgba(255,210,63,0.25)" stroke="#ffd23f" strokeWidth={stroke} strokeDasharray="12 8" />;
+  return <rect x={b.x} y={b.y} width={b.w} height={b.h} fill="rgba(240,184,25,0.25)" stroke="#f0b819" strokeWidth={stroke} strokeDasharray="12 8" />;
 }
 
 function norm(b: Box, W: number, H: number): Box {

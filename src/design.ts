@@ -69,7 +69,7 @@ export const BOX_SIZES = { min: 0.018, max: 0.12, normal: 0.04 };
 
 export const DEFAULT_DESIGN: Design = {
   frame: 'desktop',
-  fill: { kind: 'solid', colour: '#ffd23f' },
+  fill: { kind: 'solid', colour: '#f0b819' },
   pattern: null,
   patternColour: '#1b1b3a',
   patternOpacity: 0.16,
@@ -79,7 +79,8 @@ export const DEFAULT_DESIGN: Design = {
 };
 
 export const INK = '#1b1b3a';
-export const PALETTE = ['#ffffff', '#fffaf0', '#ffd23f', '#ff8c42', '#ff5d8f', '#e63946', '#8338ec', '#3a86ff', '#4cc9f0', '#06d6a0', '#2d6a4f', '#8d5524', '#c9c9d6', INK];
+/** Colours to pick from: the brand's four first, then a few more for posters and cards. */
+export const PALETTE = ['#ffffff', '#fffaf0', '#f0b819', '#eb362d', '#23b56e', '#80b6e4', '#ff8c42', '#ff5d8f', '#8338ec', '#2d6a4f', '#8d5524', '#c9c9d6', INK];
 
 // ---------- patterns ----------
 
@@ -195,7 +196,7 @@ export const PATTERNS: Record<string, PatternDef[]> = {
         c.lineCap = 'round';
         c.lineWidth = 0.22 * u;
         SPOTS.slice(0, 14).forEach((s, i) => {
-          c.strokeStyle = ['#ff5d8f', '#3a86ff', '#ffd23f', '#06d6a0', '#ff8c42', '#8338ec'][i % 6];
+          c.strokeStyle = ['#eb362d', '#80b6e4', '#f0b819', '#23b56e'][i % 4];
           const a = rad(s.r), x = s.x * 6 * u, y = s.y * 6 * u;
           c.beginPath();
           c.moveTo(x - Math.cos(a) * 0.35 * u, y - Math.sin(a) * 0.35 * u);

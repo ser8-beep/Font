@@ -164,7 +164,7 @@ export function GrowStep({ alphabet, captured, onMix, onAlphabet, onReroll, onAd
           <span>{finished ? 'All done!' : `${done} of ${total}`}</span>
         </div>
       </div>
-      {failed && <p className="card" style={{ background: 'var(--pink)' }}>We couldn't grow new letters from this photo. Try neatening your letters, or add another photo.</p>}
+      {failed && <p className="card alert">We couldn't grow new letters from this photo. Try neatening your letters, or add another photo.</p>}
 
       {sel && selGlyph && (
         <div className="card ideas">
@@ -184,7 +184,7 @@ export function GrowStep({ alphabet, captured, onMix, onAlphabet, onReroll, onAd
               </p>
             )}
             {!captured.has(sel) && (
-              <button className="btn small pink" onClick={() => onAddMore(sel)}>
+              <button className="btn small red" onClick={() => onAddMore(sel)}>
                 + Photograph my own {sel}
               </button>
             )}

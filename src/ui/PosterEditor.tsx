@@ -26,11 +26,11 @@ interface Props {
 }
 
 const GRADIENTS: Fill[] = [
-  { kind: 'gradient', type: 'linear', from: '#ffd23f', to: '#ff5d8f', angle: 135 },
-  { kind: 'gradient', type: 'linear', from: '#4cc9f0', to: '#8338ec', angle: 160 },
-  { kind: 'gradient', type: 'linear', from: '#06d6a0', to: '#ffd23f', angle: 180 },
-  { kind: 'gradient', type: 'radial', from: '#fffaf0', to: '#ff8c42', angle: 0 },
-  { kind: 'gradient', type: 'linear', from: '#1b1b3a', to: '#3a86ff', angle: 200 },
+  { kind: 'gradient', type: 'linear', from: '#f0b819', to: '#eb362d', angle: 135 },
+  { kind: 'gradient', type: 'linear', from: '#80b6e4', to: '#23b56e', angle: 160 },
+  { kind: 'gradient', type: 'linear', from: '#23b56e', to: '#f0b819', angle: 180 },
+  { kind: 'gradient', type: 'radial', from: '#fffaf0', to: '#80b6e4', angle: 0 },
+  { kind: 'gradient', type: 'linear', from: '#1b1b3a', to: '#80b6e4', angle: 200 },
 ];
 
 /** 'rgb(1, 2, 3)' or '#abc' -> '#aabbcc'. */
@@ -158,7 +158,7 @@ export function PosterEditor(p: Props) {
 
   // ---- background ----
   const fill = d.fill;
-  const colour = fill.kind === 'solid' ? fill.colour : fill.kind === 'gradient' ? fill.from : '#ffd23f';
+  const colour = fill.kind === 'solid' ? fill.colour : fill.kind === 'gradient' ? fill.from : '#f0b819';
   const groups = backgroundGroups(p.themes);
   const pickPicture = (id: string) => {
     loadBackground(id).catch(() => undefined);
@@ -218,7 +218,7 @@ export function PosterEditor(p: Props) {
             <button className={fill.kind === 'solid' ? 'on' : ''} aria-pressed={fill.kind === 'solid'} onClick={() => fill.kind !== 'solid' && leavePicture({ kind: 'solid', colour })}>
               Colour
             </button>
-            <button className={fill.kind === 'gradient' ? 'on' : ''} aria-pressed={fill.kind === 'gradient'} onClick={() => fill.kind !== 'gradient' && leavePicture({ kind: 'gradient', type: 'linear', from: colour, to: '#ff5d8f', angle: 135 })}>
+            <button className={fill.kind === 'gradient' ? 'on' : ''} aria-pressed={fill.kind === 'gradient'} onClick={() => fill.kind !== 'gradient' && leavePicture({ kind: 'gradient', type: 'linear', from: colour, to: '#eb362d', angle: 135 })}>
               Gradient
             </button>
           </div>
@@ -353,7 +353,7 @@ export function PosterEditor(p: Props) {
                   </button>
                 )}
                 <span className="spacer" />
-                <button className="btn small pink" onClick={() => removeBox(sel.id)}>
+                <button className="btn small red" onClick={() => removeBox(sel.id)}>
                   Delete box
                 </button>
               </div>

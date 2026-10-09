@@ -28,11 +28,11 @@ const PART_NAMES: Record<Step | 'add', string> = {
 };
 const COLOURS: Record<Step, string> = {
   capture: 'var(--yellow)',
-  split: 'var(--pink)',
+  split: 'var(--red)',
   clean: 'var(--blue)',
-  grow: 'var(--purple)',
-  type: 'var(--green)',
-  export: 'var(--orange)',
+  grow: 'var(--green)',
+  type: 'var(--yellow)',
+  export: 'var(--red)',
 };
 
 export default function App() {
@@ -139,7 +139,7 @@ function Station() {
       <header className="topbar">
         <div className="brand" aria-label="Photo to Font Station">
           {['P', 'L', 'A', 'Y'].map((c, i) => (
-            <span key={c} style={{ background: ['var(--yellow)', 'var(--pink)', 'var(--blue)', 'var(--green)'][i] }}>{c}</span>
+            <span key={c} style={{ background: ['var(--yellow)', 'var(--red)', 'var(--blue)', 'var(--green)'][i] }}>{c}</span>
           ))}
           <span style={{ color: 'white', background: 'none' }}>font station</span>
         </div>

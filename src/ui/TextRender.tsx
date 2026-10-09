@@ -58,7 +58,7 @@ export function TextRender({ text, map, maxWidth = 5200, className, backdrop, ca
       </g>
       <g>{glyphs}</g>
       {caret && (
-        <rect x={pad + (last && last.line === lay.lines - 1 ? last.x + last.advance : 0) + 20} y={base(lay.lines - 1) - 750} width={40} height={850} fill="#ff5d8f">
+        <rect x={pad + (last && last.line === lay.lines - 1 ? last.x + last.advance : 0) + 20} y={base(lay.lines - 1) - 750} width={40} height={850} fill="#eb362d">
           <animate attributeName="opacity" values="1;0;1" dur="1s" repeatCount="indefinite" />
         </rect>
       )}
