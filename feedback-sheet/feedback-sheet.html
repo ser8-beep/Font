@@ -1,0 +1,312 @@
+<title>Font Station Feedback</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,700;12..96,800&family=Figtree:wght@400;500;600;700&family=JetBrains+Mono:wght@400;600&display=swap">
+<style>
+/* Layout: a spreadsheet workbook. Title bar, a summary block per station step, a toolbar, then the sheet
+   itself with column letters and row numbers, like the grid a facilitator would paste this into. */
+:root {
+  --bg: #f6f5f1;
+  --surface: #ffffff;
+  --ink: #1b1b3a;
+  --muted: #62627c;
+  --line: #dddbd2;
+  --grid: #ecebe5;
+  --head: #efede6;
+  --accent: #3a5bd9;
+  --accent-soft: #e6ebfb;
+  --good: #1f8a5b;
+  --mid: #b07a00;
+  --bad: #c2384b;
+  --chip-capture: #ffd23f; --chip-add: #ffe58a; --chip-split: #ff8fb1; --chip-clean: #7fb2ff;
+  --chip-grow: #b08cff; --chip-type: #42dcb4; --chip-export: #ffad6b; --chip-overall: #c9c9d6;
+  --display: 'Bricolage Grotesque', 'Trebuchet MS', sans-serif;
+  --body: 'Figtree', 'Segoe UI', system-ui, sans-serif;
+  --mono: 'JetBrains Mono', ui-monospace, 'SFMono-Regular', Menlo, monospace;
+}
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) {
+    --bg: #15151f; --surface: #1d1d2a; --ink: #ecebf5; --muted: #a3a3bd; --line: #33334a; --grid: #28283a; --head: #242435;
+    --accent: #8ea6ff; --accent-soft: #2a3157; --good: #4fcf94; --mid: #e9b949; --bad: #ff7d8f;
+    --chip-capture: #8a6f00; --chip-add: #7a6a2a; --chip-split: #8a3552; --chip-clean: #2f4f88; --chip-grow: #55408f;
+    --chip-type: #12755d; --chip-export: #8a4f1f; --chip-overall: #4a4a60;
+    color-scheme: dark;
+  }
+}
+:root[data-theme="dark"] {
+  --bg: #15151f; --surface: #1d1d2a; --ink: #ecebf5; --muted: #a3a3bd; --line: #33334a; --grid: #28283a; --head: #242435;
+  --accent: #8ea6ff; --accent-soft: #2a3157; --good: #4fcf94; --mid: #e9b949; --bad: #ff7d8f;
+  --chip-capture: #8a6f00; --chip-add: #7a6a2a; --chip-split: #8a3552; --chip-clean: #2f4f88; --chip-grow: #55408f;
+  --chip-type: #12755d; --chip-export: #8a4f1f; --chip-overall: #4a4a60;
+  color-scheme: dark;
+}
+* { box-sizing: border-box; }
+body { background: var(--bg); color: var(--ink); font-family: var(--body); font-size: 15px; line-height: 1.45; }
+.wrap { max-width: 1280px; margin: 0 auto; padding-inline: 16px; padding-block: 20px 40px; display: grid; gap: 18px; }
+h1, h2 { font-family: var(--display); text-wrap: balance; margin: 0; }
+h1 { font-size: clamp(26px, 4vw, 36px); font-weight: 800; letter-spacing: -0.01em; }
+h2 { font-size: 19px; font-weight: 700; }
+.top { display: flex; flex-wrap: wrap; align-items: end; justify-content: space-between; gap: 12px; }
+.top p { margin: 4px 0 0; color: var(--muted); max-width: 70ch; }
+.stats { display: flex; gap: 18px; font-variant-numeric: tabular-nums; }
+.stat b { display: block; font-family: var(--display); font-size: 28px; line-height: 1; }
+.stat span { color: var(--muted); font-size: 13px; }
+.panel { background: var(--surface); border: 1px solid var(--line); border-radius: 10px; min-width: 0; }
+.summary { overflow-x: auto; }
+.summary table { width: 100%; border-collapse: collapse; font-variant-numeric: tabular-nums; min-width: 640px; }
+.summary th, .summary td { padding: 9px 12px; text-align: left; border-bottom: 1px solid var(--grid); white-space: nowrap; }
+.summary th { font-size: 12px; text-transform: uppercase; letter-spacing: 0.06em; color: var(--muted); font-weight: 700; }
+.summary tr:last-child td { border-bottom: none; }
+.score { display: inline-flex; align-items: center; gap: 8px; }
+.bar { width: 70px; height: 7px; border-radius: 4px; background: var(--grid); overflow: hidden; }
+.bar i { display: block; height: 100%; border-radius: 4px; }
+.chip { display: inline-block; padding: 2px 9px; border-radius: 999px; font-weight: 600; font-size: 13px; background: var(--chip-overall); color: var(--ink); white-space: nowrap; }
+.toolbar { display: flex; flex-wrap: wrap; gap: 10px; align-items: center; padding: 12px; }
+.filters { display: flex; flex-wrap: wrap; gap: 6px; flex: 1 1 420px; min-width: 0; }
+.filters button { border: 1px solid var(--line); background: var(--surface); color: var(--ink); border-radius: 999px; padding: 5px 12px; font: inherit; font-weight: 600; font-size: 13px; cursor: pointer; }
+.filters button[aria-pressed="true"] { background: var(--ink); color: var(--surface); border-color: var(--ink); }
+input[type="search"] { font: inherit; padding: 7px 11px; border: 1px solid var(--line); border-radius: 8px; background: var(--surface); color: var(--ink); min-width: 0; flex: 0 1 220px; }
+.btn { font: inherit; font-weight: 700; font-size: 14px; padding: 8px 14px; border-radius: 8px; border: 1px solid var(--ink); background: var(--surface); color: var(--ink); cursor: pointer; white-space: nowrap; }
+.btn.primary { background: var(--ink); color: var(--surface); }
+.btn:disabled { opacity: 0.45; cursor: default; }
+:focus-visible { outline: 3px solid var(--accent); outline-offset: 2px; }
+.sheet { overflow: auto; max-height: 70vh; }
+.sheet table { border-collapse: separate; border-spacing: 0; width: 100%; min-width: 1080px; font-variant-numeric: tabular-nums; }
+.sheet th, .sheet td { border-right: 1px solid var(--grid); border-bottom: 1px solid var(--grid); padding: 7px 10px; vertical-align: top; text-align: left; }
+.sheet thead th { position: sticky; background: var(--head); z-index: 2; }
+.sheet thead tr.letters th { top: 0; font-family: var(--mono); font-size: 11px; color: var(--muted); text-align: center; padding: 3px; font-weight: 400; }
+.sheet thead tr.names th { top: 22px; font-size: 12px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.05em; color: var(--muted); cursor: pointer; user-select: none; }
+.sheet thead tr.names th[aria-sort="ascending"]::after { content: ' ▲'; }
+.sheet thead tr.names th[aria-sort="descending"]::after { content: ' ▼'; }
+.sheet .rownum { position: sticky; left: 0; background: var(--head); font-family: var(--mono); font-size: 11px; color: var(--muted); text-align: right; width: 44px; z-index: 1; }
+.sheet thead .rownum { z-index: 3; }
+.sheet tbody tr:hover td { background: var(--accent-soft); }
+.sheet td.when, .sheet td.mono { font-family: var(--mono); font-size: 12.5px; white-space: nowrap; }
+.sheet td.num { white-space: nowrap; }
+.sheet td.ctx { min-width: 150px; }
+.sheet td.remarks { min-width: 260px; max-width: 420px; white-space: pre-wrap; overflow-wrap: anywhere; }
+.face { font-size: 17px; margin-right: 4px; }
+.n { font-weight: 700; }
+.lo { color: var(--bad); } .md { color: var(--mid); } .hi { color: var(--good); }
+.del { border: none; background: none; color: var(--muted); cursor: pointer; font-size: 15px; padding: 0 4px; opacity: 0; }
+tr:hover .del, .del:focus-visible { opacity: 1; }
+.empty { padding: 40px 20px; text-align: center; color: var(--muted); display: grid; gap: 8px; justify-items: center; }
+.empty strong { color: var(--ink); font-family: var(--display); font-size: 20px; }
+.sr { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0); }
+.note { color: var(--muted); font-size: 13px; margin: 0; padding: 0 12px 12px; }
+.drop { outline: 3px dashed var(--accent); outline-offset: -6px; }
+.toast { position: fixed; left: 50%; bottom: calc(18px + env(safe-area-inset-bottom, 0px)); transform: translateX(-50%); background: var(--ink); color: var(--surface); padding: 10px 16px; border-radius: 8px; font-weight: 600; max-width: calc(100% - 32px); }
+.legend { display: flex; flex-wrap: wrap; gap: 14px; color: var(--muted); font-size: 13px; padding: 0 12px 12px; }
+@media (prefers-reduced-motion: no-preference) { .bar i { transition: width 0.3s; } }
+</style>
+
+<div class="wrap" id="app">
+  <header class="top">
+    <div>
+      <h1>Font Station Feedback</h1>
+      <p>Every rating and remark from the Photo → Font Station, step by step. Feedback from the claude.ai link is copied in by Claude; drop in the CSV files downloaded from phones, tablets and USB copies.</p>
+    </div>
+    <div class="stats" aria-live="polite">
+      <div class="stat"><b id="statRows">0</b><span>responses</span></div>
+      <div class="stat"><b id="statSessions">0</b><span>kids' goes</span></div>
+      <div class="stat"><b id="statRemarks">0</b><span>remarks</span></div>
+    </div>
+  </header>
+
+  <section class="panel summary" aria-labelledby="sumTitle">
+    <div style="padding: 12px 12px 0"><h2 id="sumTitle">By step</h2></div>
+    <table>
+      <thead><tr><th>Step</th><th>Responses</th><th>Easy to understand</th><th>Easy to use</th><th>Rarely stuck</th><th>Remarks</th></tr></thead>
+      <tbody id="sumBody"></tbody>
+    </table>
+    <div class="legend"><span>Scores are 1 to 5: 😣 1 · 😕 2 · 😐 3 · 🙂 4 · 😄 5.</span><span>“Rarely stuck” 5 means never stuck.</span></div>
+  </section>
+
+  <section class="panel" aria-labelledby="sheetTitle" id="sheetPanel">
+    <div class="toolbar">
+      <h2 id="sheetTitle" style="margin-right: 6px">All responses</h2>
+      <div class="filters" id="filters" role="group" aria-label="Show step"></div>
+      <input type="search" id="search" placeholder="Search remarks" aria-label="Search remarks">
+      <button class="btn" id="importBtn" type="button">Import CSV</button>
+      <button class="btn primary" id="exportBtn" type="button">Download CSV</button>
+      <input type="file" id="file" accept=".csv,text/csv" multiple hidden>
+    </div>
+    <p class="note" id="note">Loading the sheet…</p>
+    <div class="sheet" id="sheet"></div>
+  </section>
+</div>
+<div class="toast" id="toast" hidden></div>
+
+<script>
+(() => {
+  const PARTS = [
+    ['capture', 'Snap your letters'], ['add', 'Add a letter'], ['split', 'Match your letters'], ['clean', 'Neaten your letters'],
+    ['grow', 'Your whole A–Z'], ['type', 'Play with your font'], ['export', 'Save your font'], ['overall', 'The whole font station'],
+  ];
+  const PART_NAME = Object.fromEntries(PARTS);
+  const FACES = ['😣', '😕', '😐', '🙂', '😄'];
+  const COLS = [
+    { key: 'at', name: 'When', cls: 'when' },
+    { key: 'part', name: 'Step' },
+    { key: 'understand', name: 'Understand', cls: 'num' },
+    { key: 'use', name: 'Use', cls: 'num' },
+    { key: 'stuck', name: 'Rarely stuck', cls: 'num' },
+    { key: 'remarks', name: 'Remarks', cls: 'remarks' },
+    { key: 'context', name: 'Photo taken as', cls: 'ctx' },
+    { key: 'device', name: 'Device' },
+    { key: 'session', name: 'Kid’s go', cls: 'mono' },
+    { key: 'source', name: 'From' },
+  ];
+  const $ = (id) => document.getElementById(id);
+  let rows = [];
+  let db = null, canEdit = false, downloads = null;
+  let filter = 'all', query = '', sort = { key: 'at', dir: -1 };
+
+  const toast = (msg) => { const t = $('toast'); t.textContent = msg; t.hidden = false; clearTimeout(toast.t); toast.t = setTimeout(() => (t.hidden = true), 3200); };
+  const device = (w) => (!w ? '' : w < 600 ? 'Phone' : w < 1100 ? 'Tablet' : 'Computer');
+  const num = (v) => { const n = Number(v); return n >= 1 && n <= 5 ? n : null; };
+  const avg = (list) => (list.length ? list.reduce((a, b) => a + b, 0) / list.length : null);
+  const tone = (v) => (v == null ? '' : v < 2.5 ? 'lo' : v < 3.75 ? 'md' : 'hi');
+  const esc = (s) => String(s ?? '').replace(/[&<>"]/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' })[c]);
+  const fmtWhen = (iso) => { const d = new Date(iso); return isNaN(d) ? esc(iso) : d.toLocaleString(undefined, { day: 'numeric', month: 'short', hour: '2-digit', minute: '2-digit' }); };
+  const scoreCell = (v) => { const n = num(v); return n ? `<span class="face" aria-hidden="true">${FACES[n - 1]}</span><span class="n ${tone(n)}">${n}</span>` : '<span style="color:var(--muted)">–</span>'; };
+  const chip = (part) => `<span class="chip" style="background:var(--chip-${PART_NAME[part] ? part : 'overall'})">${esc(PART_NAME[part] || part)}</span>`;
+  const idFor = (r) => `${r.session || 'nosession'}~${r.part || 'part'}~${Date.parse(r.at) || 0}`.replace(/[^A-Za-z0-9_\-.~:@+]/g, '_').slice(0, 190);
+
+  function summary() {
+    const by = new Map(PARTS.map(([k]) => [k, []]));
+    for (const r of rows) (by.get(r.part) || by.set(r.part, []).get(r.part)).push(r);
+    const body = [...by].map(([k, list]) => {
+      const cell = (key) => {
+        const a = avg(list.map((r) => num(r[key])).filter(Boolean));
+        if (a == null) return '<td style="color:var(--muted)">–</td>';
+        const pct = ((a - 1) / 4) * 100;
+        const colour = a < 2.5 ? 'var(--bad)' : a < 3.75 ? 'var(--mid)' : 'var(--good)';
+        return `<td><span class="score"><span class="face" aria-hidden="true">${FACES[Math.round(a) - 1]}</span><b class="${tone(a)}">${a.toFixed(1)}</b><span class="bar" aria-hidden="true"><i style="width:${pct}%;background:${colour}"></i></span></span></td>`;
+      };
+      return `<tr><td>${chip(k)}</td><td>${list.length}</td>${cell('understand')}${cell('use')}${cell('stuck')}<td>${list.filter((r) => (r.remarks || '').trim()).length}</td></tr>`;
+    });
+    $('sumBody').innerHTML = body.join('');
+    $('statRows').textContent = rows.length;
+    $('statSessions').textContent = new Set(rows.map((r) => r.session).filter(Boolean)).size;
+    $('statRemarks').textContent = rows.filter((r) => (r.remarks || '').trim()).length;
+  }
+
+  function filters() {
+    const present = new Set(rows.map((r) => r.part));
+    const opts = [['all', 'All steps'], ...PARTS.filter(([k]) => present.has(k))];
+    $('filters').innerHTML = opts.map(([k, n]) => `<button type="button" data-part="${k}" aria-pressed="${filter === k}">${esc(n)}</button>`).join('');
+  }
+
+  function sheet() {
+    const q = query.trim().toLowerCase();
+    const shown = rows
+      .filter((r) => filter === 'all' || r.part === filter)
+      .filter((r) => !q || (r.remarks || '').toLowerCase().includes(q))
+      .sort((a, b) => {
+        const x = a[sort.key] ?? '', y = b[sort.key] ?? '';
+        return (typeof x === 'number' && typeof y === 'number' ? x - y : String(x).localeCompare(String(y))) * sort.dir;
+      });
+    if (!rows.length) {
+      $('sheet').innerHTML = `<div class="empty"><strong>No feedback yet</strong><span>Feedback from the claude.ai link appears here once Claude copies it in (ask Claude to “sync the feedback”).</span><span>From phones, tablets or a USB copy: open “Rate this step”, tap “Download feedback saved on this device”, then use Import CSV here or drop the file on this sheet.</span></div>`;
+      return;
+    }
+    const letters = ['', ...COLS.map((_, i) => String.fromCharCode(65 + i)), ''];
+    const head = `<thead><tr class="letters">${letters.map((l, i) => `<th class="${i === 0 ? 'rownum' : ''}">${l}</th>`).join('')}</tr>
+      <tr class="names"><th class="rownum" scope="col"><span class="sr">#</span></th>${COLS.map((c) => `<th scope="col" data-key="${c.key}" aria-sort="${sort.key === c.key ? (sort.dir > 0 ? 'ascending' : 'descending') : 'none'}" tabindex="0">${c.name}</th>`).join('')}<th scope="col"></th></tr></thead>`;
+    const body = shown.map((r, i) => `<tr><td class="rownum">${i + 2}</td>${COLS.map((c) => {
+      const v = r[c.key];
+      const inner = c.key === 'at' ? fmtWhen(v) : c.key === 'part' ? chip(v) : ['understand', 'use', 'stuck'].includes(c.key) ? scoreCell(v) : esc(v);
+      return `<td class="${c.cls || ''}">${inner}</td>`;
+    }).join('')}<td>${canEdit ? `<button class="del" type="button" data-id="${esc(r._id)}" aria-label="Delete this row" title="Delete this row">✕</button>` : ''}</td></tr>`).join('');
+    $('sheet').innerHTML = `<table>${head}<tbody>${body}</tbody></table>`;
+    if (!shown.length) $('sheet').insertAdjacentHTML('beforeend', '<div class="empty"><span>No responses match this filter.</span></div>');
+  }
+
+  const render = () => { summary(); filters(); sheet(); };
+
+  // ---- CSV in and out ----
+  function parseCsv(text) {
+    const out = []; let row = [], cell = '', q = false;
+    for (let i = 0; i < text.length; i++) {
+      const c = text[i];
+      if (q) { if (c === '"' && text[i + 1] === '"') { cell += '"'; i++; } else if (c === '"') q = false; else cell += c; }
+      else if (c === '"') q = true;
+      else if (c === ',') { row.push(cell); cell = ''; }
+      else if (c === '\n' || c === '\r') { if (c === '\r' && text[i + 1] === '\n') i++; row.push(cell); out.push(row); row = []; cell = ''; }
+      else cell += c;
+    }
+    if (cell || row.length) { row.push(cell); out.push(row); }
+    return out.filter((r) => r.some((x) => x.trim()));
+  }
+  function toRows(text) {
+    const [head, ...lines] = parseCsv(text);
+    if (!head || !head.includes('part') || !head.includes('understand')) return null;
+    return lines.map((l) => {
+      const o = Object.fromEntries(head.map((h, i) => [h.trim(), l[i] ?? '']));
+      return {
+        at: o.at, session: o.session, part: o.part, partLabel: o.partLabel || PART_NAME[o.part] || o.part,
+        understand: num(o.understand), use: num(o.use), stuck: num(o.stuck), remarks: o.remarks || '',
+        context: o.context || '', screen: Number(o.screen) || null, device: device(Number(o.screen)), source: 'Device file',
+      };
+    }).filter((r) => r.at && r.part);
+  }
+  async function importFiles(files) {
+    if (!db || !canEdit) { toast('Only the sheet’s owner and editors can import.'); return; }
+    let added = 0, bad = 0;
+    for (const f of files) {
+      const list = toRows(await f.text());
+      if (!list) { bad++; continue; }
+      for (const r of list) {
+        try { await db.collection('rows').doc(idFor(r)).set({ ...r, importedAt: new Date().toISOString() }); added++; }
+        catch (e) { console.warn(e); }
+      }
+    }
+    toast(bad ? `Imported ${added} rows. ${bad} file(s) weren’t feedback CSVs from the station.` : `Imported ${added} rows. Rows already here are kept once.`);
+  }
+  function toCsv() {
+    const cols = ['at', 'part', 'partLabel', 'understand', 'use', 'stuck', 'remarks', 'context', 'device', 'screen', 'session', 'source'];
+    const cell = (v) => { const s = String(v ?? ''); return /[",\n\r]/.test(s) ? `"${s.replace(/"/g, '""')}"` : s; };
+    return [cols.join(','), ...rows.map((r) => cols.map((c) => cell(r[c])).join(','))].join('\r\n') + '\r\n';
+  }
+
+  // ---- events ----
+  $('filters').addEventListener('click', (e) => { const b = e.target.closest('button[data-part]'); if (!b) return; filter = b.dataset.part; filters(); sheet(); });
+  $('search').addEventListener('input', (e) => { query = e.target.value; sheet(); });
+  const sortBy = (key) => { sort = sort.key === key ? { key, dir: -sort.dir } : { key, dir: key === 'at' ? -1 : 1 }; sheet(); };
+  $('sheet').addEventListener('click', async (e) => {
+    const th = e.target.closest('th[data-key]'); if (th) return sortBy(th.dataset.key);
+    const del = e.target.closest('button.del');
+    if (del && db) { try { await db.collection('rows').doc(del.dataset.id).delete(); toast('Row deleted.'); } catch { toast('That row couldn’t be deleted.'); } }
+  });
+  $('sheet').addEventListener('keydown', (e) => { const th = e.target.closest('th[data-key]'); if (th && (e.key === 'Enter' || e.key === ' ')) { e.preventDefault(); sortBy(th.dataset.key); } });
+  $('importBtn').addEventListener('click', () => $('file').click());
+  $('file').addEventListener('change', (e) => { importFiles([...e.target.files]); e.target.value = ''; });
+  const panel = $('sheetPanel');
+  panel.addEventListener('dragover', (e) => { if ([...(e.dataTransfer?.types || [])].includes('Files')) { e.preventDefault(); panel.classList.add('drop'); } });
+  panel.addEventListener('dragleave', () => panel.classList.remove('drop'));
+  panel.addEventListener('drop', (e) => { e.preventDefault(); panel.classList.remove('drop'); importFiles([...e.dataTransfer.files]); });
+  $('exportBtn').addEventListener('click', async () => {
+    if (!rows.length) return toast('Nothing to download yet.');
+    if (!downloads) return toast('Downloading isn’t available in this view.');
+    try { await downloads.save({ filename: 'font station feedback (all).csv', data: toCsv() }); toast('Downloaded.'); }
+    catch (e) { toast(e && e.code === 'declined' ? 'Download cancelled.' : 'The download didn’t start.'); }
+  });
+
+  // ---- data ----
+  render();
+  (async () => {
+    const use = (n) => (window.claude && window.claude.use ? window.claude.use(n) : Promise.resolve(null));
+    const [d, user, dl] = await Promise.all([use('db'), use('user'), use('downloads')]);
+    db = d; downloads = dl;
+    canEdit = !!(user && user.canEdit && user.canEdit());
+    $('importBtn').disabled = !canEdit;
+    if (!db) { $('note').textContent = 'Sign in on claude.ai to see the feedback.'; return; }
+    $('note').textContent = canEdit ? 'Click a column name to sort. Hover a row to delete it.' : 'Click a column name to sort.';
+    db.collection('rows').limit(1000).onSnapshot(
+      (snap) => { rows = snap.docs.map((doc) => ({ ...doc.data(), _id: doc.id, device: doc.data().device || device(doc.data().screen) })); render(); },
+      () => { $('note').textContent = 'The feedback couldn’t be loaded. Reload the page to try again.'; },
+    );
+  })();
+})();
+</script>
