@@ -1,6 +1,6 @@
 // Feedback on each part of the station: three ratings (five faces, 1–5) and a remark. On the claude.ai page it
-// goes to the artifact's shared store (feedback/<viewer>/entries, readable only by the owner and
-// editors), where it can be read back and summed up. Elsewhere, or for viewers who can't write
+// goes to the artifact's shared store (feedback/<viewer>/entries, with feedback/<viewer> as an index;
+// readable only by the owner and editors), where it can be read back and summed up. Elsewhere, or for viewers who can't write
 // there, it stays on this device, and a facilitator can download it as a spreadsheet (CSV).
 import { useCapability } from './host';
 
@@ -60,6 +60,7 @@ function keepLocally(e: FeedbackEntry): boolean {
 
 interface Db {
   collection(path: string): { add(data: Record<string, unknown>): Promise<unknown> };
+  doc(path: string): { set(data: Record<string, unknown>): Promise<void> };
 }
 interface User {
   id(): Promise<string | null>;
@@ -75,6 +76,8 @@ export async function sendFeedback(part: string, partLabel: string, ratings: Rat
   if (db && id) {
     try {
       await db.collection(`feedback/${id}/entries`).add({ ...e });
+      // One small document per person, so the owner can list who left feedback (feedback/<id>).
+      await db.doc(`feedback/${id}`).set({ lastAt: e.at, lastPart: part }).catch(() => undefined);
       return 'shared';
     } catch {
       // A viewer who may only look (not write) keeps it on the device instead.
