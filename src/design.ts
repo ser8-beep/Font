@@ -357,6 +357,58 @@ export interface RenderOptions {
   caption?: string;
 }
 
+// Letter shadow: soft and short, and a deeper shade of whatever is behind the letters (colour,
+// gradient or pattern) rather than a grey smudge over it, like real things lying on coloured paper.
+const SHADOW = { blur: 14, dx: 7, dy: 11, strength: 0.5, shade: 0.6 };
+
+/**
+ * Draws the shadow of what `draw` paints (in frame units, `s` = letter scale) under it on `ctx`.
+ * The background under the shadow is darkened and multiplied by itself, so it keeps its hue and gets
+ * richer: on yellow the shadow is deep amber, on white a soft grey. Only the area around `box` is used.
+ */
+function drawShadow(ctx: CanvasRenderingContext2D, draw: (c: CanvasRenderingContext2D) => void, box: Box, s: number) {
+  const t = ctx.getTransform();
+  const k = t.a * s;
+  const blur = SHADOW.blur * k, dx = SHADOW.dx * k, dy = SHADOW.dy * k;
+  // The area the shadow can reach, in canvas pixels.
+  const m = blur * 2 + Math.max(dx, dy);
+  const x0 = Math.max(0, Math.floor(t.e + box.x * t.a - m)), y0 = Math.max(0, Math.floor(t.f + box.y * t.d - m));
+  const x1 = Math.min(ctx.canvas.width, Math.ceil(t.e + (box.x + box.w) * t.a + m)), y1 = Math.min(ctx.canvas.height, Math.ceil(t.f + (box.y + box.h) * t.d + m));
+  if (x1 <= x0 || y1 <= y0) return;
+  const w = x1 - x0, h = y1 - y0;
+  const layer = (): [HTMLCanvasElement, CanvasRenderingContext2D] => {
+    const c = document.createElement('canvas');
+    c.width = w;
+    c.height = h;
+    return [c, c.getContext('2d')!];
+  };
+  // The shadow's shape: the letters, blurred and moved down-right. The letters themselves are drawn
+  // off to the left, out of the picture, so only their shadow lands (no hard edge under soft letters).
+  const [mask, mc] = layer();
+  const away = w + m;
+  mc.setTransform(t.a, t.b, t.c, t.d, t.e - x0 - away, t.f - y0);
+  mc.shadowColor = '#000';
+  mc.shadowBlur = blur;
+  mc.shadowOffsetX = dx + away;
+  mc.shadowOffsetY = dy;
+  draw(mc);
+  // The background under it, darkened, cut to the shadow's shape.
+  const [tint, tc] = layer();
+  tc.drawImage(ctx.canvas, x0, y0, w, h, 0, 0, w, h);
+  tc.fillStyle = `rgba(0, 0, 0, ${1 - SHADOW.shade})`;
+  tc.globalCompositeOperation = 'source-atop';
+  tc.fillRect(0, 0, w, h);
+  tc.globalCompositeOperation = 'destination-in';
+  tc.globalAlpha = SHADOW.strength;
+  tc.drawImage(mask, 0, 0);
+  // Multiplied onto the background.
+  ctx.save();
+  ctx.setTransform(1, 0, 0, 1, 0, 0);
+  ctx.globalCompositeOperation = 'multiply';
+  ctx.drawImage(tint, x0, y0);
+  ctx.restore();
+}
+
 /** Draws the design. Returns where the words landed, in frame pixels. */
 export function renderDesign(ctx: CanvasRenderingContext2D, d: Design, o: RenderOptions): { text: Box } {
   const { w: W, h: H } = FRAMES[d.frame];
@@ -403,26 +455,26 @@ export function renderDesign(ctx: CanvasRenderingContext2D, d: Design, o: Render
   const s = fit * SIZE_SHARE[o.size];
   const tw = lay.width * s, th = textH * s;
   const ox = d.textX * W - tw / 2, oy = d.textY * H - th / 2;
-  for (const it of lay.items) {
-    if (it.ch === ' ') continue;
-    const x = ox + it.x * s;
-    const base = oy + (it.line * LINE + lay.top) * s;
-    if (!it.glyph) {
-      ctx.fillStyle = '#d6d6e0';
-      ctx.fillRect(x + 40 * s, base - 700 * s, (it.advance - 80) * s, 700 * s);
-      continue;
+  /** Draws the letters on `c`; `boxes`: also the grey boxes for characters the font doesn't have. */
+  const letters = (c: CanvasRenderingContext2D, boxes: boolean) => {
+    for (const it of lay.items) {
+      if (it.ch === ' ') continue;
+      const x = ox + it.x * s;
+      const base = oy + (it.line * LINE + lay.top) * s;
+      if (!it.glyph) {
+        if (boxes) {
+          c.fillStyle = '#d6d6e0';
+          c.fillRect(x + 40 * s, base - 700 * s, (it.advance - 80) * s, 700 * s);
+        }
+        continue;
+      }
+      const g = it.glyph.outline;
+      c.imageSmoothingQuality = 'high';
+      c.drawImage(glyphCanvas(it.glyph), x + g.lsb * s, base - g.top * s, g.inkWidth * s, (g.top - g.bottom) * s);
     }
-    const g = it.glyph.outline;
-    // Soft shadow, like real things lying on a table.
-    ctx.save();
-    ctx.shadowColor = 'rgba(27, 27, 58, 0.35)';
-    ctx.shadowBlur = 24 * s * o.scale;
-    ctx.shadowOffsetX = 14 * s * o.scale;
-    ctx.shadowOffsetY = 20 * s * o.scale;
-    ctx.imageSmoothingQuality = 'high';
-    ctx.drawImage(glyphCanvas(it.glyph), x + g.lsb * s, base - g.top * s, g.inkWidth * s, (g.top - g.bottom) * s);
-    ctx.restore();
-  }
+  };
+  drawShadow(ctx, (c) => letters(c, false), { x: ox, y: oy, w: tw, h: th }, s);
+  letters(ctx, true);
 
   // Stickers, on top.
   const short = Math.min(W, H);
