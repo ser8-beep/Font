@@ -192,7 +192,7 @@ export function useAlphabet(
   }, [themes, category, todo, looks, alphabet]);
 
   const themeOf = useMemo(
-    () => assignThemes(todo, chars.length, themes, tagged, (theme, ch) => (setsOf.get(theme) ?? []).some((s) => s.category === theme && s.letters.some((l) => l.char === ch))),
+    () => assignThemes(todo, chars.length, themes, tagged, (theme, ch) => (setsOf.get(theme) ?? []).some((s) => s.letters.some((l) => l.char === ch))),
     [todo, chars, themes, tagged, setsOf],
   );
 

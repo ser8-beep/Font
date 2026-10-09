@@ -148,7 +148,6 @@ export function GrowStep({ alphabet, captured, onMix, onAlphabet, onReroll, onAd
           <div className="row" style={{ marginTop: 12, justifyContent: 'space-between' }}>
             <span>
               {themes.length > 1 ? `Main ${nameOf(category).label} letters from` : 'Letters from'}: <strong>{set.title}</strong>
-              {set.category !== category && ` (${nameOf(set.category).label.toLowerCase()})`}
             </span>
             {nextSet && (
               <button className="btn small yellow" onClick={() => onAlphabet(nextSet)}>

@@ -39,18 +39,6 @@ async function decodeAtlas(url: string): Promise<RGBAImage> {
 
 export const SETS: LibrarySet[] = (manifest as LibraryManifest).sets;
 
-/**
- * Where to look when a category has no alphabet of its own (yet): the closest kind of stuff.
- * Generated alphabets fill these gaps; this keeps the app working without them.
- */
-const NEAREST: Record<string, string[]> = {
-  stationery: ['tools'],
-  tools: ['stationery'],
-  produce: ['food', 'plants'],
-  food: ['produce'],
-  plants: ['produce'],
-};
-
 const has = (s: LibrarySet, ch: string) => s.letters.some((l) => l.char === ch);
 const otherCase = (ch: string) => (ch === ch.toUpperCase() ? ch.toLowerCase() : ch.toUpperCase());
 
@@ -65,21 +53,19 @@ export function qualityTier(s: LibrarySet): number {
 }
 
 /**
- * The alphabets to fill this font from, best first: the category's own sets, sharpest first (high-
- * resolution originals before small enlarged pictures), then by how many of the needed letters they
- * have (in the right case) and how close their colours are to the kid's letters; then the nearest
- * categories' sets, for letters the category lacks.
+ * The alphabets to fill this font from, best first: only the category's own sets (a theme never
+ * borrows another theme's pictures), sharpest first (high-resolution originals before small enlarged
+ * pictures), then by how many of the needed letters they have (in the right case) and how close
+ * their colours are to the kid's letters.
  */
 export function rankSets(category: string, chars: string[], looks: number[] | null): LibrarySet[] {
-  const near = NEAREST[category] ?? [];
   const score = (s: LibrarySet) => {
     const exact = chars.filter((c) => has(s, c)).length;
     const either = chars.filter((c) => !has(s, c) && has(s, otherCase(c))).length;
     const look = looks ? Math.sqrt(s.looks.reduce((d, v, i) => d + (v - looks[i]) ** 2, 0)) : 0;
-    const where = s.category === category ? 1000 : -100 * near.indexOf(s.category);
-    return where + 100 * qualityTier(s) + exact + 0.1 * either - 4 * look;
+    return 100 * qualityTier(s) + exact + 0.1 * either - 4 * look;
   };
-  return SETS.filter((s) => s.category === category || near.includes(s.category))
+  return SETS.filter((s) => s.category === category)
     .map((s) => ({ s, v: score(s) }))
     .sort((a, b) => b.v - a.v)
     .map(({ s }) => s);

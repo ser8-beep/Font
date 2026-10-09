@@ -34,12 +34,13 @@ describe('letter library', () => {
     }
   });
 
-  it('puts the category\'s own alphabets first: the sharpest first, then the most complete', () => {
+  it('uses only the category\'s own alphabets: the sharpest first, then the most complete', () => {
     for (const id of CATEGORY_IDS) {
-      const sets = rankSets(id, UPPER, null);
-      const own = sets.filter((s) => s.category === id);
-      expect(sets.slice(0, own.length)).toEqual(own);
-      const count = (s: (typeof sets)[number]) => UPPER.filter((c) => s.letters.some((l) => l.char === c)).length;
+      const own = rankSets(id, UPPER, null);
+      expect(own.length).toBeGreaterThan(0);
+      expect(own.every((s) => s.category === id), `${id} borrows another theme`).toBe(true);
+      expect(own).toHaveLength(SETS.filter((s) => s.category === id).length);
+      const count = (s: (typeof own)[number]) => UPPER.filter((c) => s.letters.some((l) => l.char === c)).length;
       for (let i = 1; i < own.length; i++) {
         const [a, b] = [qualityTier(own[i - 1]), qualityTier(own[i])];
         expect(a).toBeGreaterThanOrEqual(b);
@@ -64,7 +65,7 @@ describe('letter library', () => {
     expect(z.every((c) => c.letter.char === z[0].letter.char)).toBe(true);
   });
 
-  it('has every capital for every category, from its own or a nearby alphabet', () => {
+  it('has every capital for every category from its own alphabets', () => {
     for (const id of CATEGORY_IDS) {
       const sets = rankSets(id, UPPER, null);
       for (const ch of UPPER) expect(optionsFor(ch, sets).length, `${id} ${ch}`).toBeGreaterThan(0);
