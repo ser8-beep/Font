@@ -12,3 +12,4 @@ alphabet-repository/_upscaled/**/*.tmp
 dist-artifact
 *.tsbuildinfo
 __pycache__/
+data/botanical-photos/_4x/

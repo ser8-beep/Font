@@ -1,6 +1,6 @@
 # Removes white halos: leftover paper or table background around cut-outs that came from photos.
 #
-#   .venv-sr/bin/python -I scripts/clean-repository.py        (needs numpy, opencv, pillow)
+#   .venv-sr/bin/python -I scripts/clean-repository.py [--only <source> ...]   (needs numpy, opencv, pillow)
 #
 # For every cut-out the app uses, takes the picture the library would use (the sharpened copy in
 # _upscaled/ when there is one, else the original), measures its halo (edge pixels much lighter and
@@ -28,6 +28,12 @@ NEEDS = 0.03   # halo share above which a picture is cleaned
 KEEP = 0.06    # halo share above which a cleaned picture is still not good enough
 LOST = 0.30    # share of the letter cleaning may take away
 PAPER = 0.06   # share of the cleaned letter that may still look like the background
+# Checked by eye (alphabet-repository/rejected.json): cut-outs whose light parts are the object itself,
+# sources re-cut with the paper colour already taken out, and single cut-outs to leave out.
+_REVIEW = json.load(open(os.path.join(REPO, 'rejected.json'))) if os.path.exists(os.path.join(REPO, 'rejected.json')) else {}
+AS_IS = set(_REVIEW.get('keep_as_is', []))
+TRUSTED = set(_REVIEW.get('trusted_sources', []))
+LEAVE_OUT = set(_REVIEW.get('leave_out', []))
 
 
 def lab(rgb):
@@ -125,13 +131,29 @@ def clean(img):
 
 def main():
     manifest = json.load(open(os.path.join(REPO, 'manifest.json')))
+    # --only <source> ...: check just these sources again; every other letter keeps its verdict.
+    only = set(sys.argv[sys.argv.index('--only') + 1:]) if '--only' in sys.argv else None
     excluded, cleaned, kept = [], 0, 0
+    if only:
+        old = json.load(open(os.path.join(OUT, 'excluded.json')))
+        mine = {e['file'] for e in manifest if e['source'] in only}
+        excluded = [f for f in old if f not in mine]
     for e in manifest:
         if e.get('set_aside') or e['category'] not in CATEGORIES or not (e['char'].isascii() and e['char'].isalpha()):
             continue
+        if only and e['source'] not in only:
+            continue
+        out = os.path.join(OUT, e['file'][:-4] + '.webp')
+        if e['file'] in AS_IS or e['source'] in TRUSTED:
+            # Checked by eye, or re-cut carefully: used as it is.
+            if os.path.exists(out):
+                os.remove(out)
+            if e['file'] in LEAVE_OUT:
+                excluded.append(e['file'])
+            kept += 1
+            continue
         up = os.path.join(REPO, '_upscaled', e['file'][:-4] + '.webp')
         src = Image.open(up if os.path.exists(up) else os.path.join(REPO, e['file'])).convert('RGBA')
-        out = os.path.join(OUT, e['file'][:-4] + '.webp')
         before = score(np.asarray(src).astype(np.float32))
         if before < NEEDS:
             if os.path.exists(out):

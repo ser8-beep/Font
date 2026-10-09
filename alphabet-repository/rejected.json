@@ -1,13 +1,39 @@
 {
- "_about": "Sources left out of the app after checking them by eye on a dark background: their cut-outs still show paper (in light or shadow) around the objects, or broke into pieces when the paper was taken away. Other alphabets fill in their letters. Remove a source here to bring it back.",
- "sources": {
-  "p4-nature-teacher": "tiny crops (46 px) that broke into fragments",
-  "p4-twig-alphabet": "tiny crops (36 px) that broke into fragments",
-  "p4-dont-forget-to-smile": "beige paper patches around the petunias",
-  "p4-love-yourself-roses": "pink paper shadow around the roses",
-  "p4-one-of-a-kind": "beige paper patches between the flowers",
-  "p4-smile-mint": "broke into fragments",
-  "p4-awesome-carnations": "white paper blotches through the carnations",
-  "p4-lovely-roses": "cream paper fringe around the yellow rose"
- }
+ "_about": "Checked by eye on a dark background. sources: whole sources left out of the app. trusted_sources: sources re-cut by scripts/recut-botanical.py, whose edges already have the paper colour taken out; the halo cleaner leaves them alone. leave_out: single cut-outs that still show paper or came out broken; other alphabets fill in. keep_as_is: cut-outs whose light parts are the object itself (white feathers, pale stripes), used exactly as supplied. Remove an entry to undo it.",
+ "sources": {},
+ "trusted_sources": [
+  "p4-nature-teacher",
+  "p4-twig-alphabet",
+  "p4-dont-forget-to-smile",
+  "p4-love-yourself-roses",
+  "p4-one-of-a-kind",
+  "p4-smile-mint",
+  "p4-awesome-carnations",
+  "p4-lovely-roses",
+  "p4-wild-plants-roots",
+  "p4-light-will-come",
+  "p4-be-free-with-joy",
+  "p4-hello-spring",
+  "p4-smile-often",
+  "p4-shine-on-yellow",
+  "p4-be-kind-yellow",
+  "p4-june-wildflowers",
+  "p4-grasses-and-hops"
+ ],
+ "leave_out": [
+  "plants/D/p4-dont-forget-to-smile_D_upper.png",
+  "plants/E/_more/p4-dont-forget-to-smile_E_upper_2.png",
+  "plants/F/p4-dont-forget-to-smile_F_upper.png",
+  "plants/M/p4-dont-forget-to-smile_M_upper.png",
+  "plants/S/_more/p4-dont-forget-to-smile_S_upper.png",
+  "plants/T/p4-dont-forget-to-smile_T_upper_2.png",
+  "plants/L/p4-smile-mint_L_upper.png",
+  "plants/Y/_more/p4-love-yourself-roses_Y_upper.png"
+ ],
+ "keep_as_is": [
+  "plants/K/img47_K_upper.png",
+  "plants/Q/img47_Q_upper.png",
+  "plants/X/img47_X_upper.png",
+  "plants/I/_more/p7-feathers_I_upper_3.png"
+ ]
 }
