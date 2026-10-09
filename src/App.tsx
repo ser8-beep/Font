@@ -5,15 +5,27 @@ import { useAlphabet } from './grow';
 import { warmPictures } from './pictures';
 import { processPhoto } from './photo';
 import { GROW_STEPS, initialState, inWordOrder, reducer, STEPS, type Letter, type Step } from './state';
+import { newFeedbackSession } from './feedback';
 import { CaptureStep } from './ui/CaptureStep';
 import { CleanStep } from './ui/CleanStep';
 import { ExportStep } from './ui/ExportStep';
+import { FeedbackButton } from './ui/Feedback';
 import { GrowStep } from './ui/GrowStep';
 import { RoomView } from './ui/RoomView';
 import { SplitStep } from './ui/SplitStep';
 import { TypeStep } from './ui/TypeStep';
 
 const LABELS: Record<Step, string> = { capture: 'Snap', split: 'Match', clean: 'Neaten', grow: 'A–Z', type: 'Play', export: 'Save' };
+/** Each part's name as the kid sees it, for feedback. */
+const PART_NAMES: Record<Step | 'add', string> = {
+  capture: 'Snap your letters',
+  add: 'Add a letter',
+  split: 'Match your letters',
+  clean: 'Neaten your letters',
+  grow: 'Your whole A–Z',
+  type: 'Play with your font',
+  export: 'Save your font',
+};
 const COLOURS: Record<Step, string> = {
   capture: 'var(--yellow)',
   split: 'var(--pink)',
@@ -206,6 +218,7 @@ function Station() {
             onAddMore={addMore}
             onStartOver={() => {
               setAdding(null);
+              newFeedbackSession();
               dispatch({ type: 'reset' });
             }}
           />
@@ -230,6 +243,11 @@ function Station() {
             ↶ Undo
           </button>
           <span className="spacer" />
+          <FeedbackButton
+            part={s.step === 'capture' && adding !== null ? 'add' : s.step}
+            label={PART_NAMES[s.step === 'capture' && adding !== null ? 'add' : s.step]}
+            context={s.photos.length ? (skipMatch ? 'one letter at a time' : 'whole word photo') : undefined}
+          />
           {s.step !== 'export' && (
             <button
               className="btn next"

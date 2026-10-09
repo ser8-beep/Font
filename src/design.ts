@@ -1,7 +1,7 @@
-// The poster or birthday invitation a kid designs in the playground: a frame size, a background
-// (colour, gradient or picture), an optional pattern from their category, and their words
-// in their photo letters, with optional body text (an invitation's party details) in a handwritten or
-// easy-to-read font.
+// The poster or card a kid designs in the playground: a frame size, a background (colour, gradient or
+// picture, party cards for birthday invitations among them), an optional pattern from their
+// category, their big words in their photo letters, and text boxes in a handwritten or easy-to-read
+// font, each with its own size, colour and place.
 // renderDesign draws it onto a canvas at any scale, so the preview and the saved picture match.
 import { backgroundById, backgroundImage, loadBackground } from './backgrounds';
 import { LINE, layoutText, materialCanvas, type Layout, type LetterGlyph } from './font';
@@ -13,14 +13,12 @@ import type { Size } from './state';
 
 export { FRAME_IDS, FRAMES, type FixedFrame, type Frame, type FrameId } from './frames';
 
-/** A birthday invitation on a colour or gradient: a 5 × 7 inch card. */
-const CARD: Frame = { label: 'Invitation', w: 1500, h: 2100, note: '5 × 7 in card at 300 dpi' };
-
-/** The design's size: an invitation or a 'picture' frame takes the picture's own shape. */
+/** The design's size: a 'picture' frame takes the picture's own shape (a party card's is an invitation). */
 export function frameOf(d: Design): Frame {
   const pic = d.fill.kind === 'picture' ? backgroundById(d.fill.id) : null;
-  if (d.mode === 'invite') return pic ? { label: 'Invitation', w: pic.w, h: pic.h, note: pic.label } : CARD;
-  if (d.frame === 'picture' || !(d.frame in FRAMES)) return pic ? { label: 'Poster', w: pic.w, h: pic.h, note: pic.label } : FRAMES.phone;
+  if (d.frame === 'picture' || !(d.frame in FRAMES)) {
+    return pic ? { label: pic.groups.includes('party') ? 'Invitation' : 'Poster', w: pic.w, h: pic.h, note: pic.label } : FRAMES.phone;
+  }
   return FRAMES[d.frame as FixedFrame];
 }
 
@@ -33,29 +31,43 @@ export type Fill =
   /** A picture from src/backgrounds, covering the frame. */
   | { kind: 'picture'; id: string };
 
+/** A box of text in a simple font: a message, or a party's details. */
+export interface TextBox {
+  id: string;
+  /** A line each. */
+  text: string;
+  font: BodyFont;
+  /** Letter size as a share of the frame's height. */
+  size: number;
+  /** null: what reads best on the background. */
+  colour: string | null;
+  /** Where (x, y) is on the text: its left edge, middle or right edge; y is its middle. */
+  align: 'left' | 'center' | 'right';
+  /** Shares of the frame. */
+  x: number;
+  y: number;
+}
+
 export interface Design {
-  /** A poster, or a birthday invitation (the words on top, the party details under them). */
-  mode: 'poster' | 'invite';
   frame: FrameId;
   fill: Fill;
   /** A pattern id from PATTERNS, or null. */
   pattern: string | null;
   patternColour: string;
   patternOpacity: number;
-  /** Centre of the words, as shares of the frame (an invitation: of the picture's calm middle). */
+  /** Centre of the big words, as shares of the frame. */
   textX: number;
   textY: number;
-  /** Body text under the words, a line each: an invitation's party details, or a poster's own lines (may be empty). */
-  details: string;
-  bodyFont: BodyFont;
-  /** The body text's colour (null: what reads best on the background). */
-  bodyColour: string | null;
+  /** Text boxes, drawn over the background in this order. */
+  boxes: TextBox[];
 }
 
 export const DEFAULT_DETAILS = "You're invited to my birthday party!\nSaturday 14 June, 2 to 5 pm\n12 Cherry Lane\nPlease tell us if you can come";
 
+/** Text size choices go between these (shares of the frame's height). */
+export const BOX_SIZES = { min: 0.018, max: 0.12, normal: 0.04 };
+
 export const DEFAULT_DESIGN: Design = {
-  mode: 'poster',
   frame: 'desktop',
   fill: { kind: 'solid', colour: '#ffd23f' },
   pattern: null,
@@ -63,9 +75,7 @@ export const DEFAULT_DESIGN: Design = {
   patternOpacity: 0.16,
   textX: 0.5,
   textY: 0.5,
-  details: '',
-  bodyFont: 'hand',
-  bodyColour: null,
+  boxes: [],
 };
 
 export const INK = '#1b1b3a';
@@ -356,7 +366,7 @@ const PAPER = '#f4efe6';
 /**
  * Draws the words in photo letters with their soft shadow, `s` frame pixels per font unit, the
  * first line's top-left at (ox, oy). Characters the font doesn't have: grey boxes, or in `fallback`
- * (an invitation's "7" or "!", in the details' font and colour).
+ * (an invitation's "7" or "!", in a text font and colour).
  */
 function drawWords(ctx: CanvasRenderingContext2D, lay: Layout, ox: number, oy: number, s: number, tw: number, th: number, fallback?: { font: BodyFont; colour: string }) {
   const letters = (c: CanvasRenderingContext2D, all: boolean) => {
@@ -387,7 +397,7 @@ function drawWords(ctx: CanvasRenderingContext2D, lay: Layout, ox: number, oy: n
   letters(ctx, true);
 }
 
-/** Splits the details into lines that fit `width` in the current font. */
+/** Splits text into lines that fit `width` in the current font. */
 function wrapLines(ctx: CanvasRenderingContext2D, text: string, width: number): string[] {
   const out: string[] = [];
   for (const para of text.split('\n')) {
@@ -404,8 +414,11 @@ function wrapLines(ctx: CanvasRenderingContext2D, text: string, width: number): 
   return out;
 }
 
-/** Draws the design. Returns where the words landed, in frame pixels. */
-export function renderDesign(ctx: CanvasRenderingContext2D, d: Design, o: RenderOptions): { text: Box } {
+/** Where things landed, in frame pixels: the big words, and each text box by id. */
+export interface Placed { text: Box; boxes: Record<string, Box> }
+
+/** Draws the design. Returns where the words and text boxes landed, in frame pixels. */
+export function renderDesign(ctx: CanvasRenderingContext2D, d: Design, o: RenderOptions): Placed {
   const { w: W, h: H } = frameOf(d);
   const pic = d.fill.kind === 'picture' ? backgroundById(d.fill.id) : null;
   ctx.save();
@@ -432,8 +445,8 @@ export function renderDesign(ctx: CanvasRenderingContext2D, d: Design, o: Render
   const img = pic && backgroundImage(pic.id);
   if (img) cover(ctx, img, W, H);
 
-  // Pattern (posters only), drawn at device resolution so it stays sharp.
-  const pat = d.mode === 'poster' ? patternById(d.pattern) : null;
+  // Pattern, drawn at device resolution so it stays sharp.
+  const pat = patternById(d.pattern);
   if (pat && d.patternOpacity > 0) {
     const u = (Math.min(W, H) / 32) * o.scale;
     const tile = patternTile(pat, u, d.patternColour);
@@ -445,24 +458,25 @@ export function renderDesign(ctx: CanvasRenderingContext2D, d: Design, o: Render
     ctx.restore();
   }
 
-  const content = o.text.trim() || 'PLAY';
-  let text: Box;
-  if (d.mode === 'invite' || d.details.trim()) text = drawWithBody(ctx, d, o, content, W, H);
-  else {
-    // The words: wrapped to suit the frame's shape, as big as the size setting allows.
-    const aspect = W / H;
-    const lay = layoutText(content, o.map, 6400 * Math.min(1.2, Math.max(0.42, aspect / 1.6)));
+  // The big words: in the background's calm middle (a picture's) or inside the margins, on as many
+  // lines as makes them biggest, as big as the size setting allows, centred on (textX, textY).
+  const S = textArea(d, W, H);
+  const fitted = [Infinity, 6400, 5200, 4000, 3000, 2200].map((wrap) => {
+    const lay = layoutText(o.text.trim() || 'PLAY', o.map, wrap);
     const textH = (lay.lines - 1) * LINE + lay.top - lay.bottom + 40;
-    const fit = Math.min((W * 0.86) / Math.max(lay.width, 1), (H * 0.7) / textH);
-    const s = fit * SIZE_SHARE[o.size];
-    const tw = lay.width * s, th = textH * s;
-    const ox = d.textX * W - tw / 2, oy = d.textY * H - th / 2;
-    drawWords(ctx, lay, ox, oy, s, tw, th);
-    text = { x: ox, y: oy, w: tw, h: th };
-  }
+    return { lay, textH, fit: Math.min(S.w / Math.max(lay.width, 1), (S.h * 0.5) / textH) };
+  });
+  const { lay, textH, fit } = fitted.reduce((x, y) => (y.fit > x.fit * 1.05 ? y : x));
+  const s = fit * SIZE_SHARE[o.size];
+  const tw = lay.width * s, th = textH * s;
+  const ox = d.textX * W - tw / 2, oy = d.textY * H - th / 2;
+  drawWords(ctx, lay, ox, oy, s, tw, th, { font: 'hand', colour: inkFor(d) });
+
+  // Text boxes, on top.
+  const boxes: Record<string, Box> = {};
+  for (const b of d.boxes) boxes[b.id] = drawBox(ctx, d, b, S.w, W, H);
 
   const short = Math.min(W, H);
-
   if (o.caption) {
     const fs = short * 0.028;
     ctx.font = `800 ${fs}px "Arial Rounded MT Bold", "Trebuchet MS", sans-serif`;
@@ -480,14 +494,28 @@ export function renderDesign(ctx: CanvasRenderingContext2D, d: Design, o: Render
     ctx.fillText(o.caption, bx + px, by + py + fs / 2);
   }
   ctx.restore();
-  return { text };
+  return { text: { x: ox, y: oy, w: tw, h: th }, boxes };
 }
 
-/** How much of the text area the words may take, by the letter size setting. */
-const BLOCK_SHARE: Record<Size, number> = { S: 0.7, M: 0.85, L: 1 };
+/** Draws a text box (wrapped to `width`) and returns where it landed. */
+function drawBox(ctx: CanvasRenderingContext2D, d: Design, b: TextBox, width: number, W: number, H: number): Box {
+  const fs = b.size * H;
+  const lineH = fs * 1.3;
+  ctx.font = bodyFont(b.font, fs);
+  const lines = wrapLines(ctx, b.text.trim() || ' ', width);
+  const widest = Math.max(1, ...lines.map((l) => ctx.measureText(l).width));
+  const h = lines.length * lineH;
+  const ax = b.x * W, top = b.y * H - h / 2;
+  ctx.fillStyle = b.colour ?? inkFor(d);
+  ctx.textAlign = b.align;
+  ctx.textBaseline = 'alphabetic';
+  lines.forEach((line, i) => ctx.fillText(line, ax, top + i * lineH + fs * 1.02));
+  const x = b.align === 'left' ? ax : b.align === 'right' ? ax - widest : ax - widest / 2;
+  return { x, y: top, w: widest, h };
+}
 
-/** Where words and body text go, in frame pixels: a picture's calm middle (where the frame crops it), else inside the margins. */
-function textArea(d: Design, W: number, H: number): Box {
+/** Where words and text go, in frame pixels: a picture's calm middle (where the frame crops it), else inside the margins. */
+export function textArea(d: Design, W: number, H: number): Box {
   const pic = d.fill.kind === 'picture' ? backgroundById(d.fill.id) : null;
   if (!pic) return { x: W * 0.08, y: H * 0.1, w: W * 0.84, h: H * 0.8 };
   const k = Math.max(W / pic.w, H / pic.h);
@@ -506,59 +534,50 @@ function inkOn(hex: string): string {
   return 0.299 * r + 0.587 * g + 0.114 * b < 120 ? '#ffffff' : INK;
 }
 
-/** The body text's colour: the kid's pick, else what reads best on the background. */
-export function bodyColourOf(d: Design): string {
-  if (d.bodyColour) return d.bodyColour;
+/** The text colour that reads best on the design's background. */
+export function inkFor(d: Design): string {
   if (d.fill.kind === 'picture') return backgroundById(d.fill.id)?.ink ?? INK;
   return inkOn(d.fill.kind === 'solid' ? d.fill.colour : d.fill.from);
 }
 
 /**
- * The words in photo letters with body text (an invitation's party details, or a poster's own lines)
- * under them, together in the middle of the text area (moved by textX/textY). The body text shrinks
- * until everything fits.
+ * Where to put things in the background's calm middle, as shares of the frame: the big words in
+ * its upper part, a first text box under them, and the nine places a text box can be put
+ * (columns left, middle, right; rows top, middle, bottom).
  */
-function drawWithBody(ctx: CanvasRenderingContext2D, d: Design, o: RenderOptions, content: string, W: number, H: number): Box {
+export function spotsFor(d: Design): {
+  words: { x: number; y: number };
+  /** Under the big words, for a few lines. */
+  below: { x: number; y: number; align: TextBox['align'] };
+  box: (col: 0 | 1 | 2, row: 0 | 1 | 2) => { x: number; y: number; align: TextBox['align'] };
+} {
+  const { w: W, h: H } = frameOf(d);
   const S = textArea(d, W, H);
-  const colour = bodyColourOf(d);
+  return {
+    words: { x: (S.x + S.w / 2) / W, y: (S.y + S.h * 0.27) / H },
+    below: { x: (S.x + S.w / 2) / W, y: (S.y + S.h * 0.775) / H, align: 'center' },
+    box: (col, row) => ({
+      x: (S.x + (S.w * col) / 2) / W,
+      y: (S.y + S.h * [0.14, 0.5, 0.82][row]) / H,
+      align: (['left', 'center', 'right'] as const)[col],
+    }),
+  };
+}
 
-  // The words: up to 42% of the area's height, on as many lines as makes them biggest.
-  const fitted = [Infinity, 5200, 4000, 3000, 2200].map((wrap) => {
-    const lay = layoutText(content, o.map, wrap);
-    const textH = (lay.lines - 1) * LINE + lay.top - lay.bottom + 40;
-    return { lay, textH, fit: Math.min(S.w / Math.max(lay.width, 1), (S.h * 0.42) / textH) };
-  });
-  const { lay, textH, fit } = fitted.reduce((a, b) => (b.fit > a.fit * 1.05 ? b : a));
-  const s = fit * BLOCK_SHARE[o.size];
-  const tw = lay.width * s, th = textH * s;
-
-  // The body text: as big as fits under the words (and no bigger than a comfortable size).
-  const details = d.details.trim();
-  const room = S.h - th;
-  let fs = Math.min(S.h * 0.062, S.w * 0.085);
-  let lines: string[] = [];
-  const lineH = () => fs * 1.32;
-  for (; fs > S.h * 0.018; fs *= 0.94) {
-    ctx.font = bodyFont(d.bodyFont, fs);
-    lines = details ? wrapLines(ctx, details, S.w) : [];
-    if (fs * 0.9 + lines.length * lineH() <= room) break;
+/**
+ * A text size (share of the frame's height) at which `text` fits under the big words: in the
+ * lower part of the background's calm middle, at most the normal size.
+ */
+export function fitBoxSize(d: Design, text: string, font: BodyFont): number {
+  const { w: W, h: H } = frameOf(d);
+  const S = textArea(d, W, H);
+  const ctx = document.createElement('canvas').getContext('2d');
+  if (!ctx) return BOX_SIZES.normal;
+  for (let size = BOX_SIZES.normal; size > BOX_SIZES.min; size *= 0.92) {
+    ctx.font = bodyFont(font, size * H);
+    if (wrapLines(ctx, text, S.w).length * size * H * 1.3 <= S.h * 0.42) return size;
   }
-  const gap = lines.length ? fs * 0.9 : 0;
-  const bh = lines.length * lineH();
-  const blockH = th + gap + bh;
-  const cx = S.x + S.w / 2 + (d.textX - 0.5) * W;
-  const top = S.y + (S.h - blockH) / 2 + (d.textY - 0.5) * H;
-
-  drawWords(ctx, lay, cx - tw / 2, top, s, tw, th, { font: d.bodyFont, colour });
-
-  ctx.font = bodyFont(d.bodyFont, fs);
-  ctx.fillStyle = colour;
-  ctx.textAlign = 'center';
-  ctx.textBaseline = 'alphabetic';
-  lines.forEach((line, i) => ctx.fillText(line, cx, top + th + gap + i * lineH() + fs * 0.98));
-
-  const bw = Math.max(tw, ...lines.map((l) => ctx.measureText(l).width));
-  return { x: cx - bw / 2, y: top, w: bw, h: blockH };
+  return BOX_SIZES.min;
 }
 
 /** Loads what the design needs before it can be drawn in full (its picture, the body text's fonts). */

@@ -3,6 +3,7 @@ import { useEffect, useState } from 'react';
 import { buildFont, materialCanvas, safeFileName, type LetterGlyph } from '../font';
 import { inClaudeViewer, saveFile, type SaveOutcome } from '../host';
 import { fontPictures, warmPictures } from '../pictures';
+import { FeedbackForm } from './Feedback';
 import { designCanvas, designReady, frameOf, type Design } from '../design';
 import type { Size } from '../state';
 import { fetchRoom, roomBase, saveRoomBase, submitToRoom } from '../room';
@@ -139,7 +140,7 @@ export function ExportStep(p: Props) {
             <div className="poster-preview" style={{ aspectRatio: `${frame.w} / ${frame.h}` }} />
           )}
           <p className="help" style={{ marginTop: 10 }}>
-            <strong>{frame.label}</strong> · {frame.w} × {frame.h} px, {frame.note}. {p.design.mode === 'invite' ? 'Change the picture, words and party details' : 'Change the frame, colours and stickers'} in the Play step.
+            <strong>{frame.label}</strong> · {frame.w} × {frame.h} px, {frame.note}. Change the background, words and text boxes in the Play step.
           </p>
           <label className="toggle">
             <input type="checkbox" checked={withName} onChange={(e) => setWithName(e.target.checked)} />
@@ -157,6 +158,11 @@ export function ExportStep(p: Props) {
           )}
         </div>
       </div>
+
+      <section className="card feedback-card" aria-labelledby="overall-title">
+        <h2 id="overall-title">How was making your font?</h2>
+        <FeedbackForm part="overall" label="The whole font station" />
+      </section>
 
       {/* The room wall talks to a server on the local network, which a claude.ai page can't reach. */}
       {!inClaudeViewer && <RoomPanel map={p.captured} team={p.maker} />}

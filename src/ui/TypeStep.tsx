@@ -27,13 +27,16 @@ interface Props {
   onAddMore: (ch?: string) => void;
 }
 
+/** Longest big words (letters, spaces and new lines). */
+const MAX_WORDS = 80;
+
 const WORDS = ['PIZZA', 'ROBOT', 'JELLY', 'ZOOM', 'HELLO', 'BANANA', 'QUIZ', 'DINOSAUR', 'WOW', 'YUMMY', 'PLAY TIME', 'SUPER STAR', 'MAGIC', 'JUMP', 'SPLASH', 'FOX AND OWL', 'ROCKET'];
 
 /** The playground: type anything in the kid's own letters. */
 export function TypeStep(p: Props) {
   const [party, setParty] = useState(false);
   const [word, setWord] = useState(0);
-  const input = useRef<HTMLInputElement>(null);
+  const input = useRef<HTMLTextAreaElement>(null);
   const missing = useMemo(() => [...new Set([...p.text].filter((c) => c.trim() && !lookup(p.map, c)))], [p.text, p.map]);
   // Words come out in the font's own case: capitals, small letters, or both.
   const hasUpper = p.keys.some((k) => /[A-Z]/.test(k)), hasLower = p.keys.some((k) => /[a-z]/.test(k));
@@ -53,7 +56,7 @@ export function TypeStep(p: Props) {
   }, [p.text, p.celebrated]);
 
   const type = (s: string) => {
-    p.onText((p.text + s).slice(0, 60));
+    p.onText((p.text + s).slice(0, MAX_WORDS));
     input.current?.focus();
   };
 
@@ -62,30 +65,6 @@ export function TypeStep(p: Props) {
       <h1>
         <span className="tag">Play with your font!</span>
       </h1>
-      <div className="row" style={{ alignItems: 'stretch' }}>
-        <input
-          ref={input}
-          className="typebox"
-          style={{ flex: '1 1 240px', minWidth: 0 }}
-          value={p.text}
-          maxLength={60}
-          placeholder="Type your name!"
-          onChange={(e) => p.onText(e.target.value)}
-          autoComplete="off"
-          spellCheck={false}
-          aria-label="Type here"
-        />
-        <button
-          className="btn yellow"
-          onClick={() => {
-            p.onText(caseWord(WORDS[word % WORDS.length]));
-            setWord(word + 1);
-          }}
-        >
-          🎲 Surprise me
-        </button>
-      </div>
-
       <PosterEditor
         design={p.design}
         onDesign={p.onDesign}
@@ -95,6 +74,34 @@ export function TypeStep(p: Props) {
         onSize={p.onSize}
         themes={p.themes}
         table={p.table}
+        words={
+          <>
+            <textarea
+              ref={input}
+              className="typebox"
+              rows={2}
+              value={p.text}
+              maxLength={MAX_WORDS}
+              placeholder="Type your name!"
+              onChange={(e) => p.onText(e.target.value)}
+              autoComplete="off"
+              spellCheck={false}
+              aria-label="Your big words: press Enter for a new line"
+            />
+            <div className="row tight">
+              <button
+                className="btn small yellow"
+                onClick={() => {
+                  p.onText(caseWord(WORDS[word % WORDS.length]));
+                  setWord(word + 1);
+                }}
+              >
+                🎲 Surprise me
+              </button>
+              <span className="help">Enter starts a new line. Or tap your letters under the picture.</span>
+            </div>
+          </>
+        }
       />
 
       <div className="keyboard" aria-label="Your letters keyboard">
@@ -117,7 +124,7 @@ export function TypeStep(p: Props) {
       {missing.length > 0 && (
         <div className="missing" style={{ marginTop: 16 }}>
           <span>
-            {p.growing ? 'Still coming: ' : p.design.mode === 'invite' ? 'Your font doesn’t have these, so they’re in the party details font: ' : 'Grey boxes are letters your font doesn’t have: '}
+            {p.growing ? 'Still coming: ' : 'Your font doesn’t have these, so they’re written by hand: '}
             <strong>{missing.join(' ')}</strong>
           </span>
           {!p.growing && (

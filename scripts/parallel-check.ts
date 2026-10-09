@@ -24,12 +24,12 @@ const ROOT = join(dirname(fileURLToPath(import.meta.url)), '..');
 const TMP = join(tmpdir(), `font-station-parallel-${process.pid}`);
 mkdirSync(TMP, { recursive: true });
 
-// ---- one photo per letter, cut from the Lego demo ----
-const demo = jpeg.decode(readFileSync(join(ROOT, 'src/assets/demo-lego.jpg')), { useTArray: true });
+// ---- one photo per letter, cut from the Lego sample photo ----
+const demo = jpeg.decode(readFileSync(join(ROOT, 'samples/lego-demo.jpg')), { useTArray: true });
 const an = analyse({ width: demo.width, height: demo.height, data: new Uint8ClampedArray(demo.data.buffer) }, { expected: 4 });
 const k = demo.width / an.work.width;
 const boxes = an.blobs.map((b) => b.box).sort((a, b) => a.x - b.x);
-if (boxes.length !== 4) throw new Error(`expected 4 letters in the demo photo, found ${boxes.length}`);
+if (boxes.length !== 4) throw new Error(`expected 4 letters in the Lego sample photo, found ${boxes.length}`);
 for (const [i, c] of [...'PLAY'].entries()) {
   const b = boxes[i], pad = 0.15 * Math.max(b.w, b.h);
   const x0 = Math.max(0, Math.round((b.x - pad) * k)), y0 = Math.max(0, Math.round((b.y - pad) * k));
@@ -104,7 +104,8 @@ async function run(j: Job, page: Page) {
   const step = async () => page.getByRole('button', { name: 'Next ▶' }).click();
   await page.goto(BASE);
   if (j.mode === 'word') {
-    await page.getByText('Try the Lego demo').click();
+    const [chooser] = await Promise.all([page.waitForEvent('filechooser'), page.getByRole('button', { name: /Choose a photo/ }).first().click()]);
+    await chooser.setFiles(join(ROOT, 'samples/lego-demo.jpg'));
     await page.getByText('Match your letters').waitFor({ timeout: 60_000 });
     for (const ch of 'PLAY') {
       await page.locator('.stage .chip.unknown').first().click();
@@ -145,7 +146,7 @@ async function run(j: Job, page: Page) {
     fontBytes = readFileSync((await font.path())!).length;
   }
   await page.getByText('Send your letters to the room wall').waitFor({ timeout: 20_000 });
-  await page.getByRole('button', { name: /^Send / }).click();
+  await page.getByRole('button', { name: /^Send (?!feedback)/ }).click();
   await page.getByText('Your letters are on the wall').waitFor({ timeout: 20_000 });
   return { size, fontBytes };
 }

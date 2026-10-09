@@ -62,13 +62,13 @@ export function loadBackground(id: string): Promise<Picture> {
 }
 
 /**
- * Pictures to offer, grouped: only the typeface's themes' (or every theme's, while the themes aren't
- * known yet), with the party cards first for a birthday invitation. Each picture once.
+ * Pictures to offer, grouped: the typeface's themes' (or every theme's, while the themes aren't
+ * known yet), then the party cards for birthday invitations. Each picture once.
  */
-export function backgroundGroups(themes: string[], invite: boolean): { key: string; items: Background[] }[] {
+export function backgroundGroups(themes: string[]): { key: string; items: Background[] }[] {
   const known = themes.filter((t) => BACKGROUNDS.some((b) => b.groups.includes(t)));
   const all = [...new Set(BACKGROUNDS.flatMap((b) => b.groups))].filter((g) => g !== 'party');
-  const order = [...(invite ? ['party'] : []), ...(known.length ? known : all)];
+  const order = [...(known.length ? known : all), 'party'];
   const seen = new Set<string>();
   const out: { key: string; items: Background[] }[] = [];
   for (const key of order) {

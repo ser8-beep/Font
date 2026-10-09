@@ -3,7 +3,7 @@
  "pictures": [
   { "id": "animal-party-arch", "src": "0717c02e", "label": "Animal party arch", "groups": ["party"], "safe": [0.22, 0.2, 0.6, 0.62] },
   { "id": "sunny-stripes-parade", "src": "d85f8f4a", "label": "Sunny stripes parade", "groups": ["party", "plants"], "safe": [0.2, 0.2, 0.6, 0.6] },
-  { "id": "balloon-bear", "src": "a54f7c30", "label": "Balloon bear", "groups": ["party"], "safe": [0.26, 0.15, 0.5, 0.47] },
+  { "id": "balloon-bear", "src": "a54f7c30", "label": "Balloon bear", "groups": ["party"], "safe": [0.26, 0.15, 0.5, 0.58] },
   { "id": "folk-flowers", "src": "0a810812", "label": "Folk flowers", "groups": ["party"], "safe": [0.2, 0.14, 0.6, 0.7] },
   { "id": "rainbow-crown", "src": "6ed8f6cf", "label": "Rainbow crown", "groups": ["party"], "safe": [0.2, 0.22, 0.6, 0.56] },
   { "id": "scallop-cake", "src": "9ef928d8", "label": "Scallop cake", "groups": ["party"], "safe": [0.27, 0.25, 0.46, 0.44] },

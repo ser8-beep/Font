@@ -13,6 +13,12 @@ const claude = (window as unknown as { claude?: Partial<ClaudeHost> }).claude;
 
 export const inClaudeViewer = typeof claude?.use === 'function';
 
+/** A viewer capability's namespace, or null when not inside the viewer or this view can't run it. */
+export async function useCapability<T>(name: string): Promise<T | null> {
+  if (!inClaudeViewer) return null;
+  return ((await claude!.use!(name).catch(() => null)) as T | null) ?? null;
+}
+
 /**
  * How a save went. 'link': the page could not start the download itself, so it hands back a link
  * for the viewer to tap (a real tap on a download link works where scripted downloads are blocked).
@@ -56,15 +62,4 @@ export async function saveFile(data: Blob, filename: string): Promise<SaveOutcom
   a.remove();
   setTimeout(() => URL.revokeObjectURL(url), 60000);
   return { kind: 'saved' };
-}
-
-/** data: URL -> Blob without fetch (the viewer's content policy may block fetching data: URLs). */
-export function dataUrlToBlob(url: string): Blob {
-  const [head, body] = url.split(',', 2);
-  const type = head.match(/^data:([^;,]+)/)?.[1] ?? 'application/octet-stream';
-  if (!head.includes(';base64')) return new Blob([decodeURIComponent(body)], { type });
-  const bin = atob(body);
-  const bytes = new Uint8Array(bin.length);
-  for (let i = 0; i < bin.length; i++) bytes[i] = bin.charCodeAt(i);
-  return new Blob([bytes], { type });
 }

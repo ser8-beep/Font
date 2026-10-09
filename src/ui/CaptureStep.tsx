@@ -1,6 +1,5 @@
 import { useEffect, useRef, useState } from 'react';
-import demoUrl from '../assets/demo-lego.jpg';
-import { dataUrlToBlob, inClaudeViewer } from '../host';
+import { inClaudeViewer } from '../host';
 import { WORD, type Photo } from '../state';
 import { CATEGORY_IDS, CATEGORY_LABELS } from '../core/alphabet/category';
 import { letterColour } from './SplitStep';
@@ -143,22 +142,64 @@ export function CaptureStep({ photos, adding, busy, error, onPhoto, onTag }: Pro
       <button className="btn big yellow" onClick={() => choose(word)}>
         <PhotoIcon /> Choose a photo{label}
       </button>
-      {word === WORD && adding === null && (
-        <button
-          className="btn big"
-          onClick={async () => {
-            const blob = demoUrl.startsWith('data:') ? dataUrlToBlob(demoUrl) : await (await fetch(demoUrl)).blob();
-            send(blob, WORD);
-          }}
-        >
-          Try the Lego demo
-        </button>
-      )}
       <button className="dropzone" onClick={() => choose(word)}>
         <DropIcon />
         Or drag your photo here
       </button>
     </div>
+  );
+
+  const wordChips = (
+    <span className="word-chips" aria-label={WORD}>
+      {[...WORD].map((c) => (
+        <b key={c} style={{ background: letterColour(c) }}>{c}</b>
+      ))}
+    </span>
+  );
+
+  // Where the photo goes: the camera, the buttons for one photo, or a slot per letter.
+  const photoArea = camera ? (
+    <Camera
+      onShot={(b) => { const w = camera; setCamera(null); send(b, w); }}
+      onError={(msg) => { setCamera(null); setCamError(msg); }}
+    />
+  ) : adding !== null ? (
+    addLetter && photoButtons(addLetter, ` of ${addLetter}`)
+  ) : mode === 'word' ? (
+    photoButtons(WORD, '')
+  ) : (
+    <>
+      <div className="slots">
+        {[...WORD].map((c) => {
+          const p = photoOf(c);
+          return (
+            <div key={c} className="slot card">
+              <span className="slot-letter" style={{ background: letterColour(c) }}>{c}</span>
+              <div className="slot-pic">{p ? <img src={p.url} alt={`Your ${c}`} /> : <span>No photo yet</span>}</div>
+              <ThemePick
+                value={p ? (p.theme ?? null) : (slotTheme[c] ?? null)}
+                onChange={(t) => (p ? onTag(p.id, t) : setSlotTheme({ ...slotTheme, [c]: t }))}
+                label={`Theme for ${c}`}
+              />
+              <div className="slot-buttons">
+                {canUseCamera() && (
+                  <button className="btn small pink" aria-label={`Take a photo of ${c}`} onClick={() => setCamera(c)}>
+                    Take
+                  </button>
+                )}
+                <button className="btn small yellow" aria-label={`${p ? 'Change the' : 'Choose a'} photo of ${c}`} onClick={() => choose(c)}>
+                  {p ? 'Change' : 'Choose'}
+                </button>
+              </div>
+            </div>
+          );
+        })}
+      </div>
+      <p className="status-line">
+        <strong>{done} of {WORD.length}</strong> letters photographed.{' '}
+        {done < WORD.length ? "Skip any you didn't make: they come from the A–Z." : 'Press Next to see them.'}
+      </p>
+    </>
   );
 
   return (
@@ -169,113 +210,87 @@ export function CaptureStep({ photos, adding, busy, error, onPhoto, onTag }: Pro
 
       {adding === null ? (
         <>
-          <p className="lead">
-            Build{' '}
-            <span className="word-chips" aria-label={WORD}>
-              {[...WORD].map((c) => (
-                <b key={c} style={{ background: letterColour(c) }}>{c}</b>
-              ))}
-            </span>{' '}
-            out of things you find, then take a photo.
-          </p>
-          <p className="section-label" id="mode-title">How will you take it?</p>
-          <div className="mode-switch" role="group" aria-labelledby="mode-title">
-            <button className={mode === 'word' ? 'on' : ''} aria-pressed={mode === 'word'} onClick={() => setMode('word')}>
-              All four letters in one photo
-            </button>
-            <button className={mode === 'letters' ? 'on' : ''} aria-pressed={mode === 'letters'} onClick={() => setMode('letters')}>
-              One letter at a time
-            </button>
-          </div>
+          <p className="lead">Build {wordChips} out of things you find, take a photo, and get your own font.</p>
+          <ol className="how-strip" aria-label="How it works">
+            <li><span aria-hidden>🧱</span> Build PLAY</li>
+            <li><span aria-hidden>📸</span> Photograph it</li>
+            <li><span aria-hidden>🔤</span> Get a whole A–Z</li>
+            <li><span aria-hidden>🎉</span> Play and save</li>
+          </ol>
         </>
       ) : (
-        <>
-          <p className="lead">Which letter are you photographing?</p>
-          <div className="letter-choices">
-            {ALPHABET.map((c) => (
-              <button key={c} className={addLetter === c ? 'on' : ''} aria-pressed={addLetter === c} style={addLetter === c ? { background: letterColour(c) } : undefined} onClick={() => setAddLetter(c)}>
-                {c}
-              </button>
-            ))}
-          </div>
-          {addLetter && (
-            <div className="row" style={{ marginTop: 12 }}>
-              <span style={{ fontWeight: 800 }}>What is your {addLetter} made of?</span>
-              <ThemePick value={slotTheme[addLetter] ?? null} onChange={(t) => setSlotTheme({ ...slotTheme, [addLetter]: t })} label={`Theme for your ${addLetter}`} />
-            </div>
-          )}
-        </>
+        <p className="lead">Photograph one more letter for your font.</p>
       )}
 
-      {/* Tips are information, not buttons: a flat panel with no outline or shadow. */}
-      <section className="tips" aria-labelledby="tips-title">
-        <h2 id="tips-title">Tips for a good photo</h2>
-        <ul>
-          <Tip text="Plain table or paper behind">
-            <rect x="6" y="6" width="44" height="44" rx="8" fill="white" stroke="#1b1b3a" strokeWidth="4" />
-          </Tip>
-          <Tip text={mode === 'letters' || adding !== null ? 'Fill the photo with your letter' : 'Leave gaps between letters'}>
-            <>
-              <rect x="4" y="16" width="14" height="24" rx="3" fill="#ff5d8f" stroke="#1b1b3a" strokeWidth="3" />
-              <rect x="38" y="16" width="14" height="24" rx="3" fill="#3a86ff" stroke="#1b1b3a" strokeWidth="3" />
-              <path d="M22 28h12M22 28l4-4M22 28l4 4M34 28l-4-4M34 28l-4 4" stroke="#1b1b3a" strokeWidth="3" fill="none" />
-            </>
-          </Tip>
-          <Tip text="Hold the camera straight above">
-            <>
-              <rect x="14" y="4" width="28" height="18" rx="4" fill="#3a86ff" stroke="#1b1b3a" strokeWidth="3" />
-              <path d="M28 24v14M22 32l6 6 6-6" stroke="#1b1b3a" strokeWidth="4" fill="none" />
-              <rect x="6" y="42" width="44" height="10" rx="3" fill="#ffd23f" stroke="#1b1b3a" strokeWidth="3" />
-            </>
-          </Tip>
-        </ul>
-      </section>
-
-      {(hint || error) && <p className="card" style={{ background: 'var(--pink)' }}>{hint || error}</p>}
-
-      {camera ? (
-        <Camera
-          onShot={(b) => { const w = camera; setCamera(null); send(b, w); }}
-          onError={(msg) => { setCamera(null); setCamError(msg); }}
-        />
-      ) : adding !== null ? (
-        addLetter && photoButtons(addLetter, ` of ${addLetter}`)
-      ) : mode === 'word' ? (
-        photoButtons(WORD, '')
-      ) : (
-        <>
-          <div className="slots">
-            {[...WORD].map((c) => {
-              const p = photoOf(c);
-              return (
-                <div key={c} className="slot card">
-                  <span className="slot-letter" style={{ background: letterColour(c) }}>{c}</span>
-                  <div className="slot-pic">{p ? <img src={p.url} alt={`Your ${c}`} /> : <span>No photo yet</span>}</div>
-                  <ThemePick
-                    value={p ? (p.theme ?? null) : (slotTheme[c] ?? null)}
-                    onChange={(t) => (p ? onTag(p.id, t) : setSlotTheme({ ...slotTheme, [c]: t }))}
-                    label={`Theme for ${c}`}
-                  />
-                  <div className="slot-buttons">
-                    {canUseCamera() && (
-                      <button className="btn small pink" aria-label={`Take a photo of ${c}`} onClick={() => setCamera(c)}>
-                        Take
-                      </button>
-                    )}
-                    <button className="btn small yellow" aria-label={`${p ? 'Change the' : 'Choose a'} photo of ${c}`} onClick={() => choose(c)}>
-                      {p ? 'Change' : 'Choose'}
-                    </button>
-                  </div>
+      <div className="start-layout">
+        <div className="start-main">
+          {adding === null ? (
+            <section className="start-section" aria-labelledby="mode-title">
+              <h2 className="start-h" id="mode-title"><span className="num">1</span> How will you photograph it?</h2>
+              <div className="mode-switch" role="group" aria-labelledby="mode-title">
+                <button className={mode === 'word' ? 'on' : ''} aria-pressed={mode === 'word'} onClick={() => setMode('word')}>
+                  <strong>All four letters in one photo</strong>
+                  <small>Lay P, L, A and Y out together, with gaps between them.</small>
+                </button>
+                <button className={mode === 'letters' ? 'on' : ''} aria-pressed={mode === 'letters'} onClick={() => setMode('letters')}>
+                  <strong>One letter at a time</strong>
+                  <small>A photo for each letter. Say what each is made of.</small>
+                </button>
+              </div>
+            </section>
+          ) : (
+            <section className="start-section" aria-labelledby="which-title">
+              <h2 className="start-h" id="which-title"><span className="num">1</span> Which letter is it?</h2>
+              <div className="letter-choices">
+                {ALPHABET.map((c) => (
+                  <button key={c} className={addLetter === c ? 'on' : ''} aria-pressed={addLetter === c} style={addLetter === c ? { background: letterColour(c) } : undefined} onClick={() => setAddLetter(c)}>
+                    {c}
+                  </button>
+                ))}
+              </div>
+              {addLetter && (
+                <div className="row" style={{ marginTop: 12 }}>
+                  <span style={{ fontWeight: 800 }}>What is your {addLetter} made of?</span>
+                  <ThemePick value={slotTheme[addLetter] ?? null} onChange={(t) => setSlotTheme({ ...slotTheme, [addLetter]: t })} label={`Theme for your ${addLetter}`} />
                 </div>
-              );
-            })}
-          </div>
-          <p>
-            <strong>{done} of {WORD.length}</strong> letters photographed.{' '}
-            {done < WORD.length ? 'Skip any you didn\'t make: they come from the A–Z.' : 'Press Next to see them.'}
-          </p>
-        </>
-      )}
+              )}
+            </section>
+          )}
+
+          <section className="start-section" aria-labelledby="photo-title">
+            <h2 className="start-h" id="photo-title">
+              <span className="num">2</span> {adding !== null ? (addLetter ? `Add your photo of ${addLetter}` : 'Add your photo') : mode === 'word' ? 'Add your photo' : 'Add a photo of each letter'}
+            </h2>
+            {(hint || error) && <p className="card alert">{hint || error}</p>}
+            {adding !== null && !addLetter ? <p className="help">First tap the letter above.</p> : photoArea}
+          </section>
+        </div>
+
+        {/* Tips are information, not buttons: a flat panel with no outline or shadow. */}
+        <aside className="tips" aria-labelledby="tips-title">
+          <h2 id="tips-title">Tips for a good photo</h2>
+          <ul>
+            <Tip text="Plain table or paper behind">
+              <rect x="6" y="6" width="44" height="44" rx="8" fill="white" stroke="#1b1b3a" strokeWidth="4" />
+            </Tip>
+            <Tip text={mode === 'letters' || adding !== null ? 'Fill the photo with your letter' : 'Leave gaps between letters'}>
+              <>
+                <rect x="4" y="16" width="14" height="24" rx="3" fill="#ff5d8f" stroke="#1b1b3a" strokeWidth="3" />
+                <rect x="38" y="16" width="14" height="24" rx="3" fill="#3a86ff" stroke="#1b1b3a" strokeWidth="3" />
+                <path d="M22 28h12M22 28l4-4M22 28l4 4M34 28l-4-4M34 28l-4 4" stroke="#1b1b3a" strokeWidth="3" fill="none" />
+              </>
+            </Tip>
+            <Tip text="Hold the camera straight above">
+              <>
+                <rect x="14" y="4" width="28" height="18" rx="4" fill="#3a86ff" stroke="#1b1b3a" strokeWidth="3" />
+                <path d="M28 24v14M22 32l6 6 6-6" stroke="#1b1b3a" strokeWidth="4" fill="none" />
+                <rect x="6" y="42" width="44" height="10" rx="3" fill="#ffd23f" stroke="#1b1b3a" strokeWidth="3" />
+              </>
+            </Tip>
+          </ul>
+        </aside>
+      </div>
+
       {camError && <p>{camError}</p>}
       {/* No `capture` attribute: phones then offer both "take photo" and "pick from gallery". */}
       <input

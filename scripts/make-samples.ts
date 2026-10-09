@@ -405,7 +405,7 @@ for (const [name, m] of Object.entries(MATERIALS)) {
   m.fn(layout('PLAY', m.size, m.gap));
   finish({ angle: rr(0, Math.PI * 2), strength: rr(0.12, 0.22), vignette: rr(0.15, 0.3), tint: [1.0, rr(0.96, 1.0), rr(0.88, 0.97)], noise: 4 });
   save(join(ROOT, 'samples', `${name}.jpg`));
-  if (name === 'lego') save(join(ROOT, 'src', 'assets', 'demo-lego.jpg'), 960, 640);
+  if (name === 'lego') save(join(ROOT, 'samples', 'lego-demo.jpg'), 960, 640);
   n++;
 }
 
