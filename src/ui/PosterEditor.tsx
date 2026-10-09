@@ -1,9 +1,11 @@
 import { useEffect, useLayoutEffect, useRef, useState } from 'react';
 import { CATEGORY_LABELS } from '../core/alphabet/category';
+import { backgroundById, backgroundGroups, loadBackground, thumbUrl } from '../backgrounds';
 import {
-  drawPatternSample, FRAME_IDS, FRAMES, PALETTE, PATTERNS, renderDesign, STICKERS,
+  designReady, drawPatternSample, FRAME_IDS, FRAMES, frameOf, PALETTE, PATTERNS, renderDesign, STICKERS,
   type Box, type Design, type Fill, type Sticker, type StickerShape,
 } from '../design';
+import { BODY_FONT_IDS, BODY_FONTS, bodyFont, loadBodyFonts } from '../fonts';
 import type { LetterGlyph } from '../font';
 import { uid, type Size } from '../state';
 import { ColorPicker } from './ColorPicker';
@@ -37,10 +39,27 @@ function asHex(c: string): string {
 
 const Label = ({ children }: { children: React.ReactNode }) => <p className="section-label">{children}</p>;
 
-/** The playground's poster: a live preview to drag words and stickers on, and the design controls. */
+const themeLabel = (key: string) => (CATEGORY_LABELS[key] ? `${CATEGORY_LABELS[key].emoji} ${CATEGORY_LABELS[key].label}` : key);
+// Pantry Raid and Market Basket share their kitchen pictures.
+const groupLabel = (key: string) =>
+  key === 'party' ? '🎉 Party' : key === 'more' ? 'More pictures' : key === 'food' || key === 'produce' ? `${themeLabel('food')} · ${themeLabel('produce')}` : themeLabel(key);
+
+/** The playground's poster or birthday invitation: a live preview to drag words and stickers on, and the design controls. */
 export function PosterEditor(p: Props) {
   const d = p.design;
-  const f = FRAMES[d.frame];
+  const f = frameOf(d);
+  const invite = d.mode === 'invite';
+  const pic = d.fill.kind === 'picture' ? backgroundById(d.fill.id) : null;
+
+  // The picture and the details' fonts load in the background; draw again when they arrive.
+  const [ready, setReady] = useState(0);
+  useEffect(() => {
+    let live = true;
+    designReady(d).then(() => live && setReady((n) => n + 1));
+    return () => {
+      live = false;
+    };
+  }, [d.fill, d.mode]); // eslint-disable-line react-hooks/exhaustive-deps
   const short = Math.min(f.w, f.h);
   const swatches = [...PALETTE, asHex(p.table)];
 
@@ -76,7 +95,7 @@ export function PosterEditor(p: Props) {
     const ctx = c.getContext('2d')!;
     const r = renderDesign(ctx, d, { text: p.text, map: p.map, size: p.size, scale: c.width / f.w });
     setTextBox((b) => (b.x === r.text.x && b.y === r.text.y && b.w === r.text.w && b.h === r.text.h ? b : r.text));
-  }, [d, p.text, p.map, p.size, viewW, viewH, f.w]);
+  }, [d, p.text, p.map, p.size, viewW, viewH, f.w, ready]);
 
   // ---- stickers ----
   const [selected, setSelected] = useState<string | null>(null);
@@ -178,11 +197,23 @@ export function PosterEditor(p: Props) {
   };
 
   const fill = d.fill;
+  const colour = fill.kind === 'solid' ? fill.colour : fill.kind === 'gradient' ? fill.from : '#ffd23f';
+  const setMode = (mode: Design['mode']) => {
+    if (mode === d.mode) return;
+    // An invitation starts on a party card; both start with the words in the middle.
+    const card = mode === 'invite' && fill.kind !== 'picture' ? backgroundGroups(p.themes, true)[0]?.items[0] : null;
+    p.onDesign({ mode, textX: 0.5, textY: 0.5, ...(card ? { fill: { kind: 'picture', id: card.id } } : {}) });
+    if (mode === 'invite') loadBodyFonts();
+  };
+  const pickPicture = (id: string) => {
+    loadBackground(id).catch(() => undefined);
+    p.onDesign({ fill: { kind: 'picture', id }, ...(invite ? {} : { frame: 'picture' }) });
+  };
   // Every theme in the typeface brings its patterns; with none known yet, one of each.
   const known = p.themes.filter((t) => PATTERNS[t]);
   const patterns = known.length ? known.flatMap((t) => PATTERNS[t]) : Object.values(PATTERNS).map((l) => l[0]);
   const cat = known.length ? known.map((t) => `${CATEGORY_LABELS[t].emoji} ${CATEGORY_LABELS[t].label}`).join(' + ') : null;
-  const bg = fill.kind === 'solid' ? fill.colour : fill.from;
+  const bg = colour;
 
   return (
     <div className="poster-editor">
@@ -226,8 +257,58 @@ export function PosterEditor(p: Props) {
 
       <div className="design-panel">
         <section>
+          <Label>Make a…</Label>
+          <div className="seg" role="group" aria-label="What to make">
+            <button className={!invite ? 'on' : ''} aria-pressed={!invite} onClick={() => setMode('poster')}>
+              🖼️ Poster
+            </button>
+            <button className={invite ? 'on' : ''} aria-pressed={invite} onClick={() => setMode('invite')}>
+              🎉 Birthday invitation
+            </button>
+          </div>
+        </section>
+
+        {invite && (
+          <section className="invite-panel">
+            <Label>Party details</Label>
+            <p className="help">Your big words are your photo letters: type them in the box above, like <strong>MIA IS 7!</strong></p>
+            <textarea
+              className="details"
+              rows={5}
+              value={d.details}
+              onChange={(e) => p.onDesign({ details: e.target.value })}
+              placeholder={'When is it?\nWhere is it?\nWho to tell if you can come'}
+              aria-label="Party details: one line each"
+              style={{ fontFamily: `"${BODY_FONTS[d.bodyFont].family}", sans-serif`, fontWeight: BODY_FONTS[d.bodyFont].weight }}
+            />
+            <div className="seg" role="group" aria-label="Font for the details">
+              {BODY_FONT_IDS.map((id) => (
+                <button key={id} className={d.bodyFont === id ? 'on' : ''} aria-pressed={d.bodyFont === id} onClick={() => p.onDesign({ bodyFont: id })} style={{ font: bodyFont(id, 20) }}>
+                  {BODY_FONTS[id].label}
+                </button>
+              ))}
+            </div>
+            <div className="row tight">
+              <ColorPicker label="Details colour" value={d.bodyColour ?? pic?.ink ?? '#1b1b3a'} swatches={swatches} onChange={(c) => p.onDesign({ bodyColour: c })} />
+              {d.bodyColour && (
+                <button className="btn small" onClick={() => p.onDesign({ bodyColour: null })}>
+                  Best for this picture
+                </button>
+              )}
+            </div>
+          </section>
+        )}
+
+        {!invite && (
+        <section>
           <Label>Frame</Label>
           <div className="frame-chips" role="group" aria-label="Frame size">
+            {pic && (
+              <button className={d.frame === 'picture' ? 'on' : ''} aria-pressed={d.frame === 'picture'} onClick={() => p.onDesign({ frame: 'picture' })} title={`The picture's own shape (${pic.w} × ${pic.h})`}>
+                <span className="frame-icon" style={{ width: (26 * pic.w) / Math.max(pic.w, pic.h), height: (26 * pic.h) / Math.max(pic.w, pic.h) }} />
+                Picture
+              </button>
+            )}
             {FRAME_IDS.map((id) => {
               const fr = FRAMES[id];
               const s = 26 / Math.max(fr.w, fr.h);
@@ -240,18 +321,37 @@ export function PosterEditor(p: Props) {
             })}
           </div>
         </section>
+        )}
 
         <section>
           <Label>Background</Label>
           <div className="seg" role="group" aria-label="Background type">
-            <button className={fill.kind === 'solid' ? 'on' : ''} aria-pressed={fill.kind === 'solid'} onClick={() => fill.kind !== 'solid' && p.onDesign({ fill: { kind: 'solid', colour: fill.from } })}>
+            <button className={fill.kind === 'picture' ? 'on' : ''} aria-pressed={fill.kind === 'picture'} onClick={() => fill.kind !== 'picture' && pickPicture(backgroundGroups(p.themes, invite)[0].items[0].id)}>
+              Picture
+            </button>
+            <button className={fill.kind === 'solid' ? 'on' : ''} aria-pressed={fill.kind === 'solid'} onClick={() => fill.kind !== 'solid' && p.onDesign({ fill: { kind: 'solid', colour }, ...(d.frame === 'picture' ? { frame: 'phone' } : {}) })}>
               Colour
             </button>
-            <button className={fill.kind === 'gradient' ? 'on' : ''} aria-pressed={fill.kind === 'gradient'} onClick={() => fill.kind !== 'gradient' && p.onDesign({ fill: { kind: 'gradient', type: 'linear', from: fill.colour, to: '#ff5d8f', angle: 135 } })}>
+            <button className={fill.kind === 'gradient' ? 'on' : ''} aria-pressed={fill.kind === 'gradient'} onClick={() => fill.kind !== 'gradient' && p.onDesign({ fill: { kind: 'gradient', type: 'linear', from: colour, to: '#ff5d8f', angle: 135 }, ...(d.frame === 'picture' ? { frame: 'phone' } : {}) })}>
               Gradient
             </button>
           </div>
-          {fill.kind === 'solid' ? (
+          {fill.kind === 'picture' ? (
+            <div className="picture-groups">
+              {backgroundGroups(p.themes, invite).map((g) => (
+                <div key={g.key}>
+                  <p className="picture-group">{groupLabel(g.key)}</p>
+                  <div className="picture-tiles" role="group" aria-label={`${groupLabel(g.key)} pictures`}>
+                    {g.items.map((b) => (
+                      <button key={b.id} className={fill.id === b.id ? 'on' : ''} aria-pressed={fill.id === b.id} onClick={() => pickPicture(b.id)} title={b.label} aria-label={b.label}>
+                        <img src={thumbUrl(b.id)} alt="" loading="lazy" />
+                      </button>
+                    ))}
+                  </div>
+                </div>
+              ))}
+            </div>
+          ) : fill.kind === 'solid' ? (
             <ColorPicker label="Colour" value={fill.colour} swatches={swatches} onChange={(c) => p.onDesign({ fill: { kind: 'solid', colour: c } })} />
           ) : (
             <>
@@ -281,13 +381,16 @@ export function PosterEditor(p: Props) {
               </div>
             </>
           )}
-          <div className="grad-presets" role="group" aria-label="Ready-made gradients">
-            {GRADIENTS.map((g, i) => (
-              <button key={i} style={{ background: g.kind === 'gradient' ? (g.type === 'radial' ? `radial-gradient(circle, ${g.from}, ${g.to})` : `linear-gradient(${g.angle}deg, ${g.from}, ${g.to})`) : undefined }} onClick={() => p.onDesign({ fill: g })} aria-label={`Gradient ${i + 1}`} />
-            ))}
-          </div>
+          {fill.kind !== 'picture' && (
+            <div className="grad-presets" role="group" aria-label="Ready-made gradients">
+              {GRADIENTS.map((g, i) => (
+                <button key={i} style={{ background: g.kind === 'gradient' ? (g.type === 'radial' ? `radial-gradient(circle, ${g.from}, ${g.to})` : `linear-gradient(${g.angle}deg, ${g.from}, ${g.to})`) : undefined }} onClick={() => p.onDesign({ fill: g, ...(d.frame === 'picture' ? { frame: 'phone' } : {}) })} aria-label={`Gradient ${i + 1}`} />
+              ))}
+            </div>
+          )}
         </section>
 
+        {!invite && (
         <section>
           <Label>Pattern{cat ? ` · ${cat}` : ''}</Label>
           <div className="pattern-tiles" role="group" aria-label="Pattern">
@@ -312,6 +415,7 @@ export function PosterEditor(p: Props) {
             </div>
           )}
         </section>
+        )}
 
         <section>
           <Label>Stickers</Label>
@@ -322,7 +426,7 @@ export function PosterEditor(p: Props) {
               </button>
             ))}
           </div>
-          <p className="help">Drag a sticker onto your poster, or tap to add it.</p>
+          <p className="help">Drag a sticker onto your {invite ? 'invitation' : 'poster'}, or tap to add it.</p>
           {sel && (
             <div className="sticker-tools">
               <ColorPicker label="Sticker" value={sel.colour} swatches={swatches} onChange={(c) => setSticker(sel.id, { colour: c })} />
@@ -341,7 +445,7 @@ export function PosterEditor(p: Props) {
         </section>
 
         <section>
-          <Label>Letter size</Label>
+          <Label>{invite ? 'Big words size' : 'Letter size'}</Label>
           <div className="seg" role="group" aria-label="Letter size">
             {(['S', 'M', 'L'] as Size[]).map((s) => (
               <button key={s} className={p.size === s ? 'on' : ''} onClick={() => p.onSize(s)} aria-pressed={p.size === s}>

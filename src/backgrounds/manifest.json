@@ -1,0 +1,653 @@
+[
+ {
+  "id": "animal-party-arch",
+  "label": "Animal party arch",
+  "groups": [
+   "party"
+  ],
+  "w": 1472,
+  "h": 2616,
+  "safe": [
+   0.22,
+   0.2,
+   0.6,
+   0.62
+  ],
+  "ink": "#1b1b3a"
+ },
+ {
+  "id": "sunny-stripes-parade",
+  "label": "Sunny stripes parade",
+  "groups": [
+   "party",
+   "plants"
+  ],
+  "w": 1350,
+  "h": 2400,
+  "safe": [
+   0.2,
+   0.2,
+   0.6,
+   0.6
+  ],
+  "ink": "#1b1b3a"
+ },
+ {
+  "id": "balloon-bear",
+  "label": "Balloon bear",
+  "groups": [
+   "party"
+  ],
+  "w": 1472,
+  "h": 2616,
+  "safe": [
+   0.26,
+   0.15,
+   0.5,
+   0.47
+  ],
+  "ink": "#1b1b3a"
+ },
+ {
+  "id": "folk-flowers",
+  "label": "Folk flowers",
+  "groups": [
+   "party"
+  ],
+  "w": 1472,
+  "h": 1962,
+  "safe": [
+   0.2,
+   0.14,
+   0.6,
+   0.7
+  ],
+  "ink": "#1b1b3a"
+ },
+ {
+  "id": "rainbow-crown",
+  "label": "Rainbow crown",
+  "groups": [
+   "party"
+  ],
+  "w": 1472,
+  "h": 2208,
+  "safe": [
+   0.2,
+   0.22,
+   0.6,
+   0.56
+  ],
+  "ink": "#1b1b3a"
+ },
+ {
+  "id": "scallop-cake",
+  "label": "Scallop cake",
+  "groups": [
+   "party"
+  ],
+  "w": 1472,
+  "h": 2208,
+  "safe": [
+   0.27,
+   0.25,
+   0.46,
+   0.44
+  ],
+  "ink": "#1b1b3a"
+ },
+ {
+  "id": "lemon-bunting",
+  "label": "Lemon bunting",
+  "groups": [
+   "party"
+  ],
+  "w": 1472,
+  "h": 2616,
+  "safe": [
+   0.12,
+   0.31,
+   0.76,
+   0.5
+  ],
+  "ink": "#1b1b3a"
+ },
+ {
+  "id": "candy-stripe-bunting",
+  "label": "Candy-stripe bunting",
+  "groups": [
+   "party"
+  ],
+  "w": 1350,
+  "h": 2400,
+  "safe": [
+   0.18,
+   0.3,
+   0.64,
+   0.45
+  ],
+  "ink": "#1b1b3a"
+ },
+ {
+  "id": "ribbon-stripes",
+  "label": "Ribbon stripes",
+  "groups": [
+   "party"
+  ],
+  "w": 1350,
+  "h": 2400,
+  "safe": [
+   0.18,
+   0.23,
+   0.64,
+   0.55
+  ],
+  "ink": "#1b1b3a"
+ },
+ {
+  "id": "gingham-notebook",
+  "label": "Gingham notebook",
+  "groups": [
+   "stationery"
+  ],
+  "w": 1350,
+  "h": 2400,
+  "safe": [
+   0.2,
+   0.27,
+   0.6,
+   0.45
+  ],
+  "ink": "#1b1b3a"
+ },
+ {
+  "id": "clipboard-paper",
+  "label": "Clipboard paper",
+  "groups": [
+   "stationery"
+  ],
+  "w": 1350,
+  "h": 2400,
+  "safe": [
+   0.13,
+   0.25,
+   0.74,
+   0.5
+  ],
+  "ink": "#1b1b3a"
+ },
+ {
+  "id": "grid-and-tape",
+  "label": "Grid and tape",
+  "groups": [
+   "stationery"
+  ],
+  "w": 1472,
+  "h": 2616,
+  "safe": [
+   0.12,
+   0.2,
+   0.76,
+   0.58
+  ],
+  "ink": "#1b1b3a"
+ },
+ {
+  "id": "torn-tartan",
+  "label": "Torn tartan",
+  "groups": [
+   "stationery"
+  ],
+  "w": 1472,
+  "h": 2208,
+  "safe": [
+   0.12,
+   0.25,
+   0.76,
+   0.5
+  ],
+  "ink": "#1b1b3a"
+ },
+ {
+  "id": "fishy-lines",
+  "label": "Fishy lines",
+  "groups": [
+   "stationery",
+   "plants"
+  ],
+  "w": 1350,
+  "h": 2400,
+  "safe": [
+   0.18,
+   0.2,
+   0.64,
+   0.6
+  ],
+  "ink": "#1b1b3a"
+ },
+ {
+  "id": "button-grid",
+  "label": "Button grid",
+  "groups": [
+   "stationery"
+  ],
+  "w": 1350,
+  "h": 2400,
+  "safe": [
+   0.12,
+   0.2,
+   0.76,
+   0.42
+  ],
+  "ink": "#1b1b3a"
+ },
+ {
+  "id": "crayon-sky",
+  "label": "Crayon sky",
+  "groups": [
+   "stationery"
+  ],
+  "w": 1472,
+  "h": 2208,
+  "safe": [
+   0.18,
+   0.35,
+   0.64,
+   0.42
+  ],
+  "ink": "#1b1b3a"
+ },
+ {
+  "id": "kraft-note",
+  "label": "Kraft note",
+  "groups": [
+   "stationery"
+  ],
+  "w": 1350,
+  "h": 2400,
+  "safe": [
+   0.12,
+   0.24,
+   0.7,
+   0.54
+  ],
+  "ink": "#1b1b3a"
+ },
+ {
+  "id": "kids-drawing",
+  "label": "Kid's drawing",
+  "groups": [
+   "stationery"
+  ],
+  "w": 1470,
+  "h": 2080,
+  "safe": [
+   0.3,
+   0.2,
+   0.55,
+   0.55
+  ],
+  "ink": "#1b1b3a"
+ },
+ {
+  "id": "daisy-notepad",
+  "label": "Daisy notepad",
+  "groups": [
+   "stationery"
+  ],
+  "w": 1472,
+  "h": 2616,
+  "safe": [
+   0.1,
+   0.18,
+   0.8,
+   0.6
+  ],
+  "ink": "#1b1b3a"
+ },
+ {
+  "id": "rainbow-lined-paper",
+  "label": "Rainbow lined paper",
+  "groups": [
+   "stationery"
+  ],
+  "w": 1472,
+  "h": 2616,
+  "safe": [
+   0.18,
+   0.12,
+   0.66,
+   0.68
+  ],
+  "ink": "#1b1b3a"
+ },
+ {
+  "id": "doodle-grid",
+  "label": "Doodle grid",
+  "groups": [
+   "stationery"
+  ],
+  "w": 1472,
+  "h": 2082,
+  "safe": [
+   0.19,
+   0.16,
+   0.62,
+   0.7
+  ],
+  "ink": "#1b1b3a"
+ },
+ {
+  "id": "pressed-blossoms",
+  "label": "Pressed blossoms",
+  "groups": [
+   "plants"
+  ],
+  "w": 1350,
+  "h": 2400,
+  "safe": [
+   0.1,
+   0.3,
+   0.8,
+   0.36
+  ],
+  "ink": "#1b1b3a"
+ },
+ {
+  "id": "mint-gingham",
+  "label": "Mint gingham",
+  "groups": [
+   "plants"
+  ],
+  "w": 1472,
+  "h": 2210,
+  "safe": [
+   0.12,
+   0.12,
+   0.76,
+   0.76
+  ],
+  "ink": "#1b1b3a"
+ },
+ {
+  "id": "daisy-meadow",
+  "label": "Daisy meadow",
+  "groups": [
+   "plants"
+  ],
+  "w": 1472,
+  "h": 2616,
+  "safe": [
+   0.1,
+   0.2,
+   0.68,
+   0.42
+  ],
+  "ink": "#1b1b3a"
+ },
+ {
+  "id": "chalk-clouds",
+  "label": "Chalk clouds",
+  "groups": [
+   "plants"
+  ],
+  "w": 1472,
+  "h": 2616,
+  "safe": [
+   0.12,
+   0.2,
+   0.76,
+   0.6
+  ],
+  "ink": "#1b1b3a"
+ },
+ {
+  "id": "sky-and-hills",
+  "label": "Sky and hills",
+  "groups": [
+   "plants"
+  ],
+  "w": 1348,
+  "h": 2400,
+  "safe": [
+   0.12,
+   0.16,
+   0.76,
+   0.62
+  ],
+  "ink": "#1b1b3a"
+ },
+ {
+  "id": "button-border",
+  "label": "Button border",
+  "groups": [
+   "plants"
+  ],
+  "w": 1350,
+  "h": 2400,
+  "safe": [
+   0.15,
+   0.12,
+   0.7,
+   0.76
+  ],
+  "ink": "#1b1b3a"
+ },
+ {
+  "id": "picnic-frame",
+  "label": "Picnic frame",
+  "groups": [
+   "plants"
+  ],
+  "w": 1350,
+  "h": 2400,
+  "safe": [
+   0.2,
+   0.28,
+   0.56,
+   0.35
+  ],
+  "ink": "#1b1b3a"
+ },
+ {
+  "id": "garden-bunting",
+  "label": "Garden bunting",
+  "groups": [
+   "plants"
+  ],
+  "w": 1350,
+  "h": 2400,
+  "safe": [
+   0.12,
+   0.24,
+   0.76,
+   0.62
+  ],
+  "ink": "#1b1b3a"
+ },
+ {
+  "id": "pink-stripe-note",
+  "label": "Pink stripe note",
+  "groups": [
+   "plants"
+  ],
+  "w": 1350,
+  "h": 2400,
+  "safe": [
+   0.14,
+   0.24,
+   0.72,
+   0.54
+  ],
+  "ink": "#1b1b3a"
+ },
+ {
+  "id": "picnic-gingham-note",
+  "label": "Picnic gingham note",
+  "groups": [
+   "plants"
+  ],
+  "w": 1350,
+  "h": 2400,
+  "safe": [
+   0.12,
+   0.24,
+   0.72,
+   0.56
+  ],
+  "ink": "#1b1b3a"
+ },
+ {
+  "id": "market-veg",
+  "label": "Market veg",
+  "groups": [
+   "food",
+   "produce"
+  ],
+  "w": 1124,
+  "h": 2000,
+  "safe": [
+   0.1,
+   0.1,
+   0.8,
+   0.5
+  ],
+  "ink": "#1b1b3a"
+ },
+ {
+  "id": "recipe-grid",
+  "label": "Recipe grid",
+  "groups": [
+   "food",
+   "produce"
+  ],
+  "w": 1350,
+  "h": 2400,
+  "safe": [
+   0.1,
+   0.2,
+   0.8,
+   0.56
+  ],
+  "ink": "#1b1b3a"
+ },
+ {
+  "id": "recipe-card",
+  "label": "Recipe card",
+  "groups": [
+   "food",
+   "produce"
+  ],
+  "w": 1350,
+  "h": 2400,
+  "safe": [
+   0.18,
+   0.24,
+   0.72,
+   0.56
+  ],
+  "ink": "#1b1b3a"
+ },
+ {
+  "id": "trattoria-arch",
+  "label": "Trattoria arch",
+  "groups": [
+   "food",
+   "produce"
+  ],
+  "w": 1350,
+  "h": 2400,
+  "safe": [
+   0.24,
+   0.27,
+   0.56,
+   0.5
+  ],
+  "ink": "#1b1b3a"
+ },
+ {
+  "id": "sardines-and-tomatoes",
+  "label": "Sardines and tomatoes",
+  "groups": [
+   "food",
+   "produce"
+  ],
+  "w": 1350,
+  "h": 2400,
+  "safe": [
+   0.12,
+   0.22,
+   0.76,
+   0.46
+  ],
+  "ink": "#1b1b3a"
+ },
+ {
+  "id": "kitchen-rail",
+  "label": "Kitchen rail",
+  "groups": [
+   "food",
+   "produce"
+  ],
+  "w": 1472,
+  "h": 2604,
+  "safe": [
+   0.1,
+   0.46,
+   0.8,
+   0.46
+  ],
+  "ink": "#1b1b3a"
+ },
+ {
+  "id": "teatime",
+  "label": "Teatime",
+  "groups": [
+   "food",
+   "produce"
+  ],
+  "w": 1400,
+  "h": 1960,
+  "safe": [
+   0.18,
+   0.13,
+   0.64,
+   0.72
+  ],
+  "ink": "#1b1b3a"
+ },
+ {
+  "id": "mustard-menu",
+  "label": "Mustard menu",
+  "groups": [
+   "food",
+   "produce"
+  ],
+  "w": 1472,
+  "h": 2208,
+  "safe": [
+   0.18,
+   0.13,
+   0.66,
+   0.72
+  ],
+  "ink": "#1b1b3a"
+ },
+ {
+  "id": "breakfast-note",
+  "label": "Breakfast note",
+  "groups": [
+   "food",
+   "produce"
+  ],
+  "w": 1472,
+  "h": 2616,
+  "safe": [
+   0.1,
+   0.18,
+   0.7,
+   0.58
+  ],
+  "ink": "#1b1b3a"
+ }
+]

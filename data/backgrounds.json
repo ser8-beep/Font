@@ -1,0 +1,48 @@
+{
+ "_about": "Originals in data/backgrounds/<id>.jpg. Picture backgrounds for the playground (posters and birthday invitations). groups: 'party' (birthday invitations) and the theme ids whose playground offers the picture first. scripts/backgrounds.py turns these into src/backgrounds/. safe: where the words go, as shares of the picture [x, y, w, h] (the biggest calm area when left out).",
+ "pictures": [
+  { "id": "animal-party-arch", "src": "0717c02e", "label": "Animal party arch", "groups": ["party"], "safe": [0.22, 0.2, 0.6, 0.62] },
+  { "id": "sunny-stripes-parade", "src": "d85f8f4a", "label": "Sunny stripes parade", "groups": ["party", "plants"], "safe": [0.2, 0.2, 0.6, 0.6] },
+  { "id": "balloon-bear", "src": "a54f7c30", "label": "Balloon bear", "groups": ["party"], "safe": [0.26, 0.15, 0.5, 0.47] },
+  { "id": "folk-flowers", "src": "0a810812", "label": "Folk flowers", "groups": ["party"], "safe": [0.2, 0.14, 0.6, 0.7] },
+  { "id": "rainbow-crown", "src": "6ed8f6cf", "label": "Rainbow crown", "groups": ["party"], "safe": [0.2, 0.22, 0.6, 0.56] },
+  { "id": "scallop-cake", "src": "9ef928d8", "label": "Scallop cake", "groups": ["party"], "safe": [0.27, 0.25, 0.46, 0.44] },
+  { "id": "lemon-bunting", "src": "1c1f1fe9", "label": "Lemon bunting", "groups": ["party"], "safe": [0.12, 0.31, 0.76, 0.5] },
+  { "id": "candy-stripe-bunting", "src": "35503d49", "label": "Candy-stripe bunting", "groups": ["party"], "safe": [0.18, 0.3, 0.64, 0.45] },
+  { "id": "ribbon-stripes", "src": "50041705", "label": "Ribbon stripes", "groups": ["party"], "safe": [0.18, 0.23, 0.64, 0.55] },
+
+  { "id": "gingham-notebook", "src": "fe45e8d7", "label": "Gingham notebook", "groups": ["stationery"], "safe": [0.2, 0.27, 0.6, 0.45] },
+  { "id": "clipboard-paper", "src": "a0f8a928", "label": "Clipboard paper", "groups": ["stationery"], "safe": [0.13, 0.25, 0.74, 0.5] },
+  { "id": "grid-and-tape", "src": "2ff71723", "label": "Grid and tape", "groups": ["stationery"], "safe": [0.12, 0.2, 0.76, 0.58] },
+  { "id": "torn-tartan", "src": "d1098548", "label": "Torn tartan", "groups": ["stationery"], "safe": [0.12, 0.25, 0.76, 0.5] },
+  { "id": "fishy-lines", "src": "5b7967c3", "label": "Fishy lines", "groups": ["stationery", "plants"], "safe": [0.18, 0.2, 0.64, 0.6] },
+  { "id": "button-grid", "src": "cadce5b1", "label": "Button grid", "groups": ["stationery"], "safe": [0.12, 0.2, 0.76, 0.42] },
+  { "id": "crayon-sky", "src": "c27525d0", "label": "Crayon sky", "groups": ["stationery"], "safe": [0.18, 0.35, 0.64, 0.42] },
+  { "id": "kraft-note", "src": "9c6ab9b4", "label": "Kraft note", "groups": ["stationery"], "safe": [0.12, 0.24, 0.7, 0.54] },
+  { "id": "kids-drawing", "src": "035583de", "label": "Kid's drawing", "groups": ["stationery"], "safe": [0.3, 0.2, 0.55, 0.55] },
+  { "id": "daisy-notepad", "src": "c8940cce", "label": "Daisy notepad", "groups": ["stationery"], "safe": [0.1, 0.18, 0.8, 0.6] },
+  { "id": "rainbow-lined-paper", "src": "fcb2796f", "label": "Rainbow lined paper", "groups": ["stationery"], "safe": [0.18, 0.12, 0.66, 0.68] },
+  { "id": "doodle-grid", "src": "7facc5f8", "label": "Doodle grid", "groups": ["stationery"], "safe": [0.19, 0.16, 0.62, 0.7] },
+
+  { "id": "pressed-blossoms", "src": "ac914ffd", "label": "Pressed blossoms", "groups": ["plants"], "safe": [0.1, 0.3, 0.8, 0.36] },
+  { "id": "mint-gingham", "src": "e7d11eb9", "label": "Mint gingham", "groups": ["plants"], "safe": [0.12, 0.12, 0.76, 0.76] },
+  { "id": "daisy-meadow", "src": "13486282", "label": "Daisy meadow", "groups": ["plants"], "safe": [0.1, 0.2, 0.68, 0.42] },
+  { "id": "chalk-clouds", "src": "0fcade83", "label": "Chalk clouds", "groups": ["plants"], "safe": [0.12, 0.2, 0.76, 0.6] },
+  { "id": "sky-and-hills", "src": "921a55bf", "label": "Sky and hills", "groups": ["plants"], "safe": [0.12, 0.16, 0.76, 0.62] },
+  { "id": "button-border", "src": "e34a4bc6", "label": "Button border", "groups": ["plants"], "safe": [0.15, 0.12, 0.7, 0.76] },
+  { "id": "picnic-frame", "src": "9b922586", "label": "Picnic frame", "groups": ["plants"], "safe": [0.2, 0.28, 0.56, 0.35] },
+  { "id": "garden-bunting", "src": "7347dd61", "label": "Garden bunting", "groups": ["plants"], "safe": [0.12, 0.24, 0.76, 0.62] },
+  { "id": "pink-stripe-note", "src": "829e1114", "label": "Pink stripe note", "groups": ["plants"], "safe": [0.14, 0.24, 0.72, 0.54] },
+  { "id": "picnic-gingham-note", "src": "9c808f7a", "label": "Picnic gingham note", "groups": ["plants"], "safe": [0.12, 0.24, 0.72, 0.56] },
+
+  { "id": "market-veg", "src": "dd9dd7a3", "label": "Market veg", "groups": ["food", "produce"], "safe": [0.1, 0.1, 0.8, 0.5] },
+  { "id": "recipe-grid", "src": "f946b0a7", "label": "Recipe grid", "groups": ["food", "produce"], "safe": [0.1, 0.2, 0.8, 0.56] },
+  { "id": "recipe-card", "src": "e7137d23", "label": "Recipe card", "groups": ["food", "produce"], "safe": [0.18, 0.24, 0.72, 0.56] },
+  { "id": "trattoria-arch", "src": "aa7f00e5", "label": "Trattoria arch", "groups": ["food", "produce"], "safe": [0.24, 0.27, 0.56, 0.5] },
+  { "id": "sardines-and-tomatoes", "src": "0e8c3b7f", "label": "Sardines and tomatoes", "groups": ["food", "produce"], "safe": [0.12, 0.22, 0.76, 0.46] },
+  { "id": "kitchen-rail", "src": "218e59d6", "label": "Kitchen rail", "groups": ["food", "produce"], "safe": [0.1, 0.46, 0.8, 0.46] },
+  { "id": "teatime", "src": "3f88ad26", "label": "Teatime", "groups": ["food", "produce"], "safe": [0.18, 0.13, 0.64, 0.72] },
+  { "id": "mustard-menu", "src": "46b887f6", "label": "Mustard menu", "groups": ["food", "produce"], "safe": [0.18, 0.13, 0.66, 0.72] },
+  { "id": "breakfast-note", "src": "14df6f87", "label": "Breakfast note", "groups": ["food", "produce"], "safe": [0.1, 0.18, 0.7, 0.58] }
+ ]
+}

@@ -1,7 +1,8 @@
 // Turns dist-artifact/index.html into the body-only page the claude.ai Artifact tool publishes
 // (the tool adds its own doctype/head/body), from `vite build --mode artifact`, and copies the letter
-// pictures to dist-artifact/atlases/ to publish beside it (Artifact tool `files`).
-import { cpSync, readFileSync, rmSync, writeFileSync } from 'node:fs';
+// pictures to dist-artifact/atlases/ and the full-size background pictures to dist-artifact/backgrounds/,
+// to publish beside it (Artifact tool `files`).
+import { cpSync, mkdirSync, readdirSync, readFileSync, rmSync, writeFileSync } from 'node:fs';
 
 const html = readFileSync('dist-artifact/index.html', 'utf8');
 const title = html.match(/<title>[\s\S]*?<\/title>/)[0];
@@ -20,4 +21,7 @@ writeFileSync(
 );
 rmSync('dist-artifact/atlases', { recursive: true, force: true });
 cpSync('src/library/atlases', 'dist-artifact/atlases', { recursive: true });
-console.log('wrote dist-artifact/artifact.html and dist-artifact/atlases/');
+rmSync('dist-artifact/backgrounds', { recursive: true, force: true });
+mkdirSync('dist-artifact/backgrounds');
+for (const f of readdirSync('src/backgrounds')) if (f.endsWith('.webp')) cpSync(`src/backgrounds/${f}`, `dist-artifact/backgrounds/${f}`);
+console.log('wrote dist-artifact/artifact.html, dist-artifact/atlases/ and dist-artifact/backgrounds/');

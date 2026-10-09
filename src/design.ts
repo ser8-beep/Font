@@ -1,29 +1,36 @@
-// The poster a kid designs in the playground: a frame size, a background (colour or gradient), an
-// optional pattern from their category, stickers, and their words in their photo letters.
+// The poster or birthday invitation a kid designs in the playground: a frame size, a background
+// (colour, gradient or picture), an optional pattern from their category, stickers, and their words
+// in their photo letters; an invitation adds the party details in an easy or handwritten font.
 // renderDesign draws it onto a canvas at any scale, so the preview and the saved picture match.
-import { LINE, layoutText, materialCanvas, type LetterGlyph } from './font';
+import { backgroundById, backgroundImage, loadBackground } from './backgrounds';
+import { LINE, layoutText, materialCanvas, type Layout, type LetterGlyph } from './font';
+import { bodyFont, loadBodyFonts, type BodyFont } from './fonts';
+import { FRAMES, type FixedFrame, type Frame, type FrameId } from './frames';
 import type { Size } from './state';
 
 // ---------- frames ----------
 
-export type FrameId = 'phone' | 'ipad' | 'desktop' | 'a4' | 'a3';
+export { FRAME_IDS, FRAMES, type FixedFrame, type Frame, type FrameId } from './frames';
 
-export const FRAMES: Record<FrameId, { label: string; w: number; h: number; note: string }> = {
-  phone: { label: 'Phone wallpaper', w: 1170, h: 2532, note: '1170 × 2532' },
-  ipad: { label: 'iPad wallpaper', w: 2048, h: 2732, note: '2048 × 2732' },
-  desktop: { label: 'Desktop wallpaper', w: 2560, h: 1440, note: '2560 × 1440' },
-  a4: { label: 'A4 poster', w: 2480, h: 3508, note: 'prints at 300 dpi' },
-  // 250 dpi: at 300 dpi an A3 picture is too big for phones and tablets to make.
-  a3: { label: 'A3 poster', w: 2923, h: 4134, note: 'prints at 250 dpi' },
-};
-export const FRAME_IDS = Object.keys(FRAMES) as FrameId[];
+/** A birthday invitation on a colour or gradient: a 5 × 7 inch card. */
+const CARD: Frame = { label: 'Invitation', w: 1500, h: 2100, note: '5 × 7 in card at 300 dpi' };
+
+/** The design's size: an invitation or a 'picture' frame takes the picture's own shape. */
+export function frameOf(d: Design): Frame {
+  const pic = d.fill.kind === 'picture' ? backgroundById(d.fill.id) : null;
+  if (d.mode === 'invite') return pic ? { label: 'Invitation', w: pic.w, h: pic.h, note: pic.label } : CARD;
+  if (d.frame === 'picture' || !(d.frame in FRAMES)) return pic ? { label: 'Poster', w: pic.w, h: pic.h, note: pic.label } : FRAMES.phone;
+  return FRAMES[d.frame as FixedFrame];
+}
 
 // ---------- the design ----------
 
 export type Fill =
   | { kind: 'solid'; colour: string }
   /** angle: CSS-style degrees (0 = upwards, 90 = to the right); radial ignores it. */
-  | { kind: 'gradient'; type: 'linear' | 'radial'; from: string; to: string; angle: number };
+  | { kind: 'gradient'; type: 'linear' | 'radial'; from: string; to: string; angle: number }
+  /** A picture from src/backgrounds, covering the frame. */
+  | { kind: 'picture'; id: string };
 
 export interface Sticker {
   id: string;
@@ -39,6 +46,8 @@ export interface Sticker {
 }
 
 export interface Design {
+  /** A poster, or a birthday invitation (the words on top, the party details under them). */
+  mode: 'poster' | 'invite';
   frame: FrameId;
   fill: Fill;
   /** A pattern id from PATTERNS, or null. */
@@ -46,12 +55,20 @@ export interface Design {
   patternColour: string;
   patternOpacity: number;
   stickers: Sticker[];
-  /** Centre of the words, as shares of the frame. */
+  /** Centre of the words, as shares of the frame (an invitation: of the picture's calm middle). */
   textX: number;
   textY: number;
+  /** The invitation's details, a line each. */
+  details: string;
+  bodyFont: BodyFont;
+  /** The details' colour (null: what reads best on the background). */
+  bodyColour: string | null;
 }
 
+export const DEFAULT_DETAILS = "You're invited to my birthday party!\nSaturday 14 June, 2 to 5 pm\n12 Cherry Lane\nPlease tell us if you can come";
+
 export const DEFAULT_DESIGN: Design = {
+  mode: 'poster',
   frame: 'desktop',
   fill: { kind: 'solid', colour: '#ffd23f' },
   pattern: null,
@@ -60,6 +77,9 @@ export const DEFAULT_DESIGN: Design = {
   stickers: [],
   textX: 0.5,
   textY: 0.5,
+  details: DEFAULT_DETAILS,
+  bodyFont: 'easy',
+  bodyColour: null,
 };
 
 export const INK = '#1b1b3a';
@@ -409,14 +429,78 @@ function drawShadow(ctx: CanvasRenderingContext2D, draw: (c: CanvasRenderingCont
   ctx.restore();
 }
 
+/** Draws a picture to cover W × H (cropped evenly on the long side). */
+function cover(ctx: CanvasRenderingContext2D, img: CanvasImageSource & { width: number; height: number }, W: number, H: number) {
+  const k = Math.max(W / img.width, H / img.height);
+  const w = img.width * k, h = img.height * k;
+  ctx.imageSmoothingQuality = 'high';
+  ctx.drawImage(img, (W - w) / 2, (H - h) / 2, w, h);
+}
+
+/** Paper colour shown while a picture background loads. */
+const PAPER = '#f4efe6';
+
+/**
+ * Draws the words in photo letters with their soft shadow, `s` frame pixels per font unit, the
+ * first line's top-left at (ox, oy). Characters the font doesn't have: grey boxes, or in `fallback`
+ * (an invitation's "7" or "!", in the details' font and colour).
+ */
+function drawWords(ctx: CanvasRenderingContext2D, lay: Layout, ox: number, oy: number, s: number, tw: number, th: number, fallback?: { font: BodyFont; colour: string }) {
+  const letters = (c: CanvasRenderingContext2D, all: boolean) => {
+    for (const it of lay.items) {
+      if (it.ch === ' ') continue;
+      const x = ox + it.x * s;
+      const base = oy + (it.line * LINE + lay.top) * s;
+      if (!it.glyph) {
+        if (!all) continue;
+        if (fallback) {
+          c.font = bodyFont(fallback.font, 900 * s);
+          c.fillStyle = fallback.colour;
+          c.textAlign = 'center';
+          c.textBaseline = 'alphabetic';
+          c.fillText(it.ch, x + (it.advance * s) / 2, base);
+        } else {
+          c.fillStyle = '#d6d6e0';
+          c.fillRect(x + 40 * s, base - 700 * s, (it.advance - 80) * s, 700 * s);
+        }
+        continue;
+      }
+      const g = it.glyph.outline;
+      c.imageSmoothingQuality = 'high';
+      c.drawImage(glyphCanvas(it.glyph), x + g.lsb * s, base - g.top * s, g.inkWidth * s, (g.top - g.bottom) * s);
+    }
+  };
+  drawShadow(ctx, (c) => letters(c, false), { x: ox, y: oy, w: tw, h: th }, s);
+  letters(ctx, true);
+}
+
+/** Splits the details into lines that fit `width` in the current font. */
+function wrapLines(ctx: CanvasRenderingContext2D, text: string, width: number): string[] {
+  const out: string[] = [];
+  for (const para of text.split('\n')) {
+    let line = '';
+    for (const word of para.split(/\s+/).filter(Boolean)) {
+      const next = line ? `${line} ${word}` : word;
+      if (line && ctx.measureText(next).width > width) {
+        out.push(line);
+        line = word;
+      } else line = next;
+    }
+    out.push(line);
+  }
+  return out;
+}
+
 /** Draws the design. Returns where the words landed, in frame pixels. */
 export function renderDesign(ctx: CanvasRenderingContext2D, d: Design, o: RenderOptions): { text: Box } {
-  const { w: W, h: H } = FRAMES[d.frame];
+  const { w: W, h: H } = frameOf(d);
+  const pic = d.fill.kind === 'picture' ? backgroundById(d.fill.id) : null;
   ctx.save();
   ctx.scale(o.scale, o.scale);
 
   // Background.
-  if (d.fill.kind === 'solid') ctx.fillStyle = d.fill.colour;
+  if (d.fill.kind === 'picture') ctx.fillStyle = PAPER;
+  else if (d.fill.kind === 'solid') ctx.fillStyle = d.fill.colour;
   else if (d.fill.type === 'radial') {
     const g = ctx.createRadialGradient(W / 2, H / 2, 0, W / 2, H / 2, Math.hypot(W, H) / 2);
     g.addColorStop(0, d.fill.from);
@@ -432,9 +516,11 @@ export function renderDesign(ctx: CanvasRenderingContext2D, d: Design, o: Render
     ctx.fillStyle = g;
   }
   ctx.fillRect(0, 0, W, H);
+  const img = pic && backgroundImage(pic.id);
+  if (img) cover(ctx, img, W, H);
 
-  // Pattern, drawn at device resolution so it stays sharp.
-  const pat = patternById(d.pattern);
+  // Pattern (posters only), drawn at device resolution so it stays sharp.
+  const pat = d.mode === 'poster' ? patternById(d.pattern) : null;
   if (pat && d.patternOpacity > 0) {
     const u = (Math.min(W, H) / 32) * o.scale;
     const tile = patternTile(pat, u, d.patternColour);
@@ -446,35 +532,21 @@ export function renderDesign(ctx: CanvasRenderingContext2D, d: Design, o: Render
     ctx.restore();
   }
 
-  // The words: wrapped to suit the frame's shape, as big as the size setting allows.
   const content = o.text.trim() || 'PLAY';
-  const aspect = W / H;
-  const lay = layoutText(content, o.map, 6400 * Math.min(1.2, Math.max(0.42, aspect / 1.6)));
-  const textH = (lay.lines - 1) * LINE + lay.top - lay.bottom + 40;
-  const fit = Math.min((W * 0.86) / Math.max(lay.width, 1), (H * 0.7) / textH);
-  const s = fit * SIZE_SHARE[o.size];
-  const tw = lay.width * s, th = textH * s;
-  const ox = d.textX * W - tw / 2, oy = d.textY * H - th / 2;
-  /** Draws the letters on `c`; `boxes`: also the grey boxes for characters the font doesn't have. */
-  const letters = (c: CanvasRenderingContext2D, boxes: boolean) => {
-    for (const it of lay.items) {
-      if (it.ch === ' ') continue;
-      const x = ox + it.x * s;
-      const base = oy + (it.line * LINE + lay.top) * s;
-      if (!it.glyph) {
-        if (boxes) {
-          c.fillStyle = '#d6d6e0';
-          c.fillRect(x + 40 * s, base - 700 * s, (it.advance - 80) * s, 700 * s);
-        }
-        continue;
-      }
-      const g = it.glyph.outline;
-      c.imageSmoothingQuality = 'high';
-      c.drawImage(glyphCanvas(it.glyph), x + g.lsb * s, base - g.top * s, g.inkWidth * s, (g.top - g.bottom) * s);
-    }
-  };
-  drawShadow(ctx, (c) => letters(c, false), { x: ox, y: oy, w: tw, h: th }, s);
-  letters(ctx, true);
+  let text: Box;
+  if (d.mode === 'invite') text = drawInvite(ctx, d, o, content, W, H);
+  else {
+    // The words: wrapped to suit the frame's shape, as big as the size setting allows.
+    const aspect = W / H;
+    const lay = layoutText(content, o.map, 6400 * Math.min(1.2, Math.max(0.42, aspect / 1.6)));
+    const textH = (lay.lines - 1) * LINE + lay.top - lay.bottom + 40;
+    const fit = Math.min((W * 0.86) / Math.max(lay.width, 1), (H * 0.7) / textH);
+    const s = fit * SIZE_SHARE[o.size];
+    const tw = lay.width * s, th = textH * s;
+    const ox = d.textX * W - tw / 2, oy = d.textY * H - th / 2;
+    drawWords(ctx, lay, ox, oy, s, tw, th);
+    text = { x: ox, y: oy, w: tw, h: th };
+  }
 
   // Stickers, on top.
   const short = Math.min(W, H);
@@ -492,16 +564,74 @@ export function renderDesign(ctx: CanvasRenderingContext2D, d: Design, o: Render
     else ctx.rect(bx, by, tw2 + px * 2, fs + py * 2);
     ctx.fill();
     ctx.fillStyle = INK;
+    ctx.textAlign = 'left';
     ctx.textBaseline = 'middle';
     ctx.fillText(o.caption, bx + px, by + py + fs / 2);
   }
   ctx.restore();
-  return { text: { x: ox, y: oy, w: tw, h: th } };
+  return { text };
+}
+
+/** How much of the calm area the invitation's words may take, by the letter size setting. */
+const INVITE_SHARE: Record<Size, number> = { S: 0.7, M: 0.85, L: 1 };
+
+/**
+ * An invitation: the words in photo letters, then the details under them, together in the middle of
+ * the picture's calm area (moved by textX/textY). The details shrink until everything fits.
+ */
+function drawInvite(ctx: CanvasRenderingContext2D, d: Design, o: RenderOptions, content: string, W: number, H: number): Box {
+  const pic = d.fill.kind === 'picture' ? backgroundById(d.fill.id) : null;
+  const [sx, sy, sw, sh] = pic ? pic.safe : [0.1, 0.12, 0.8, 0.76];
+  const S = { x: sx * W, y: sy * H, w: sw * W, h: sh * H };
+  const colour = d.bodyColour ?? (pic ? pic.ink : INK);
+
+  // The words: up to 42% of the area's height, on as many lines as makes them biggest.
+  const fitted = [Infinity, 5200, 4000, 3000, 2200].map((wrap) => {
+    const lay = layoutText(content, o.map, wrap);
+    const textH = (lay.lines - 1) * LINE + lay.top - lay.bottom + 40;
+    return { lay, textH, fit: Math.min(S.w / Math.max(lay.width, 1), (S.h * 0.42) / textH) };
+  });
+  const { lay, textH, fit } = fitted.reduce((a, b) => (b.fit > a.fit * 1.05 ? b : a));
+  const s = fit * INVITE_SHARE[o.size];
+  const tw = lay.width * s, th = textH * s;
+
+  // The details: as big as fits under the words (and no bigger than a comfortable size).
+  const details = d.details.trim();
+  const room = S.h - th;
+  let fs = Math.min(S.h * 0.062, S.w * 0.085);
+  let lines: string[] = [];
+  const lineH = () => fs * 1.32;
+  for (; fs > S.h * 0.018; fs *= 0.94) {
+    ctx.font = bodyFont(d.bodyFont, fs);
+    lines = details ? wrapLines(ctx, details, S.w) : [];
+    if (fs * 0.9 + lines.length * lineH() <= room) break;
+  }
+  const gap = lines.length ? fs * 0.9 : 0;
+  const bh = lines.length * lineH();
+  const blockH = th + gap + bh;
+  const cx = S.x + S.w / 2 + (d.textX - 0.5) * W;
+  const top = S.y + (S.h - blockH) / 2 + (d.textY - 0.5) * H;
+
+  drawWords(ctx, lay, cx - tw / 2, top, s, tw, th, { font: d.bodyFont, colour });
+
+  ctx.font = bodyFont(d.bodyFont, fs);
+  ctx.fillStyle = colour;
+  ctx.textAlign = 'center';
+  ctx.textBaseline = 'alphabetic';
+  lines.forEach((line, i) => ctx.fillText(line, cx, top + th + gap + i * lineH() + fs * 0.98));
+
+  const bw = Math.max(tw, ...lines.map((l) => ctx.measureText(l).width));
+  return { x: cx - bw / 2, y: top, w: bw, h: blockH };
+}
+
+/** Loads what the design needs before it can be drawn in full (its picture, the details' fonts). */
+export async function designReady(d: Design): Promise<void> {
+  await Promise.all([d.fill.kind === 'picture' ? loadBackground(d.fill.id).catch(() => undefined) : undefined, d.mode === 'invite' ? loadBodyFonts() : undefined]);
 }
 
 /** The design as a full-size picture (or scaled to `width` pixels across). */
 export function designCanvas(d: Design, o: Omit<RenderOptions, 'scale'>, width?: number): HTMLCanvasElement {
-  const f = FRAMES[d.frame];
+  const f = frameOf(d);
   const scale = width ? width / f.w : 1;
   const c = document.createElement('canvas');
   c.width = Math.round(f.w * scale);
@@ -526,5 +656,6 @@ export function drawPatternSample(c: HTMLCanvasElement, id: string, colour: stri
 /** The fill as a CSS background, for buttons and samples. */
 export function fillCss(f: Fill): string {
   if (f.kind === 'solid') return f.colour;
+  if (f.kind === 'picture') return PAPER;
   return f.type === 'radial' ? `radial-gradient(circle, ${f.from}, ${f.to})` : `linear-gradient(${f.angle}deg, ${f.from}, ${f.to})`;
 }

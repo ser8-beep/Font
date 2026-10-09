@@ -117,7 +117,7 @@ export function TypeStep(p: Props) {
       {missing.length > 0 && (
         <div className="missing" style={{ marginTop: 16 }}>
           <span>
-            {p.growing ? 'Still coming: ' : 'Grey boxes are letters your font doesn’t have: '}
+            {p.growing ? 'Still coming: ' : p.design.mode === 'invite' ? 'Your font doesn’t have these, so they’re in the party details font: ' : 'Grey boxes are letters your font doesn’t have: '}
             <strong>{missing.join(' ')}</strong>
           </span>
           {!p.growing && (

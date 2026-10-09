@@ -18,7 +18,7 @@ import { fileURLToPath } from 'node:url';
 import jpeg from 'jpeg-js';
 import { chromium, devices, type BrowserContext, type Page } from 'playwright-core';
 import { analyse } from '../src/core/segment';
-import { FRAMES, type FrameId } from '../src/design';
+import { FRAMES, type FixedFrame } from '../src/frames';
 
 const ROOT = join(dirname(fileURLToPath(import.meta.url)), '..');
 const TMP = join(tmpdir(), `font-station-parallel-${process.pid}`);
@@ -61,7 +61,7 @@ interface Job {
   mode: 'word' | 'letters';
   small?: boolean;
   text: string;
-  frame: FrameId;
+  frame: FixedFrame;
   gradient?: boolean;
   pattern?: boolean;
   sticker?: string;
@@ -93,7 +93,7 @@ const watch = (page: Page, who: string) => {
 
 /** Width and height from a PNG's header. */
 const pngSize = (b: Buffer) => [b.readUInt32BE(16), b.readUInt32BE(20)];
-const shortName = (f: FrameId) => FRAMES[f].label.replace(' wallpaper', '').replace(' poster', '');
+const shortName = (f: FixedFrame) => FRAMES[f].label.replace(' wallpaper', '').replace(' poster', '');
 
 // The projector, watching the wall the whole time.
 const wallCtx = await browser.newContext({ viewport: { width: 1600, height: 900 } });

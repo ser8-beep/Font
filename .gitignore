@@ -11,3 +11,4 @@ scripts/tmp/
 alphabet-repository/_upscaled/**/*.tmp
 dist-artifact
 *.tsbuildinfo
+__pycache__/
