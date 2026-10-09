@@ -1,6 +1,7 @@
 // The poster or birthday invitation a kid designs in the playground: a frame size, a background
-// (colour, gradient or picture), an optional pattern from their category, stickers, and their words
-// in their photo letters; an invitation adds the party details in an easy or handwritten font.
+// (colour, gradient or picture), an optional pattern from their category, and their words
+// in their photo letters, with optional body text (an invitation's party details) in a handwritten or
+// easy-to-read font.
 // renderDesign draws it onto a canvas at any scale, so the preview and the saved picture match.
 import { backgroundById, backgroundImage, loadBackground } from './backgrounds';
 import { LINE, layoutText, materialCanvas, type Layout, type LetterGlyph } from './font';
@@ -32,19 +33,6 @@ export type Fill =
   /** A picture from src/backgrounds, covering the frame. */
   | { kind: 'picture'; id: string };
 
-export interface Sticker {
-  id: string;
-  shape: StickerShape;
-  /** Centre, as a share of the frame's width and height. */
-  x: number;
-  y: number;
-  /** Size, as a share of the frame's shorter side. */
-  size: number;
-  /** Degrees, clockwise. */
-  rot: number;
-  colour: string;
-}
-
 export interface Design {
   /** A poster, or a birthday invitation (the words on top, the party details under them). */
   mode: 'poster' | 'invite';
@@ -54,14 +42,13 @@ export interface Design {
   pattern: string | null;
   patternColour: string;
   patternOpacity: number;
-  stickers: Sticker[];
   /** Centre of the words, as shares of the frame (an invitation: of the picture's calm middle). */
   textX: number;
   textY: number;
-  /** The invitation's details, a line each. */
+  /** Body text under the words, a line each: an invitation's party details, or a poster's own lines (may be empty). */
   details: string;
   bodyFont: BodyFont;
-  /** The details' colour (null: what reads best on the background). */
+  /** The body text's colour (null: what reads best on the background). */
   bodyColour: string | null;
 }
 
@@ -74,11 +61,10 @@ export const DEFAULT_DESIGN: Design = {
   pattern: null,
   patternColour: '#1b1b3a',
   patternOpacity: 0.16,
-  stickers: [],
   textX: 0.5,
   textY: 0.5,
-  details: DEFAULT_DETAILS,
-  bodyFont: 'easy',
+  details: '',
+  bodyFont: 'hand',
   bodyColour: null,
 };
 
@@ -276,79 +262,6 @@ function patternTile(p: PatternDef, u: number, colour: string): HTMLCanvasElemen
   return c;
 }
 
-// ---------- stickers ----------
-
-export type StickerShape = 'star' | 'heart' | 'sparkle' | 'burst' | 'bubble' | 'arrow' | 'crown' | 'bolt' | 'smiley' | 'cloud' | 'flower' | 'sun';
-
-function starPath(points: number, inner: number): string {
-  let d = '';
-  for (let i = 0; i < points * 2; i++) {
-    const r = i % 2 ? 46 * inner : 46;
-    const a = rad((180 / points) * i - 90);
-    d += `${i ? 'L' : 'M'}${(50 + Math.cos(a) * r).toFixed(1)} ${(52 + Math.sin(a) * r).toFixed(1)} `;
-  }
-  return d + 'Z';
-}
-
-/** An exact circle (or ellipse) as SVG path data: two half arcs. */
-const ring = (cx: number, cy: number, rx: number, ry = rx) => `M${cx + rx} ${cy} A${rx} ${ry} 0 1 0 ${cx - rx} ${cy} A${rx} ${ry} 0 1 0 ${cx + rx} ${cy} Z`;
-
-/** Each sticker: SVG paths in a 100 x 100 box, filled with the sticker's colour (or a fixed one). */
-export const STICKERS: { shape: StickerShape; label: string; colour: string; parts: { d: string; fill?: string; stroke?: boolean }[] }[] = [
-  { shape: 'star', label: 'Star', colour: '#ffd23f', parts: [{ d: starPath(5, 0.45) }] },
-  { shape: 'heart', label: 'Heart', colour: '#ff5d8f', parts: [{ d: 'M50 90 C20 68 4 50 4 31 C4 16 15 6 28 6 C38 6 46 12 50 21 C54 12 62 6 72 6 C85 6 96 16 96 31 C96 50 80 68 50 90 Z' }] },
-  { shape: 'sparkle', label: 'Sparkle', colour: '#4cc9f0', parts: [{ d: 'M50 2 C54 34 66 46 98 50 C66 54 54 66 50 98 C46 66 34 54 2 50 C34 46 46 34 50 2 Z' }] },
-  { shape: 'burst', label: 'Burst', colour: '#ff8c42', parts: [{ d: starPath(12, 0.72) }] },
-  { shape: 'bubble', label: 'Speech bubble', colour: '#ffffff', parts: [{ d: 'M14 8 H86 Q96 8 96 18 V60 Q96 70 86 70 H46 L24 92 L28 70 H14 Q4 70 4 60 V18 Q4 8 14 8 Z' }] },
-  { shape: 'arrow', label: 'Arrow', colour: '#06d6a0', parts: [{ d: 'M4 38 H56 V16 L96 50 L56 84 V62 H4 Z' }] },
-  { shape: 'crown', label: 'Crown', colour: '#ffd23f', parts: [{ d: 'M10 82 L4 24 L30 48 L50 12 L70 48 L96 24 L90 82 Z' }] },
-  { shape: 'bolt', label: 'Lightning', colour: '#ffd23f', parts: [{ d: 'M60 2 L14 58 H44 L34 98 L86 38 H54 L68 2 Z' }] },
-  {
-    shape: 'smiley', label: 'Smiley', colour: '#ffd23f', parts: [
-      { d: ring(50, 50, 46) },
-      { d: ring(35, 38, 6, 8) + ring(65, 38, 6, 8), fill: INK, stroke: false },
-      { d: 'M28 58 Q50 82 72 58 Q50 72 28 58 Z', fill: INK },
-    ],
-  },
-  { shape: 'cloud', label: 'Cloud', colour: '#ffffff', parts: [{ d: 'M26 80 Q4 80 4 62 Q4 44 22 42 Q24 20 46 20 Q62 20 70 34 Q96 30 96 56 Q96 80 72 80 Z' }] },
-  {
-    shape: 'flower', label: 'Flower', colour: '#ff5d8f', parts: [
-      { d: [0, 72, 144, 216, 288].map((a) => ring(+(50 + Math.cos(rad(a - 90)) * 27).toFixed(1), +(50 + Math.sin(rad(a - 90)) * 27).toFixed(1), 20)).join(' ') },
-      { d: ring(50, 50, 15), fill: '#ffd23f' },
-    ],
-  },
-  {
-    shape: 'sun', label: 'Sun', colour: '#ff8c42', parts: [
-      { d: Array.from({ length: 12 }, (_, i) => { const a = rad(i * 30); const p = (r: number, da: number) => `${(50 + Math.cos(a + da) * r).toFixed(1)} ${(50 + Math.sin(a + da) * r).toFixed(1)}`; return `M${p(30, -0.2)} L${p(48, 0)} L${p(30, 0.2)} Z`; }).join(' ') },
-      { d: ring(50, 50, 28), fill: '#ffd23f' },
-    ],
-  },
-];
-
-const pathCache = new Map<string, Path2D>();
-const path = (d: string) => pathCache.get(d) ?? (pathCache.set(d, new Path2D(d)), pathCache.get(d)!);
-
-/** Draws a sticker centred at (x, y), `size` pixels across. */
-export function drawSticker(ctx: CanvasRenderingContext2D, s: Pick<Sticker, 'shape' | 'colour' | 'rot'>, x: number, y: number, size: number) {
-  const def = STICKERS.find((d) => d.shape === s.shape);
-  if (!def) return;
-  ctx.save();
-  ctx.translate(x, y);
-  ctx.rotate(rad(s.rot));
-  ctx.scale(size / 100, size / 100);
-  ctx.translate(-50, -50);
-  ctx.lineJoin = 'round';
-  ctx.lineWidth = 5;
-  ctx.strokeStyle = INK;
-  for (const part of def.parts) {
-    const p = path(part.d);
-    ctx.fillStyle = part.fill ?? s.colour;
-    ctx.fill(p);
-    if (part.stroke !== false) ctx.stroke(p);
-  }
-  ctx.restore();
-}
-
 // ---------- the words ----------
 
 /** How big the words are drawn, as a share of the biggest that fits. */
@@ -534,7 +447,7 @@ export function renderDesign(ctx: CanvasRenderingContext2D, d: Design, o: Render
 
   const content = o.text.trim() || 'PLAY';
   let text: Box;
-  if (d.mode === 'invite') text = drawInvite(ctx, d, o, content, W, H);
+  if (d.mode === 'invite' || d.details.trim()) text = drawWithBody(ctx, d, o, content, W, H);
   else {
     // The words: wrapped to suit the frame's shape, as big as the size setting allows.
     const aspect = W / H;
@@ -548,9 +461,7 @@ export function renderDesign(ctx: CanvasRenderingContext2D, d: Design, o: Render
     text = { x: ox, y: oy, w: tw, h: th };
   }
 
-  // Stickers, on top.
   const short = Math.min(W, H);
-  for (const st of d.stickers) drawSticker(ctx, st, st.x * W, st.y * H, st.size * short);
 
   if (o.caption) {
     const fs = short * 0.028;
@@ -572,18 +483,44 @@ export function renderDesign(ctx: CanvasRenderingContext2D, d: Design, o: Render
   return { text };
 }
 
-/** How much of the calm area the invitation's words may take, by the letter size setting. */
-const INVITE_SHARE: Record<Size, number> = { S: 0.7, M: 0.85, L: 1 };
+/** How much of the text area the words may take, by the letter size setting. */
+const BLOCK_SHARE: Record<Size, number> = { S: 0.7, M: 0.85, L: 1 };
+
+/** Where words and body text go, in frame pixels: a picture's calm middle (where the frame crops it), else inside the margins. */
+function textArea(d: Design, W: number, H: number): Box {
+  const pic = d.fill.kind === 'picture' ? backgroundById(d.fill.id) : null;
+  if (!pic) return { x: W * 0.08, y: H * 0.1, w: W * 0.84, h: H * 0.8 };
+  const k = Math.max(W / pic.w, H / pic.h);
+  const ox = (W - pic.w * k) / 2, oy = (H - pic.h * k) / 2;
+  const [sx, sy, sw, sh] = pic.safe;
+  const x0 = Math.max(W * 0.04, ox + sx * pic.w * k), y0 = Math.max(H * 0.04, oy + sy * pic.h * k);
+  const x1 = Math.min(W * 0.96, ox + (sx + sw) * pic.w * k), y1 = Math.min(H * 0.96, oy + (sy + sh) * pic.h * k);
+  return { x: x0, y: y0, w: Math.max(W * 0.3, x1 - x0), h: Math.max(H * 0.3, y1 - y0) };
+}
+
+/** Ink on light colours, white on dark ones. */
+function inkOn(hex: string): string {
+  const m = hex.match(/^#?([0-9a-f]{2})([0-9a-f]{2})([0-9a-f]{2})/i);
+  if (!m) return INK;
+  const [r, g, b] = m.slice(1).map((v) => parseInt(v, 16));
+  return 0.299 * r + 0.587 * g + 0.114 * b < 120 ? '#ffffff' : INK;
+}
+
+/** The body text's colour: the kid's pick, else what reads best on the background. */
+export function bodyColourOf(d: Design): string {
+  if (d.bodyColour) return d.bodyColour;
+  if (d.fill.kind === 'picture') return backgroundById(d.fill.id)?.ink ?? INK;
+  return inkOn(d.fill.kind === 'solid' ? d.fill.colour : d.fill.from);
+}
 
 /**
- * An invitation: the words in photo letters, then the details under them, together in the middle of
- * the picture's calm area (moved by textX/textY). The details shrink until everything fits.
+ * The words in photo letters with body text (an invitation's party details, or a poster's own lines)
+ * under them, together in the middle of the text area (moved by textX/textY). The body text shrinks
+ * until everything fits.
  */
-function drawInvite(ctx: CanvasRenderingContext2D, d: Design, o: RenderOptions, content: string, W: number, H: number): Box {
-  const pic = d.fill.kind === 'picture' ? backgroundById(d.fill.id) : null;
-  const [sx, sy, sw, sh] = pic ? pic.safe : [0.1, 0.12, 0.8, 0.76];
-  const S = { x: sx * W, y: sy * H, w: sw * W, h: sh * H };
-  const colour = d.bodyColour ?? (pic ? pic.ink : INK);
+function drawWithBody(ctx: CanvasRenderingContext2D, d: Design, o: RenderOptions, content: string, W: number, H: number): Box {
+  const S = textArea(d, W, H);
+  const colour = bodyColourOf(d);
 
   // The words: up to 42% of the area's height, on as many lines as makes them biggest.
   const fitted = [Infinity, 5200, 4000, 3000, 2200].map((wrap) => {
@@ -592,10 +529,10 @@ function drawInvite(ctx: CanvasRenderingContext2D, d: Design, o: RenderOptions, 
     return { lay, textH, fit: Math.min(S.w / Math.max(lay.width, 1), (S.h * 0.42) / textH) };
   });
   const { lay, textH, fit } = fitted.reduce((a, b) => (b.fit > a.fit * 1.05 ? b : a));
-  const s = fit * INVITE_SHARE[o.size];
+  const s = fit * BLOCK_SHARE[o.size];
   const tw = lay.width * s, th = textH * s;
 
-  // The details: as big as fits under the words (and no bigger than a comfortable size).
+  // The body text: as big as fits under the words (and no bigger than a comfortable size).
   const details = d.details.trim();
   const room = S.h - th;
   let fs = Math.min(S.h * 0.062, S.w * 0.085);
@@ -624,9 +561,9 @@ function drawInvite(ctx: CanvasRenderingContext2D, d: Design, o: RenderOptions, 
   return { x: cx - bw / 2, y: top, w: bw, h: blockH };
 }
 
-/** Loads what the design needs before it can be drawn in full (its picture, the details' fonts). */
+/** Loads what the design needs before it can be drawn in full (its picture, the body text's fonts). */
 export async function designReady(d: Design): Promise<void> {
-  await Promise.all([d.fill.kind === 'picture' ? loadBackground(d.fill.id).catch(() => undefined) : undefined, d.mode === 'invite' ? loadBodyFonts() : undefined]);
+  await Promise.all([d.fill.kind === 'picture' ? loadBackground(d.fill.id).catch(() => undefined) : undefined, loadBodyFonts()]);
 }
 
 /** The design as a full-size picture (or scaled to `width` pixels across). */

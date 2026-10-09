@@ -2,12 +2,12 @@ import { useEffect, useLayoutEffect, useRef, useState } from 'react';
 import { CATEGORY_LABELS } from '../core/alphabet/category';
 import { backgroundById, backgroundGroups, loadBackground, thumbUrl } from '../backgrounds';
 import {
-  designReady, drawPatternSample, FRAME_IDS, FRAMES, frameOf, PALETTE, PATTERNS, renderDesign, STICKERS,
-  type Box, type Design, type Fill, type Sticker, type StickerShape,
+  bodyColourOf, DEFAULT_DETAILS, designReady, drawPatternSample, FRAME_IDS, FRAMES, frameOf, PALETTE, PATTERNS, renderDesign,
+  type Box, type Design, type Fill,
 } from '../design';
-import { BODY_FONT_IDS, BODY_FONTS, bodyFont, loadBodyFonts } from '../fonts';
+import { BODY_FONT_IDS, BODY_FONTS, bodyFont } from '../fonts';
 import type { LetterGlyph } from '../font';
-import { uid, type Size } from '../state';
+import type { Size } from '../state';
 import { ColorPicker } from './ColorPicker';
 
 interface Props {
@@ -44,7 +44,7 @@ const themeLabel = (key: string) => (CATEGORY_LABELS[key] ? `${CATEGORY_LABELS[k
 const groupLabel = (key: string) =>
   key === 'party' ? '🎉 Party' : key === 'more' ? 'More pictures' : key === 'food' || key === 'produce' ? `${themeLabel('food')} · ${themeLabel('produce')}` : themeLabel(key);
 
-/** The playground's poster or birthday invitation: a live preview to drag words and stickers on, and the design controls. */
+/** The playground's poster or birthday invitation: a live preview to drag the words on, and the design controls. */
 export function PosterEditor(p: Props) {
   const d = p.design;
   const f = frameOf(d);
@@ -60,7 +60,6 @@ export function PosterEditor(p: Props) {
       live = false;
     };
   }, [d.fill, d.mode]); // eslint-disable-line react-hooks/exhaustive-deps
-  const short = Math.min(f.w, f.h);
   const swatches = [...PALETTE, asHex(p.table)];
 
   // ---- preview size ----
@@ -97,32 +96,6 @@ export function PosterEditor(p: Props) {
     setTextBox((b) => (b.x === r.text.x && b.y === r.text.y && b.w === r.text.w && b.h === r.text.h ? b : r.text));
   }, [d, p.text, p.map, p.size, viewW, viewH, f.w, ready]);
 
-  // ---- stickers ----
-  const [selected, setSelected] = useState<string | null>(null);
-  const sel = d.stickers.find((s) => s.id === selected) ?? null;
-  const setSticker = (id: string, patch: Partial<Sticker>) => p.onDesign({ stickers: d.stickers.map((s) => (s.id === id ? { ...s, ...patch } : s)) });
-  const removeSticker = (id: string) => {
-    p.onDesign({ stickers: d.stickers.filter((s) => s.id !== id) });
-    setSelected(null);
-  };
-  const addSticker = (shape: StickerShape, x: number, y: number) => {
-    const def = STICKERS.find((s) => s.shape === shape)!;
-    const st: Sticker = { id: uid(), shape, x, y, size: 0.16, rot: 0, colour: def.colour };
-    p.onDesign({ stickers: [...d.stickers, st] });
-    setSelected(st.id);
-  };
-  useEffect(() => {
-    const k = (e: KeyboardEvent) => {
-      if (!selected || (e.target as HTMLElement).closest('input, textarea')) return;
-      if (e.key === 'Delete' || e.key === 'Backspace') {
-        e.preventDefault();
-        removeSticker(selected);
-      }
-    };
-    window.addEventListener('keydown', k);
-    return () => window.removeEventListener('keydown', k);
-  });
-
   /** Follows one pointer until it lets go. */
   const follow = (e: React.PointerEvent, move: (ev: PointerEvent) => void, up?: (ev: PointerEvent) => void) => {
     e.preventDefault();
@@ -145,29 +118,7 @@ export function PosterEditor(p: Props) {
     return { x: (ev.clientX - r.left) / r.width, y: (ev.clientY - r.top) / r.height, inside: ev.clientX >= r.left && ev.clientX <= r.right && ev.clientY >= r.top && ev.clientY <= r.bottom };
   };
 
-  const moveSticker = (e: React.PointerEvent, s: Sticker) => {
-    setSelected(s.id);
-    const start = inFrame(e);
-    follow(e, (ev) => {
-      const at = inFrame(ev);
-      setSticker(s.id, { x: clamp(s.x + at.x - start.x), y: clamp(s.y + at.y - start.y) });
-    });
-  };
-  const resizeSticker = (e: React.PointerEvent, s: Sticker) =>
-    follow(e, (ev) => {
-      const at = inFrame(ev);
-      // Distance from the centre to the pointer, in frame pixels, is half the diagonal.
-      const dist = Math.hypot((at.x - s.x) * f.w, (at.y - s.y) * f.h);
-      setSticker(s.id, { size: clamp((dist * Math.SQRT2) / short, 0.04, 0.9) });
-    });
-  const rotateSticker = (e: React.PointerEvent, s: Sticker) =>
-    follow(e, (ev) => {
-      const at = inFrame(ev);
-      const a = (Math.atan2((at.y - s.y) * f.h, (at.x - s.x) * f.w) * 180) / Math.PI + 90;
-      setSticker(s.id, { rot: Math.round(((a + 360) % 360) / 5) * 5 });
-    });
   const moveText = (e: React.PointerEvent) => {
-    setSelected(null);
     const start = inFrame(e);
     const { textX, textY } = d;
     follow(e, (ev) => {
@@ -176,34 +127,15 @@ export function PosterEditor(p: Props) {
     });
   };
 
-  // Dragging a sticker in from the tray (a tap adds it in the middle).
-  const [ghost, setGhost] = useState<{ shape: StickerShape; x: number; y: number } | null>(null);
-  const dragIn = (e: React.PointerEvent, shape: StickerShape) => {
-    const sx = e.clientX, sy = e.clientY;
-    let moved = false;
-    follow(
-      e,
-      (ev) => {
-        moved ||= Math.hypot(ev.clientX - sx, ev.clientY - sy) > 6;
-        if (moved) setGhost({ shape, x: ev.clientX, y: ev.clientY });
-      },
-      (ev) => {
-        setGhost(null);
-        const at = inFrame(ev);
-        if (!moved) addSticker(shape, 0.5 + ((d.stickers.length * 0.07) % 0.3) - 0.15, 0.28 + ((d.stickers.length * 0.11) % 0.4));
-        else if (at.inside) addSticker(shape, clamp(at.x), clamp(at.y));
-      },
-    );
-  };
-
   const fill = d.fill;
   const colour = fill.kind === 'solid' ? fill.colour : fill.kind === 'gradient' ? fill.from : '#ffd23f';
   const setMode = (mode: Design['mode']) => {
     if (mode === d.mode) return;
     // An invitation starts on a party card; both start with the words in the middle.
     const card = mode === 'invite' && fill.kind !== 'picture' ? backgroundGroups(p.themes, true)[0]?.items[0] : null;
-    p.onDesign({ mode, textX: 0.5, textY: 0.5, ...(card ? { fill: { kind: 'picture', id: card.id } } : {}) });
-    if (mode === 'invite') loadBodyFonts();
+    // An invitation with no details yet gets example ones to change.
+    const details = mode === 'invite' && !d.details.trim() ? DEFAULT_DETAILS : d.details;
+    p.onDesign({ mode, textX: 0.5, textY: 0.5, details, ...(card ? { fill: { kind: 'picture', id: card.id } } : {}) });
   };
   const pickPicture = (id: string) => {
     loadBackground(id).catch(() => undefined);
@@ -218,7 +150,7 @@ export function PosterEditor(p: Props) {
   return (
     <div className="poster-editor">
       <div className="poster-wrap" ref={wrap}>
-        <div className="poster-stage" ref={stage} style={{ width: viewW, height: viewH }} onPointerDown={() => setSelected(null)}>
+        <div className="poster-stage" ref={stage} style={{ width: viewW, height: viewH }}>
           <canvas ref={canvas} style={{ width: viewW, height: viewH }} aria-label={`Your ${f.label.toLowerCase()}`} role="img" />
           <div
             className="text-hit"
@@ -227,31 +159,9 @@ export function PosterEditor(p: Props) {
             title="Drag to move your words"
             aria-label="Your words: drag to move them"
           />
-          {d.stickers.map((s) => {
-            const px = s.size * short * k;
-            return (
-              <div
-                key={s.id}
-                className={`sticker-hit ${s.id === selected ? 'on' : ''}`}
-                style={{ left: s.x * viewW, top: s.y * viewH, width: px, height: px, transform: `translate(-50%, -50%) rotate(${s.rot}deg)` }}
-                onPointerDown={(e) => moveSticker(e, s)}
-                aria-label={`${STICKERS.find((x) => x.shape === s.shape)?.label} sticker: drag to move`}
-              >
-                {s.id === selected && (
-                  <>
-                    <button className="handle rotate" onPointerDown={(e) => rotateSticker(e, s)} aria-label="Turn the sticker" title="Drag to turn" />
-                    <button className="handle resize" onPointerDown={(e) => resizeSticker(e, s)} aria-label="Resize the sticker" title="Drag to resize" />
-                    <button className="handle remove" onPointerDown={(e) => e.stopPropagation()} onClick={() => removeSticker(s.id)} aria-label="Remove the sticker" title="Remove">
-                      ✕
-                    </button>
-                  </>
-                )}
-              </div>
-            );
-          })}
         </div>
         <p className="poster-hint">
-          {f.label} · {f.note}. Drag your words or stickers to move them.
+          {f.label} · {f.note}. Drag your words to move them.
         </p>
       </div>
 
@@ -268,36 +178,42 @@ export function PosterEditor(p: Props) {
           </div>
         </section>
 
-        {invite && (
-          <section className="invite-panel">
-            <Label>Party details</Label>
-            <p className="help">Your big words are your photo letters: type them in the box above, like <strong>MIA IS 7!</strong></p>
-            <textarea
-              className="details"
-              rows={5}
-              value={d.details}
-              onChange={(e) => p.onDesign({ details: e.target.value })}
-              placeholder={'When is it?\nWhere is it?\nWho to tell if you can come'}
-              aria-label="Party details: one line each"
-              style={{ fontFamily: `"${BODY_FONTS[d.bodyFont].family}", sans-serif`, fontWeight: BODY_FONTS[d.bodyFont].weight }}
-            />
-            <div className="seg" role="group" aria-label="Font for the details">
-              {BODY_FONT_IDS.map((id) => (
-                <button key={id} className={d.bodyFont === id ? 'on' : ''} aria-pressed={d.bodyFont === id} onClick={() => p.onDesign({ bodyFont: id })} style={{ font: bodyFont(id, 20) }}>
-                  {BODY_FONTS[id].label}
-                </button>
-              ))}
-            </div>
-            <div className="row tight">
-              <ColorPicker label="Details colour" value={d.bodyColour ?? pic?.ink ?? '#1b1b3a'} swatches={swatches} onChange={(c) => p.onDesign({ bodyColour: c })} />
-              {d.bodyColour && (
-                <button className="btn small" onClick={() => p.onDesign({ bodyColour: null })}>
-                  Best for this picture
-                </button>
-              )}
-            </div>
-          </section>
-        )}
+        <section className="invite-panel">
+          <Label>{invite ? 'Party details' : 'Body text'}</Label>
+          <p className="help">
+            {invite ? (
+              <>
+                Your big words are your photo letters: type them in the box above, like <strong>MIA IS 7!</strong>
+              </>
+            ) : (
+              'Write a few lines to go under your words, or leave this empty.'
+            )}
+          </p>
+          <textarea
+            className="details"
+            rows={invite ? 5 : 3}
+            value={d.details}
+            onChange={(e) => p.onDesign({ details: e.target.value })}
+            placeholder={invite ? 'When is it?\nWhere is it?\nWho to tell if you can come' : 'A message, a line each'}
+            aria-label={invite ? 'Party details: one line each' : 'Body text: one line each'}
+            style={{ fontFamily: `"${BODY_FONTS[d.bodyFont].family}", sans-serif`, fontWeight: BODY_FONTS[d.bodyFont].weight }}
+          />
+          <div className="seg" role="group" aria-label="Font for the body text">
+            {BODY_FONT_IDS.map((id) => (
+              <button key={id} className={d.bodyFont === id ? 'on' : ''} aria-pressed={d.bodyFont === id} onClick={() => p.onDesign({ bodyFont: id })} style={{ font: bodyFont(id, 20) }}>
+                {BODY_FONTS[id].label}
+              </button>
+            ))}
+          </div>
+          <div className="row tight">
+            <ColorPicker label="Text colour" value={bodyColourOf(d)} swatches={swatches} onChange={(c) => p.onDesign({ bodyColour: c })} />
+            {d.bodyColour && (
+              <button className="btn small" onClick={() => p.onDesign({ bodyColour: null })}>
+                Best for this background
+              </button>
+            )}
+          </div>
+        </section>
 
         {!invite && (
         <section>
@@ -418,33 +334,6 @@ export function PosterEditor(p: Props) {
         )}
 
         <section>
-          <Label>Stickers</Label>
-          <div className="sticker-tray" role="group" aria-label="Stickers: drag one onto your poster, or tap to add">
-            {STICKERS.map((s) => (
-              <button key={s.shape} onPointerDown={(e) => dragIn(e, s.shape)} aria-label={`Add a ${s.label.toLowerCase()}`} title={`${s.label}: drag onto your poster`}>
-                <StickerIcon shape={s.shape} colour={s.colour} />
-              </button>
-            ))}
-          </div>
-          <p className="help">Drag a sticker onto your {invite ? 'invitation' : 'poster'}, or tap to add it.</p>
-          {sel && (
-            <div className="sticker-tools">
-              <ColorPicker label="Sticker" value={sel.colour} swatches={swatches} onChange={(c) => setSticker(sel.id, { colour: c })} />
-              <button className="btn small" onClick={() => setSticker(sel.id, { rot: (sel.rot + 345) % 360 })} aria-label="Turn left">↺</button>
-              <button className="btn small" onClick={() => setSticker(sel.id, { rot: (sel.rot + 15) % 360 })} aria-label="Turn right">↻</button>
-              <button className="btn small" onClick={() => setSticker(sel.id, { size: Math.max(0.04, sel.size / 1.2) })} aria-label="Smaller">−</button>
-              <button className="btn small" onClick={() => setSticker(sel.id, { size: Math.min(0.9, sel.size * 1.2) })} aria-label="Bigger">+</button>
-              <button className="btn small" onClick={() => p.onDesign({ stickers: [...d.stickers.filter((x) => x.id !== sel.id), sel] })} aria-label="Bring to front" title="Bring to front">
-                ⬆
-              </button>
-              <button className="btn small pink" onClick={() => removeSticker(sel.id)}>
-                Remove
-              </button>
-            </div>
-          )}
-        </section>
-
-        <section>
           <Label>{invite ? 'Big words size' : 'Letter size'}</Label>
           <div className="seg" role="group" aria-label="Letter size">
             {(['S', 'M', 'L'] as Size[]).map((s) => (
@@ -456,11 +345,6 @@ export function PosterEditor(p: Props) {
         </section>
       </div>
 
-      {ghost && (
-        <div className="sticker-ghost" style={{ left: ghost.x, top: ghost.y }} aria-hidden>
-          <StickerIcon shape={ghost.shape} colour={STICKERS.find((s) => s.shape === ghost.shape)!.colour} />
-        </div>
-      )}
     </div>
   );
 }
@@ -471,15 +355,4 @@ function PatternSample({ id, colour, background, opacity }: { id: string; colour
     if (ref.current) drawPatternSample(ref.current, id, colour, background, opacity);
   }, [id, colour, background, opacity]);
   return <canvas ref={ref} width={112} height={112} />;
-}
-
-export function StickerIcon({ shape, colour }: { shape: StickerShape; colour: string }) {
-  const def = STICKERS.find((s) => s.shape === shape)!;
-  return (
-    <svg viewBox="-4 -4 108 108" aria-hidden>
-      {def.parts.map((part, i) => (
-        <path key={i} d={part.d} fill={part.fill ?? colour} stroke={part.stroke === false ? 'none' : '#1b1b3a'} strokeWidth={5} strokeLinejoin="round" />
-      ))}
-    </svg>
-  );
 }

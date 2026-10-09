@@ -4,7 +4,7 @@
 #   <python with realesrgan-ncnn-py, numpy, opencv, pillow> -I scripts/backgrounds.py [--force]
 #
 # For each picture:
-#   - src/backgrounds/<id>.webp: twice the size, sharpened with Real-ESRGAN (realesr-animevideov3 x2,
+#   - src/backgrounds/<id>.webp: twice the size (four times for small ones), sharpened with Real-ESRGAN (realesr-animevideov3 x2,
 #     which suits drawings and paper textures), so invitations print crisply. Kept once made (--force
 #     makes them again), so only new pictures need the model.
 #   - src/backgrounds/thumbs/<id>.webp: a small copy for the picker.
@@ -69,7 +69,7 @@ def ink_for(img, safe):
     W, H = img.size
     x, y, w, h = safe
     area = np.asarray(img.convert('L').crop((int(x * W), int(y * H), int((x + w) * W), int((y + h) * H)))).astype(np.float32)
-    return WHITE if np.median(area) < 110 else INK
+    return WHITE if np.median(area) < 125 else INK
 
 
 def main():
@@ -85,9 +85,13 @@ def main():
             if model is None:
                 from realesrgan_ncnn_py import Realesrgan
                 model = Realesrgan(gpuid=-1, model=0)  # realesr-animevideov3, x2
-            big = model.process_pil(orig)
-            if big.size != (orig.width * 2, orig.height * 2):
-                big = big.resize((orig.width * 2, orig.height * 2), Image.LANCZOS)
+            # Twice the size; small pictures (under 600 px across) twice over, so they print as well.
+            big = orig
+            for _ in range(2 if orig.width < 600 else 1):
+                want = (big.width * 2, big.height * 2)
+                big = model.process_pil(big)
+                if big.size != want:
+                    big = big.resize(want, Image.LANCZOS)
             big.save(big_path, 'WEBP', quality=84, method=6)
             print(p['id'], big.size, flush=True)
         big = Image.open(big_path)

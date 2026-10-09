@@ -649,5 +649,262 @@
    0.58
   ],
   "ink": "#1b1b3a"
+ },
+ {
+  "id": "nuts-and-bolts",
+  "label": "Nuts and bolts",
+  "groups": [
+   "tools"
+  ],
+  "w": 1668,
+  "h": 2504,
+  "safe": [
+   0.25,
+   0.22,
+   0.5,
+   0.52
+  ],
+  "ink": "#1b1b3a"
+ },
+ {
+  "id": "engine-blueprint",
+  "label": "Engine blueprint",
+  "groups": [
+   "tools"
+  ],
+  "w": 1472,
+  "h": 2714,
+  "safe": [
+   0.12,
+   0.2,
+   0.76,
+   0.6
+  ],
+  "ink": "#1b1b3a"
+ },
+ {
+  "id": "dark-workbench",
+  "label": "Dark workbench",
+  "groups": [
+   "tools"
+  ],
+  "w": 1472,
+  "h": 2208,
+  "safe": [
+   0.16,
+   0.16,
+   0.68,
+   0.68
+  ],
+  "ink": "#ffffff"
+ },
+ {
+  "id": "hard-hat-planks",
+  "label": "Hard hat planks",
+  "groups": [
+   "tools"
+  ],
+  "w": 1472,
+  "h": 2208,
+  "safe": [
+   0.18,
+   0.24,
+   0.58,
+   0.5
+  ],
+  "ink": "#ffffff"
+ },
+ {
+  "id": "construction-zone",
+  "label": "Construction zone",
+  "groups": [
+   "tools"
+  ],
+  "w": 2264,
+  "h": 3200,
+  "safe": [
+   0.16,
+   0.12,
+   0.66,
+   0.7
+  ],
+  "ink": "#1b1b3a"
+ },
+ {
+  "id": "toolbox-gingham",
+  "label": "Toolbox gingham",
+  "groups": [
+   "tools"
+  ],
+  "w": 1808,
+  "h": 2560,
+  "safe": [
+   0.18,
+   0.16,
+   0.64,
+   0.64
+  ],
+  "ink": "#1b1b3a"
+ },
+ {
+  "id": "pegboard",
+  "label": "Pegboard",
+  "groups": [
+   "tools"
+  ],
+  "w": 1988,
+  "h": 2560,
+  "safe": [
+   0.25,
+   0.17,
+   0.5,
+   0.5
+  ],
+  "ink": "#1b1b3a"
+ },
+ {
+  "id": "plywood-board",
+  "label": "Plywood board",
+  "groups": [
+   "tools"
+  ],
+  "w": 1350,
+  "h": 2174,
+  "safe": [
+   0.22,
+   0.24,
+   0.58,
+   0.52
+  ],
+  "ink": "#1b1b3a"
+ },
+ {
+  "id": "paint-studio",
+  "label": "Paint studio",
+  "groups": [
+   "stationery",
+   "tools"
+  ],
+  "w": 1472,
+  "h": 2616,
+  "safe": [
+   0.15,
+   0.28,
+   0.7,
+   0.48
+  ],
+  "ink": "#1b1b3a"
+ },
+ {
+  "id": "blue-cutting-mat",
+  "label": "Blue cutting mat",
+  "groups": [
+   "stationery"
+  ],
+  "w": 1472,
+  "h": 2616,
+  "safe": [
+   0.25,
+   0.34,
+   0.68,
+   0.34
+  ],
+  "ink": "#ffffff"
+ },
+ {
+  "id": "clipboard-collage",
+  "label": "Clipboard collage",
+  "groups": [
+   "stationery"
+  ],
+  "w": 1472,
+  "h": 2616,
+  "safe": [
+   0.22,
+   0.31,
+   0.56,
+   0.45
+  ],
+  "ink": "#1b1b3a"
+ },
+ {
+  "id": "corkboard-note",
+  "label": "Corkboard note",
+  "groups": [
+   "stationery"
+  ],
+  "w": 1470,
+  "h": 1826,
+  "safe": [
+   0.26,
+   0.22,
+   0.48,
+   0.58
+  ],
+  "ink": "#1b1b3a"
+ },
+ {
+  "id": "green-cutting-mat",
+  "label": "Green cutting mat",
+  "groups": [
+   "stationery"
+  ],
+  "w": 1472,
+  "h": 2616,
+  "safe": [
+   0.25,
+   0.34,
+   0.68,
+   0.34
+  ],
+  "ink": "#ffffff"
+ },
+ {
+  "id": "crumpled-paper-desk",
+  "label": "Crumpled paper desk",
+  "groups": [
+   "stationery"
+  ],
+  "w": 1472,
+  "h": 2082,
+  "safe": [
+   0.18,
+   0.2,
+   0.66,
+   0.56
+  ],
+  "ink": "#1b1b3a"
+ },
+ {
+  "id": "clipboard-desk",
+  "label": "Clipboard desk",
+  "groups": [
+   "stationery"
+  ],
+  "w": 1472,
+  "h": 1840,
+  "safe": [
+   0.2,
+   0.22,
+   0.58,
+   0.48
+  ],
+  "ink": "#1b1b3a"
+ },
+ {
+  "id": "green-mat-clipboard",
+  "label": "Green mat clipboard",
+  "groups": [
+   "stationery"
+  ],
+  "w": 1472,
+  "h": 2082,
+  "safe": [
+   0.3,
+   0.46,
+   0.6,
+   0.34
+  ],
+  "ink": "#1b1b3a"
  }
 ]

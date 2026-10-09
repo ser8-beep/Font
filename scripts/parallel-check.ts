@@ -64,16 +64,15 @@ interface Job {
   frame: FixedFrame;
   gradient?: boolean;
   pattern?: boolean;
-  sticker?: string;
   saveFont?: boolean;
 }
 const JOBS: Job[] = [
-  { name: 'desktop', profile: 'desktop', device: 'Desktop Chrome', mode: 'word', text: 'LEGO FUN', frame: 'desktop', gradient: true, sticker: 'star', saveFont: true },
-  { name: 'iphone', profile: 'iphone', device: 'iPhone 13', mode: 'letters', text: 'PLAY', frame: 'phone', pattern: true, sticker: 'heart' },
+  { name: 'desktop', profile: 'desktop', device: 'Desktop Chrome', mode: 'word', text: 'LEGO FUN', frame: 'desktop', gradient: true, saveFont: true },
+  { name: 'iphone', profile: 'iphone', device: 'iPhone 13', mode: 'letters', text: 'PLAY', frame: 'phone', pattern: true },
   { name: 'ipad', profile: 'ipad', device: 'iPad (gen 7)', mode: 'word', text: 'YAY', frame: 'ipad', gradient: true, pattern: true },
-  { name: 'android', profile: 'android', device: 'Pixel 7', mode: 'word', small: true, text: 'play', frame: 'a4', sticker: 'smiley' },
+  { name: 'android', profile: 'android', device: 'Pixel 7', mode: 'word', small: true, text: 'play', frame: 'a4' },
   { name: 'laptop-tab1', profile: 'laptop', device: 'Desktop Chrome', mode: 'letters', text: 'PAL', frame: 'a3', saveFont: true },
-  { name: 'laptop-tab2', profile: 'laptop', device: 'Desktop Chrome', mode: 'word', text: 'LAP', frame: 'desktop', pattern: true, sticker: 'sun' },
+  { name: 'laptop-tab2', profile: 'laptop', device: 'Desktop Chrome', mode: 'word', text: 'LAP', frame: 'desktop', pattern: true },
 ];
 
 const browser = await chromium.launch({ executablePath: process.env.CHROMIUM || '/opt/pw-browsers/chromium' });
@@ -134,7 +133,6 @@ async function run(j: Job, page: Page) {
   await page.getByRole('button', { name: new RegExp(`^${shortName(j.frame)}`) }).click();
   if (j.gradient) await page.getByRole('button', { name: 'Gradient', exact: true }).click();
   if (j.pattern) await page.locator('.pattern-tiles button').nth(1).click();
-  if (j.sticker) await page.getByRole('button', { name: `Add a ${j.sticker}` }).click();
   await step();
 
   // Save: poster (and font), then the room wall.

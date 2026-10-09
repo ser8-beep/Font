@@ -1,5 +1,5 @@
-// The two fonts for an invitation's details (the words stay in the kid's photo letters): one simple
-// and easy to read, one handwritten. Both are open-licence (SIL OFL) and bundled, latin only, so they
+// The two fonts for body text (the words stay in the kid's photo letters): handwritten (the default)
+// and a simple, easy-to-read one. Both are open-licence (SIL OFL) and bundled, latin only, so they
 // work offline. The canvas can only draw them once loaded: loadBodyFonts() before drawing.
 import nunito from '@fontsource/nunito/files/nunito-latin-800-normal.woff2?url';
 import patrickHand from '@fontsource/patrick-hand/files/patrick-hand-latin-400-normal.woff2?url';
@@ -7,8 +7,8 @@ import patrickHand from '@fontsource/patrick-hand/files/patrick-hand-latin-400-n
 export type BodyFont = 'easy' | 'hand';
 
 export const BODY_FONTS: Record<BodyFont, { label: string; family: string; weight: number; url: string }> = {
-  easy: { label: 'Easy to read', family: 'Nunito', weight: 800, url: nunito },
   hand: { label: 'Handwritten', family: 'Patrick Hand', weight: 400, url: patrickHand },
+  easy: { label: 'Easy to read', family: 'Nunito', weight: 800, url: nunito },
 };
 export const BODY_FONT_IDS = Object.keys(BODY_FONTS) as BodyFont[];
 

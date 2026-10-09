@@ -4,7 +4,7 @@ import { DEFAULT_DESIGN, frameOf } from '../src/design';
 
 describe('picture backgrounds', () => {
   it('have a preview, a size and a calm area inside the picture', () => {
-    expect(BACKGROUNDS.length).toBe(40);
+    expect(BACKGROUNDS.length).toBe(56);
     for (const b of BACKGROUNDS) {
       expect(thumbUrl(b.id), b.id).toBeTruthy();
       expect(b.w).toBeGreaterThan(1000);
@@ -17,18 +17,18 @@ describe('picture backgrounds', () => {
     }
   });
 
-  it('offer party cards first for invitations, and the theme\'s own pictures first for posters', () => {
+  it('offer only the typeface\'s themes\' pictures, and the party cards for invitations', () => {
     const invite = backgroundGroups(['plants'], true);
-    expect(invite[0].key).toBe('party');
+    expect(invite.map((g) => g.key)).toEqual(['party', 'plants']);
     expect(invite[0].items).toHaveLength(9);
-    const poster = backgroundGroups(['food', 'produce'], false);
-    expect(poster[0].key).toBe('food');
-    // Then the party cards and the other themes; the kitchen pictures are shown once, not again for produce.
-    expect(poster.map((g) => g.key)).toEqual(['food', 'party', 'plants', 'stationery']);
-    // Every picture is offered exactly once.
-    const all = poster.flatMap((g) => g.items.map((b) => b.id));
-    expect(new Set(all).size).toBe(BACKGROUNDS.length);
-    expect(all).toHaveLength(BACKGROUNDS.length);
+    // A poster: only its themes; the kitchen pictures belong to both Pantry Raid and Market Basket, shown once.
+    expect(backgroundGroups(['food', 'produce'], false).map((g) => g.key)).toEqual(['food']);
+    expect(backgroundGroups(['tools'], false)[0].items).toHaveLength(9);
+    // Themes not known yet: every theme's pictures, each once, and no party cards on a poster.
+    const all = backgroundGroups([], false).flatMap((g) => g.items);
+    expect(all.some((b) => b.groups.length === 1 && b.groups[0] === 'party')).toBe(false);
+    expect(new Set(all.map((b) => b.id)).size).toBe(all.length);
+    expect(all).toHaveLength(BACKGROUNDS.filter((b) => b.groups.some((g) => g !== 'party')).length);
   });
 
   it('give an invitation the picture\'s own shape', () => {
